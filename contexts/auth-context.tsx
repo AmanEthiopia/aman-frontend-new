@@ -1,0 +1,168 @@
+"use client"
+
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { useRouter } from "next/navigation"
+import * as authAPI from "@/lib/api/auth"
+import { getAuthCookie, setAuthCookie, clearAuthCookies } from "@/lib/utils/cookies"
+import type { CompleteUserProfile } from "@/lib/types"
+
+interface AuthContextType {
+  userProfile: CompleteUserProfile | null
+  token: string | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  isAuthReady: boolean
+  login: (email: string, password: string) => Promise<void>
+  loginWithGoogle: (accessToken: string) => Promise<void>
+  registerWithGoogle: (accessToken: string, role?: "traveller" | "provider") => Promise<void>
+  register: (payload: authAPI.RegisterPayload) => Promise<void>
+  logout: () => void
+  refreshUser: () => Promise<void>
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [userProfile, setUserProfile] = useState<CompleteUserProfile | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isAuthReady, setIsAuthReady] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    loadUserFromCookie()
+  }, [])
+
+  async function loadUserFromCookie() {
+    const savedToken = getAuthCookie()
+
+    if (!savedToken) {
+      setIsAuthReady(true)
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      setToken(savedToken)
+      const profileData = await authAPI.getCurrentUser()
+      setUserProfile(profileData)
+    } catch (error) {
+      console.error("[v0] Failed to load user from cookie:", error)
+      clearAuthCookies()
+      setToken(null)
+      setUserProfile(null)
+    } finally {
+      setIsLoading(false)
+      setIsAuthReady(true)
+    }
+  }
+
+  async function login(email: string, password: string) {
+    setIsLoading(true)
+    try {
+      const response = await authAPI.login({ email, password })
+      setAuthCookie(response.access_token)
+      setAuthCookie(response.refresh_token, true)
+      setToken(response.access_token)
+
+      const profileData = await authAPI.getCurrentUser()
+      setUserProfile(profileData)
+
+      router.push("/home")
+    } catch (error) {
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function loginWithGoogle(accessToken: string) {
+    setIsLoading(true)
+    try {
+      const response = await authAPI.loginWithGoogle(accessToken)
+      setAuthCookie(response.access_token)
+      setAuthCookie(response.refresh_token, true)
+      setToken(response.access_token)
+
+      const profileData = await authAPI.getCurrentUser()
+      setUserProfile(profileData)
+      router.push("/home")
+    } catch (error) {
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function registerWithGoogle(accessToken: string, role?: "traveller" | "provider") {
+    setIsLoading(true)
+    try {
+      const response = await authAPI.registerWithGoogle(accessToken, role)
+      setAuthCookie(response.access_token)
+      setAuthCookie(response.refresh_token, true)
+      setToken(response.access_token)
+
+      const profileData = await authAPI.getCurrentUser()
+      setUserProfile(profileData)
+      router.push("/home")
+    } catch (error) {
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function register(payload: authAPI.RegisterPayload) {
+    setIsLoading(true)
+    try {
+      await authAPI.register(payload)
+    } catch (error) {
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function logout() {
+    authAPI.logoutAPI()
+    clearAuthCookies()
+    setToken(null)
+    setUserProfile(null)
+    router.push("/")
+  }
+
+  async function refreshUser() {
+    if (!token) return
+
+    try {
+      const profileData = await authAPI.getCurrentUser()
+      setUserProfile(profileData)
+    } catch (error) {
+      console.error("[v0] Failed to refresh user:", error)
+    }
+  }
+
+  const value = {
+    userProfile,
+    token,
+    isAuthenticated: !!userProfile && !!token,
+    isLoading,
+    isAuthReady,
+    login,
+    loginWithGoogle,
+    registerWithGoogle,
+    register,
+    logout,
+    refreshUser,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider")
+  }
+  return context
+}
