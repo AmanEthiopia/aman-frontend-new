@@ -51,7 +51,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { useProviderBookings, useMyProperties } from "@/lib/hooks/use-provider"
 import * as providerAPI from "@/lib/api/provider"
-import type { ProviderBooking, PropertyCategory } from "@/lib/api/provider"
+import type { ProviderBooking, PropertyCategory, PropertyBase } from "@/lib/api/provider"
 
 const statusConfig = {
   pending: { label: "Pending", color: "bg-yellow-500", badge: "secondary" as const },
@@ -380,7 +380,7 @@ export default function ProviderBookingsPage() {
 
   // Filter bookings based on search and filters
   const filteredBookings = useMemo(() => {
-    return bookings.filter((booking) => {
+    return bookings.filter((booking: ProviderBooking) => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
@@ -406,9 +406,9 @@ export default function ProviderBookingsPage() {
   }, [bookings, searchQuery, statusFilter, propertyFilter])
 
   // Group bookings by status
-  const pendingBookings = filteredBookings.filter((b) => b.status === "pending")
-  const confirmedBookings = filteredBookings.filter((b) => b.status === "confirmed")
-  const pastBookings = filteredBookings.filter((b) => b.status === "completed" || b.status === "cancelled")
+  const pendingBookings = filteredBookings.filter((b: ProviderBooking) => b.status === "pending")
+  const confirmedBookings = filteredBookings.filter((b: ProviderBooking) => b.status === "confirmed")
+  const pastBookings = filteredBookings.filter((b: ProviderBooking) => b.status === "completed" || b.status === "cancelled")
 
   const handleAccept = async (id: string) => {
     setActionLoading(id)
@@ -475,7 +475,7 @@ export default function ProviderBookingsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Properties</SelectItem>
-            {properties.map((property) => (
+            {properties.map((property: PropertyBase) => (
               <SelectItem key={property.id} value={property.id}>
                 {property.name}
               </SelectItem>
@@ -503,7 +503,7 @@ export default function ProviderBookingsPage() {
 
         <TabsContent value="pending" className="space-y-3">
           {pendingBookings.length > 0 ? (
-            pendingBookings.map((booking) => (
+            pendingBookings.map((booking: ProviderBooking) => (
               <BookingRow
                 key={booking.id}
                 booking={booking}
@@ -524,7 +524,7 @@ export default function ProviderBookingsPage() {
 
         <TabsContent value="confirmed" className="space-y-3">
           {confirmedBookings.length > 0 ? (
-            confirmedBookings.map((booking) => (
+            confirmedBookings.map((booking: ProviderBooking) => (
               <BookingRow
                 key={booking.id}
                 booking={booking}
@@ -545,7 +545,7 @@ export default function ProviderBookingsPage() {
 
         <TabsContent value="past" className="space-y-3">
           {pastBookings.length > 0 ? (
-            pastBookings.map((booking) => (
+            pastBookings.map((booking: ProviderBooking) => (
               <BookingRow
                 key={booking.id}
                 booking={booking}

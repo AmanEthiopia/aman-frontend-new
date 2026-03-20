@@ -289,7 +289,7 @@ export default function ProviderPropertiesPage() {
     router.push(`/provider/properties/${property.category}s/${property.id}/edit`)
   }
 
-  const categoryCounts = {
+  const categoryCounts: Record<"all" | PropertyCategory, number> = {
     all: properties.length,
     hotel: properties.filter((p) => p.category === "hotel").length,
     restaurant: properties.filter((p) => p.category === "restaurant").length,

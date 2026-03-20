@@ -222,7 +222,7 @@ function HotelForm({
   const toggleAmenity = (amenity: string) => {
     const amenities = formData.amenities || []
     if (amenities.includes(amenity)) {
-      updateField("amenities", amenities.filter((a) => a !== amenity))
+      updateField("amenities", amenities.filter((a: string) => a !== amenity))
     } else {
       updateField("amenities", [...amenities, amenity])
     }
@@ -464,7 +464,7 @@ function RestaurantForm({
 
   const toggleCuisine = (cuisine: string) => {
     if (formData.cuisine_types.includes(cuisine)) {
-      updateField("cuisine_types", formData.cuisine_types.filter((c) => c !== cuisine))
+      updateField("cuisine_types", formData.cuisine_types.filter((c: string) => c !== cuisine))
     } else {
       updateField("cuisine_types", [...formData.cuisine_types, cuisine])
     }
@@ -697,7 +697,7 @@ function DriverForm({
 
   const toggleService = (service: DriverService) => {
     if (formData.services.includes(service)) {
-      updateField("services", formData.services.filter((s) => s !== service))
+      updateField("services", formData.services.filter((s: DriverService) => s !== service))
     } else {
       updateField("services", [...formData.services, service])
     }
@@ -705,7 +705,7 @@ function DriverForm({
 
   const toggleLanguage = (language: string) => {
     if (formData.languages.includes(language)) {
-      updateField("languages", formData.languages.filter((l) => l !== language))
+      updateField("languages", formData.languages.filter((l: string) => l !== language))
     } else {
       updateField("languages", [...formData.languages, language])
     }
@@ -1000,9 +1000,9 @@ function TripForm({
 
   const toggleService = (service: string, type: "included" | "excluded") => {
     const key = type === "included" ? "included_services" : "excluded_services"
-    const services = formData[key]
+    const services = formData[key] || []
     if (services.includes(service)) {
-      updateField(key, services.filter((s) => s !== service))
+      updateField(key, services.filter((s: string) => s !== service))
     } else {
       updateField(key, [...services, service])
     }
