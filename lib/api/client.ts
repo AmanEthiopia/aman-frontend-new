@@ -34,10 +34,8 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
   // Get token from cookie
   const token = getAuthCookie()
 
-  console.log(`[v0] API Request: ${options.method || "GET"} ${endpoint}`, {
-    hasToken: !!token,
-    tokenPrefix: token ? token.substring(0, 20) + "..." : "none",
-  })
+  // API request logging (enable for debugging)
+  // console.log(`[v0] API Request: ${options.method || "GET"} ${endpoint}`)
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

@@ -38,15 +38,16 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import * as providerAPI from "@/lib/api/provider"
+import * as contentAPI from "@/lib/api/content"
 import type {
   PropertyCategory,
   CreateHotelPayload,
   CreateRestaurantPayload,
   CreateDriverPayload,
   CreateTripPayload,
-  City,
   DriverService,
 } from "@/lib/api/provider"
+import type { City } from "@/lib/api/content"
 
 // Hotel amenities options
 const HOTEL_AMENITIES = [
@@ -1237,18 +1238,34 @@ function AddPropertyContent() {
 
   async function loadCities() {
     try {
-      const response = await providerAPI.getCities({ page_size: 100 })
-      setCities(response.results)
+      // Use the content API to get cities
+      const citiesData = await contentAPI.getCities()
+      // Convert to the format expected by the forms
+      const formattedCities: City[] = citiesData.map(city => ({
+        id: city.id,
+        name: city.name,
+        nickname: city.nickname,
+        slug: city.slug,
+        country: city.country,
+        short_description: city.short_description,
+        cover_photo_url: city.cover_photo_url,
+        is_popular: city.is_popular,
+        display_order: city.display_order,
+        hotels_count: city.hotels_count,
+        restaurants_count: city.restaurants_count,
+        experiences_count: city.experiences_count,
+      }))
+      setCities(formattedCities)
     } catch (error) {
       console.error("[v0] Failed to load cities:", error)
       // Fallback to mock cities for demo
       setCities([
-        { id: "1", name: "Addis Ababa", nickname: "አዲስ አበባ", slug: "addis-ababa", country: "Ethiopia", is_popular: true },
-        { id: "2", name: "Lalibela", nickname: "ላሊበላ", slug: "lalibela", country: "Ethiopia", is_popular: true },
-        { id: "3", name: "Gondar", nickname: "ጎንደር", slug: "gondar", country: "Ethiopia", is_popular: true },
-        { id: "4", name: "Axum", nickname: "አክሱም", slug: "axum", country: "Ethiopia", is_popular: true },
-        { id: "5", name: "Harar", nickname: "ሐረር", slug: "harar", country: "Ethiopia", is_popular: true },
-        { id: "6", name: "Bahir Dar", nickname: "ባሕር ዳር", slug: "bahir-dar", country: "Ethiopia", is_popular: true },
+        { id: "1", name: "Addis Ababa", nickname: "አዲስ አበባ", slug: "addis-ababa", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 1, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
+        { id: "2", name: "Lalibela", nickname: "ላሊበላ", slug: "lalibela", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 2, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
+        { id: "3", name: "Gondar", nickname: "ጎንደር", slug: "gondar", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 3, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
+        { id: "4", name: "Axum", nickname: "አክሱም", slug: "axum", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 4, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
+        { id: "5", name: "Harar", nickname: "ሐረር", slug: "harar", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 5, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
+        { id: "6", name: "Bahir Dar", nickname: "ባሕር ዳር", slug: "bahir-dar", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 6, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
       ])
     } finally {
       setIsLoading(false)
