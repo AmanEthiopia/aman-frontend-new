@@ -322,3 +322,27 @@ export interface Booking {
   created_at: string
   updated_at?: string
 }
+
+// Re-export provider types for convenience
+export type {
+  PropertyCategory,
+  PropertyBase,
+  PropertyPhoto,
+  ProviderHotel,
+  ProviderRoom,
+  ProviderRestaurant,
+  ProviderDriver,
+  ProviderTrip,
+  ProviderStats,
+  ProviderBooking,
+  CreateHotelPayload,
+  CreateRoomPayload,
+  CreateRestaurantPayload,
+  CreateDriverPayload,
+  CreateTripPayload,
+  TripItineraryDay,
+  TripActivity,
+  DriverService,
+  City as APICity,
+  Attraction as APIAttraction,
+} from "@/lib/api/provider"

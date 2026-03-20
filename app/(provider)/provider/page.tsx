@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import {
@@ -17,59 +16,89 @@ import {
   AlertCircle,
   ArrowRight,
   Bell,
+  Building2,
+  Plus,
+  Loader2,
+  MessageSquare,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
+import * as providerAPI from "@/lib/api/provider"
+import type { ProviderStats, ProviderBooking } from "@/lib/api/provider"
 
-// Mock provider stats
-const stats = {
-  pendingBookings: 3,
-  confirmedBookings: 12,
-  occupancyRate: 78,
-  monthlyEarnings: 15420,
-  earningsChange: 12.5,
-  averageRating: 4.8,
-  totalReviews: 156,
-  responseRate: 95,
+// Fallback mock data for demo
+const mockStats: ProviderStats = {
+  total_properties: 2,
+  total_bookings: 15,
+  pending_bookings: 3,
+  confirmed_bookings: 12,
+  total_revenue: 45420,
+  monthly_revenue: 15420,
+  average_rating: 4.8,
+  total_reviews: 156,
+  response_rate: 95,
+  occupancy_rate: 78,
 }
 
-// Mock pending bookings
-const pendingBookings = [
+const mockPendingBookings: ProviderBooking[] = [
   {
     id: "bk-101",
-    guestName: "Sarah Johnson",
-    guestAvatar: "/diverse-user-avatars.png",
-    checkIn: "2025-01-18",
-    checkOut: "2025-01-21",
+    property_id: "1",
+    property_name: "Sheraton Addis Hotel",
+    property_type: "hotel",
+    guest_id: "g1",
+    guest_name: "Sarah Johnson",
+    guest_email: "sarah@email.com",
+    guest_phone: "+1 555-0123",
+    guest_avatar: "/diverse-user-avatars.png",
+    check_in: "2025-01-18",
+    check_out: "2025-01-21",
     guests: 2,
-    roomType: "Deluxe Suite",
-    totalPrice: 540,
-    requestedAt: "2 hours ago",
+    room_type: "Deluxe Suite",
+    total_price: 540,
+    status: "pending",
+    special_requests: "Early check-in if possible, celebrating anniversary",
+    created_at: "2025-01-15T10:00:00Z",
+    updated_at: "2025-01-15T10:00:00Z",
   },
   {
     id: "bk-102",
-    guestName: "Michael Chen",
-    guestAvatar: null,
-    checkIn: "2025-01-20",
-    checkOut: "2025-01-23",
+    property_id: "1",
+    property_name: "Sheraton Addis Hotel",
+    property_type: "hotel",
+    guest_id: "g2",
+    guest_name: "Michael Chen",
+    guest_email: "michael@email.com",
+    guest_phone: "+1 555-0456",
+    check_in: "2025-01-20",
+    check_out: "2025-01-23",
     guests: 3,
-    roomType: "Family Room",
-    totalPrice: 680,
-    requestedAt: "5 hours ago",
+    room_type: "Family Room",
+    total_price: 680,
+    status: "pending",
+    created_at: "2025-01-14T15:00:00Z",
+    updated_at: "2025-01-14T15:00:00Z",
   },
   {
     id: "bk-103",
-    guestName: "Emma Williams",
-    guestAvatar: null,
-    checkIn: "2025-01-22",
-    checkOut: "2025-01-25",
+    property_id: "1",
+    property_name: "Sheraton Addis Hotel",
+    property_type: "hotel",
+    guest_id: "g3",
+    guest_name: "Emma Williams",
+    guest_email: "emma@email.com",
+    guest_phone: "+1 555-0789",
+    check_in: "2025-01-22",
+    check_out: "2025-01-25",
     guests: 1,
-    roomType: "Standard Room",
-    totalPrice: 320,
-    requestedAt: "1 day ago",
+    room_type: "Standard Room",
+    total_price: 320,
+    status: "pending",
+    created_at: "2025-01-13T09:00:00Z",
+    updated_at: "2025-01-13T09:00:00Z",
   },
 ]
 
@@ -92,6 +121,19 @@ const recentReviews = [
     replied: false,
   },
 ]
+
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffHours < 1) return "Just now"
+  if (diffHours < 24) return `${diffHours} hours ago`
+  if (diffDays === 1) return "1 day ago"
+  return `${diffDays} days ago`
+}
 
 function StatCard({
   title,
@@ -141,37 +183,41 @@ function PendingBookingCard({
   booking,
   onAccept,
   onDecline,
+  isLoading,
 }: {
-  booking: (typeof pendingBookings)[0]
+  booking: ProviderBooking
   onAccept: () => void
   onDecline: () => void
+  isLoading: boolean
 }) {
-  const checkIn = new Date(booking.checkIn)
-  const checkOut = new Date(booking.checkOut)
-  const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24))
+  const checkIn = new Date(booking.check_in)
+  const checkOut = booking.check_out ? new Date(booking.check_out) : null
+  const nights = checkOut ? Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) : 1
 
   return (
     <div className="flex items-start gap-4 rounded-lg border bg-card p-4">
       <Avatar>
-        <AvatarImage src={booking.guestAvatar || "/placeholder.svg"} />
-        <AvatarFallback>{booking.guestName.slice(0, 2).toUpperCase()}</AvatarFallback>
+        <AvatarImage src={booking.guest_avatar || "/placeholder.svg"} />
+        <AvatarFallback>{booking.guest_name.slice(0, 2).toUpperCase()}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between">
           <div>
-            <h4 className="font-semibold">{booking.guestName}</h4>
-            <p className="text-sm text-muted-foreground">{booking.roomType}</p>
+            <h4 className="font-semibold">{booking.guest_name}</h4>
+            <p className="text-sm text-muted-foreground">{booking.room_type || booking.property_name}</p>
           </div>
           <Badge variant="secondary">
             <Clock className="mr-1 h-3 w-3" />
-            {booking.requestedAt}
+            {formatTimeAgo(booking.created_at)}
           </Badge>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           <span className="flex items-center gap-1">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            {checkIn.toLocaleDateString("en-US", { month: "short", day: "numeric" })} -{" "}
-            {checkOut.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            {checkIn.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            {checkOut && (
+              <> - {checkOut.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</>
+            )}
           </span>
           <span className="flex items-center gap-1">
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -183,14 +229,18 @@ function PendingBookingCard({
           </span>
         </div>
         <div className="mt-4 flex items-center justify-between">
-          <p className="text-lg font-bold">${booking.totalPrice}</p>
+          <p className="text-lg font-bold">${booking.total_price.toLocaleString()}</p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onDecline}>
+            <Button variant="outline" size="sm" onClick={onDecline} disabled={isLoading}>
               <XCircle className="mr-2 h-4 w-4" />
               Decline
             </Button>
-            <Button size="sm" onClick={onAccept}>
-              <CheckCircle2 className="mr-2 h-4 w-4" />
+            <Button size="sm" onClick={onAccept} disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+              )}
               Accept
             </Button>
           </div>
@@ -201,26 +251,67 @@ function PendingBookingCard({
 }
 
 export default function ProviderDashboard() {
-  const [pending, setPending] = useState(pendingBookings)
+  const [stats, setStats] = useState<ProviderStats>(mockStats)
+  const [pendingBookings, setPendingBookings] = useState<ProviderBooking[]>(mockPendingBookings)
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500)
-    return () => clearTimeout(timer)
+    loadDashboardData()
   }, [])
 
-  const handleAccept = (id: string) => {
-    setPending((prev) => prev.filter((b) => b.id !== id))
+  async function loadDashboardData() {
+    setLoading(true)
+    try {
+      // Try to load real data from API
+      const [statsData, bookingsData] = await Promise.all([
+        providerAPI.getProviderStats(),
+        providerAPI.getMyBookings({ status: "pending" }),
+      ])
+      setStats(statsData)
+      setPendingBookings(bookingsData.results)
+    } catch (error) {
+      console.log("[v0] Using mock data for dashboard:", error)
+      // Use mock data as fallback
+      setStats(mockStats)
+      setPendingBookings(mockPendingBookings)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDecline = (id: string) => {
-    setPending((prev) => prev.filter((b) => b.id !== id))
+  const handleAccept = async (id: string) => {
+    setActionLoading(id)
+    try {
+      await providerAPI.acceptBooking(id)
+      setPendingBookings((prev) => prev.filter((b) => b.id !== id))
+    } catch (error) {
+      console.log("[v0] Accept booking (demo mode):", error)
+      // Demo: just remove from list
+      setPendingBookings((prev) => prev.filter((b) => b.id !== id))
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleDecline = async (id: string) => {
+    setActionLoading(id)
+    try {
+      await providerAPI.declineBooking(id)
+      setPendingBookings((prev) => prev.filter((b) => b.id !== id))
+    } catch (error) {
+      console.log("[v0] Decline booking (demo mode):", error)
+      // Demo: just remove from list
+      setPendingBookings((prev) => prev.filter((b) => b.id !== id))
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -233,20 +324,30 @@ export default function ProviderDashboard() {
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Welcome back! Here's your property overview.</p>
         </div>
-        <Button variant="outline">
-          <Bell className="mr-2 h-4 w-4" />
-          Notifications
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/provider/properties/new">
+            <Button variant="outline" className="hidden sm:flex">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Property
+            </Button>
+          </Link>
+          <Link href="/provider/notifications">
+            <Button variant="outline">
+              <Bell className="mr-2 h-4 w-4" />
+              Notifications
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Alert Banner */}
-      {pending.length > 0 && (
+      {pendingBookings.length > 0 && (
         <Card className="border-yellow-200 bg-yellow-50/50 dark:border-yellow-900 dark:bg-yellow-950/20">
           <CardContent className="flex items-center gap-4 py-4">
             <AlertCircle className="h-5 w-5 text-yellow-600" />
             <div className="flex-1">
               <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                You have {pending.length} pending booking {pending.length === 1 ? "request" : "requests"}
+                You have {pendingBookings.length} pending booking {pendingBookings.length === 1 ? "request" : "requests"}
               </p>
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
                 Respond within 24 hours to maintain your response rate
@@ -261,18 +362,43 @@ export default function ProviderDashboard() {
         </Card>
       )}
 
+      {/* Quick Actions for New Providers */}
+      {stats.total_properties === 0 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+            <Building2 className="mb-4 h-12 w-12 text-primary" />
+            <h3 className="text-lg font-semibold">Welcome to AMAN Provider!</h3>
+            <p className="mt-2 max-w-md text-muted-foreground">
+              Start by adding your first property to begin receiving bookings and growing your business.
+            </p>
+            <Link href="/provider/properties/new" className="mt-4">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Your First Property
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Pending Bookings" value={stats.pendingBookings} icon={Clock} />
-        <StatCard title="Occupancy Rate" value={`${stats.occupancyRate}%`} change={5} trend="up" icon={Calendar} />
+        <StatCard title="Pending Bookings" value={stats.pending_bookings} icon={Clock} />
+        <StatCard 
+          title="Occupancy Rate" 
+          value={`${stats.occupancy_rate || 0}%`} 
+          change={5} 
+          trend="up" 
+          icon={Calendar} 
+        />
         <StatCard
           title="This Month"
-          value={`$${stats.monthlyEarnings.toLocaleString()}`}
-          change={stats.earningsChange}
+          value={`$${stats.monthly_revenue.toLocaleString()}`}
+          change={12.5}
           trend="up"
           icon={DollarSign}
         />
-        <StatCard title="Average Rating" value={stats.averageRating} icon={Star} />
+        <StatCard title="Average Rating" value={stats.average_rating.toFixed(1)} icon={Star} />
       </div>
 
       {/* Two Column Layout */}
@@ -292,13 +418,14 @@ export default function ProviderDashboard() {
             </Link>
           </CardHeader>
           <CardContent className="space-y-4">
-            {pending.length > 0 ? (
-              pending.map((booking) => (
+            {pendingBookings.length > 0 ? (
+              pendingBookings.slice(0, 3).map((booking) => (
                 <PendingBookingCard
                   key={booking.id}
                   booking={booking}
                   onAccept={() => handleAccept(booking.id)}
                   onDecline={() => handleDecline(booking.id)}
+                  isLoading={actionLoading === booking.id}
                 />
               ))
             ) : (
@@ -323,23 +450,23 @@ export default function ProviderDashboard() {
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm">
                   <span>Response Rate</span>
-                  <span className="font-medium">{stats.responseRate}%</span>
+                  <span className="font-medium">{stats.response_rate}%</span>
                 </div>
-                <Progress value={stats.responseRate} className="h-2" />
+                <Progress value={stats.response_rate} className="h-2" />
               </div>
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm">
                   <span>Occupancy Rate</span>
-                  <span className="font-medium">{stats.occupancyRate}%</span>
+                  <span className="font-medium">{stats.occupancy_rate || 0}%</span>
                 </div>
-                <Progress value={stats.occupancyRate} className="h-2" />
+                <Progress value={stats.occupancy_rate || 0} className="h-2" />
               </div>
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm">
                   <span>Review Score</span>
-                  <span className="font-medium">{stats.averageRating}/5</span>
+                  <span className="font-medium">{stats.average_rating}/5</span>
                 </div>
-                <Progress value={(stats.averageRating / 5) * 100} className="h-2" />
+                <Progress value={(stats.average_rating / 5) * 100} className="h-2" />
               </div>
             </CardContent>
           </Card>
@@ -349,7 +476,7 @@ export default function ProviderDashboard() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Recent Reviews</CardTitle>
-                <CardDescription>{stats.totalReviews} total reviews</CardDescription>
+                <CardDescription>{stats.total_reviews} total reviews</CardDescription>
               </div>
               <Link href="/provider/reviews">
                 <Button variant="ghost" size="sm">
@@ -364,7 +491,7 @@ export default function ProviderDashboard() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{review.guestName}</span>
-                      <div className="flex items-center gap-1 text-yellow-500">
+                      <div className="flex items-center gap-0.5 text-yellow-500">
                         {Array.from({ length: review.rating }).map((_, i) => (
                           <Star key={i} className="h-4 w-4 fill-current" />
                         ))}
@@ -374,15 +501,65 @@ export default function ProviderDashboard() {
                   </div>
                   <p className="mt-2 text-sm">{review.comment}</p>
                   {!review.replied && (
-                    <Button variant="link" size="sm" className="mt-2 h-auto p-0 text-primary">
-                      Reply to review
-                    </Button>
+                    <Link href="/provider/reviews">
+                      <Button variant="link" size="sm" className="mt-2 h-auto p-0 text-primary">
+                        Reply to review
+                      </Button>
+                    </Link>
                   )}
                 </div>
               ))}
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Quick Stats Row */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="flex items-center gap-4 pt-6">
+            <div className="rounded-full bg-blue-100 p-3 dark:bg-blue-950">
+              <Building2 className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Properties</p>
+              <p className="text-2xl font-bold">{stats.total_properties}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-4 pt-6">
+            <div className="rounded-full bg-green-100 p-3 dark:bg-green-950">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Confirmed Bookings</p>
+              <p className="text-2xl font-bold">{stats.confirmed_bookings}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-4 pt-6">
+            <div className="rounded-full bg-purple-100 p-3 dark:bg-purple-950">
+              <Users className="h-5 w-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Bookings</p>
+              <p className="text-2xl font-bold">{stats.total_bookings}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-4 pt-6">
+            <div className="rounded-full bg-orange-100 p-3 dark:bg-orange-950">
+              <MessageSquare className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Reviews</p>
+              <p className="text-2xl font-bold">{stats.total_reviews}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

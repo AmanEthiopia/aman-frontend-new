@@ -1,8 +1,9 @@
 "use client"
 
 import type { ReactNode } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard,
   Calendar,
@@ -14,11 +15,21 @@ import {
   Bell,
   Building2,
   ChevronDown,
+  Plus,
+  UtensilsCrossed,
+  Car,
+  Map,
+  LogOut,
+  User,
+  Menu,
+  X,
+  Home,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,20 +38,149 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { useAuth } from "@/contexts/auth-context"
 
-const sidebarItems = [
+interface NavItem {
+  href: string
+  label: string
+  icon: typeof LayoutDashboard
+  badge?: number
+  children?: NavItem[]
+}
+
+const sidebarItems: NavItem[] = [
   { href: "/provider", label: "Dashboard", icon: LayoutDashboard },
+  {
+    href: "/provider/properties",
+    label: "Properties",
+    icon: Building2,
+    children: [
+      { href: "/provider/properties", label: "All Properties", icon: Building2 },
+      { href: "/provider/properties/new?type=hotel", label: "Add Hotel", icon: Building2 },
+      { href: "/provider/properties/new?type=restaurant", label: "Add Restaurant", icon: UtensilsCrossed },
+      { href: "/provider/properties/new?type=driver", label: "Add Driver", icon: Car },
+      { href: "/provider/properties/new?type=trip", label: "Add Trip/Event", icon: Map },
+    ],
+  },
   { href: "/provider/bookings", label: "Bookings", icon: Calendar, badge: 3 },
   { href: "/provider/calendar", label: "Calendar", icon: Calendar },
   { href: "/provider/messages", label: "Messages", icon: MessageSquare, badge: 2 },
+  { href: "/provider/notifications", label: "Notifications", icon: Bell },
   { href: "/provider/earnings", label: "Earnings", icon: DollarSign },
   { href: "/provider/reviews", label: "Reviews", icon: Star },
   { href: "/provider/photos", label: "Photos", icon: ImageIcon },
   { href: "/provider/settings", label: "Settings", icon: Settings },
 ]
 
+function SidebarNav({ onItemClick }: { onItemClick?: () => void }) {
+  const pathname = usePathname()
+  const [openItems, setOpenItems] = useState<string[]>(["/provider/properties"])
+
+  const toggleItem = (href: string) => {
+    setOpenItems((prev) =>
+      prev.includes(href) ? prev.filter((h) => h !== href) : [...prev, href]
+    )
+  }
+
+  return (
+    <nav className="space-y-1 p-4">
+      {sidebarItems.map((item) => {
+        const Icon = item.icon
+        const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+        const hasChildren = item.children && item.children.length > 0
+        const isOpen = openItems.includes(item.href)
+
+        if (hasChildren) {
+          return (
+            <Collapsible key={item.href} open={isOpen} onOpenChange={() => toggleItem(item.href)}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-between gap-3",
+                    isActive && "bg-primary/10 text-primary"
+                  )}
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </span>
+                  <ChevronDown
+                    className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")}
+                  />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="ml-4 mt-1 space-y-1 border-l pl-4">
+                {item.children!.map((child) => {
+                  const ChildIcon = child.icon
+                  const isChildActive = pathname === child.href || pathname.startsWith(child.href.split("?")[0])
+                  return (
+                    <Link key={child.href} href={child.href} onClick={onItemClick}>
+                      <Button
+                        variant={isChildActive ? "secondary" : "ghost"}
+                        className={cn(
+                          "w-full justify-start gap-3",
+                          isChildActive && "bg-primary/10 text-primary"
+                        )}
+                        size="sm"
+                      >
+                        <ChildIcon className="h-4 w-4" />
+                        {child.label}
+                      </Button>
+                    </Link>
+                  )
+                })}
+              </CollapsibleContent>
+            </Collapsible>
+          )
+        }
+
+        return (
+          <Link key={item.href} href={item.href} onClick={onItemClick}>
+            <Button
+              variant={isActive ? "secondary" : "ghost"}
+              className={cn("w-full justify-start gap-3", isActive && "bg-primary/10 text-primary")}
+            >
+              <Icon className="h-4 w-4" />
+              {item.label}
+              {item.badge && (
+                <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1.5">
+                  {item.badge}
+                </Badge>
+              )}
+            </Button>
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
 export default function ProviderLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { userProfile, logout, isAuthenticated, isAuthReady } = useAuth()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [selectedProperty, setSelectedProperty] = useState("Sheraton Addis Hotel")
+
+  // Mock properties for dropdown - in production, this would come from API
+  const mockProperties = [
+    { id: "1", name: "Sheraton Addis Hotel", type: "hotel" as const },
+    { id: "2", name: "Lalibela Lodge", type: "hotel" as const },
+    { id: "3", name: "Yod Abyssinia", type: "restaurant" as const },
+  ]
+
+  const propertyTypeIcons = {
+    hotel: Building2,
+    restaurant: UtensilsCrossed,
+    driver: Car,
+    trip: Map,
+  }
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -49,11 +189,31 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
         <div className="flex h-16 items-center justify-between px-4 lg:px-6">
           {/* Logo & Property Selector */}
           <div className="flex items-center gap-4">
+            {/* Mobile Menu Button */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0">
+                <div className="flex h-16 items-center border-b px-4">
+                  <Link href="/" className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                      <span className="text-sm font-bold text-primary-foreground">A</span>
+                    </div>
+                    <span className="text-xl font-bold">AMAN</span>
+                  </Link>
+                </div>
+                <SidebarNav onItemClick={() => setMobileMenuOpen(false)} />
+              </SheetContent>
+            </Sheet>
+
             <Link href="/" className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                 <span className="text-sm font-bold text-primary-foreground">A</span>
               </div>
-              <span className="text-xl font-bold">AMAN</span>
+              <span className="hidden text-xl font-bold sm:inline">AMAN</span>
               <Badge variant="secondary" className="ml-2">
                 Provider
               </Badge>
@@ -64,26 +224,37 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2 bg-transparent">
                     <Building2 className="h-4 w-4" />
-                    Sheraton Addis Hotel
+                    <span className="max-w-[200px] truncate">{selectedProperty}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-64">
                   <DropdownMenuLabel>Your Properties</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Building2 className="mr-2 h-4 w-4" />
-                    Sheraton Addis Hotel
-                    <Badge className="ml-auto" variant="secondary">
-                      Active
-                    </Badge>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Building2 className="mr-2 h-4 w-4" />
-                    Lalibela Lodge
-                  </DropdownMenuItem>
+                  {mockProperties.map((property) => {
+                    const Icon = propertyTypeIcons[property.type]
+                    return (
+                      <DropdownMenuItem
+                        key={property.id}
+                        onClick={() => setSelectedProperty(property.name)}
+                      >
+                        <Icon className="mr-2 h-4 w-4" />
+                        {property.name}
+                        {property.name === selectedProperty && (
+                          <Badge className="ml-auto" variant="secondary">
+                            Active
+                          </Badge>
+                        )}
+                      </DropdownMenuItem>
+                    )
+                  })}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-primary">+ Add New Property</DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/provider/properties/new" className="text-primary">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add New Property
+                    </Link>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -91,58 +262,99 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
 
           {/* Right Side */}
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-destructive" />
-            </Button>
-            <Avatar className="h-8 w-8 cursor-pointer">
-              <AvatarImage src="/diverse-business-owner.png" />
-              <AvatarFallback>HO</AvatarFallback>
-            </Avatar>
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="hidden gap-2 sm:flex">
+                <Home className="h-4 w-4" />
+                Back to AMAN
+              </Button>
+            </Link>
+            <Link href="/provider/notifications">
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-destructive" />
+              </Button>
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="gap-2 px-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={userProfile?.profile?.profile_photo || "/diverse-business-owner.png"} />
+                    <AvatarFallback>
+                      {userProfile?.user?.first_name?.[0] || "P"}
+                      {userProfile?.user?.last_name?.[0] || "O"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden text-sm font-medium md:inline">
+                    {userProfile?.user?.first_name || "Provider"}
+                  </span>
+                  <ChevronDown className="hidden h-4 w-4 md:inline" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <span>{userProfile?.user?.first_name} {userProfile?.user?.last_name}</span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {userProfile?.user?.email || "provider@example.com"}
+                    </span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/provider/settings">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/provider/properties">
+                    <Building2 className="mr-2 h-4 w-4" />
+                    My Properties
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/home">
+                    <Home className="mr-2 h-4 w-4" />
+                    Switch to Traveler
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] w-64 border-r bg-background lg:block">
-          <nav className="space-y-1 p-4">
-            {sidebarItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
-              return (
-                <Link key={item.href} href={item.href}>
-                  <Button
-                    variant={isActive ? "secondary" : "ghost"}
-                    className={cn("w-full justify-start gap-3", isActive && "bg-primary/10 text-primary")}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                    {item.badge && (
-                      <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1.5">
-                        {item.badge}
-                      </Badge>
-                    )}
-                  </Button>
-                </Link>
-              )
-            })}
-          </nav>
+        <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] w-64 overflow-y-auto border-r bg-background lg:block">
+          <SidebarNav />
         </aside>
 
         {/* Mobile Bottom Nav */}
         <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-background lg:hidden">
           <div className="flex items-center justify-around py-2">
-            {sidebarItems.slice(0, 5).map((item) => {
+            {[
+              { href: "/provider", label: "Dashboard", icon: LayoutDashboard },
+              { href: "/provider/properties", label: "Properties", icon: Building2 },
+              { href: "/provider/bookings", label: "Bookings", icon: Calendar, badge: 3 },
+              { href: "/provider/earnings", label: "Earnings", icon: DollarSign },
+              { href: "/provider/settings", label: "Settings", icon: Settings },
+            ].map((item) => {
               const Icon = item.icon
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
                     "relative flex flex-col items-center gap-1 px-3 py-2 text-xs transition-colors",
-                    isActive ? "text-primary" : "text-muted-foreground",
+                    isActive ? "text-primary" : "text-muted-foreground"
                   )}
                 >
                   <Icon className="h-5 w-5" />
