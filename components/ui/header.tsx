@@ -152,7 +152,7 @@ export function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {user?.role === "traveller" && (
+                {user?.role === "traveler" && (
                   <>
                     <DropdownMenuItem asChild>
                       <Link href="/home" className="flex items-center gap-2">
@@ -189,8 +189,8 @@ export function Header() {
                 <DropdownMenuItem onClick={() => switchRole("guest")}>
                   Guest {user?.role === "guest" && "✓"}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => switchRole("traveller")}>
-                  Traveller {user?.role === "traveller" && "✓"}
+                <DropdownMenuItem onClick={() => switchRole("traveler")}>
+                  Traveler {user?.role === "traveler" && "✓"}
                 </DropdownMenuItem>
                 {FEATURES.PROVIDER_PORTAL && (
                   <DropdownMenuItem onClick={() => switchRole("provider")}>
@@ -220,7 +220,7 @@ export function Header() {
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel className="text-xs text-muted-foreground">Demo: Switch Role</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => switchRole("guest")}>Guest</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => switchRole("traveller")}>Traveller</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => switchRole("traveler")}>Traveler</DropdownMenuItem>
                   {FEATURES.PROVIDER_PORTAL && (
                     <DropdownMenuItem onClick={() => switchRole("provider")}>Provider</DropdownMenuItem>
                   )}
@@ -294,7 +294,7 @@ export function Header() {
                       <p className="text-xs text-muted-foreground capitalize">{user?.role || "guest"}</p>
                     </div>
                   </div>
-                  {user?.role === "traveller" && (
+                  {user?.role === "traveler" && (
                     <Button variant="outline" asChild className="w-full bg-transparent">
                       <Link href="/home">My Dashboard</Link>
                     </Button>
@@ -333,12 +333,12 @@ export function Header() {
                   Guest
                 </Button>
                 <Button
-                  variant={user?.role === "traveller" ? "default" : "outline"}
+                  variant={user?.role === "traveler" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => switchRole("traveller")}
+                  onClick={() => switchRole("traveler")}
                   className="flex-1"
                 >
-                  Traveller
+                  Traveler
                 </Button>
                 {FEATURES.PROVIDER_PORTAL && (
                   <Button

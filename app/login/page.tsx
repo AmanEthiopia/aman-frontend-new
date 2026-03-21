@@ -145,7 +145,7 @@ function LoginForm() {
     }
   }
 
-  const handleDemoLogin = (role: "traveller" | "provider") => {
+  const handleDemoLogin = (role: "traveler" | "provider") => {
     switchRole(role)
     router.push(role === "provider" ? "/provider" : "/home")
   }
@@ -297,11 +297,11 @@ function LoginForm() {
         <div className="grid grid-cols-2 gap-3">
           <Button
             variant="outline"
-            onClick={() => handleDemoLogin("traveller")}
+            onClick={() => handleDemoLogin("traveler")}
             className="bg-transparent"
             disabled={authLoading || googleLoading}
           >
-            Demo Traveller
+            Demo Traveler
           </Button>
           <Button
             variant="outline"

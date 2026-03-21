@@ -240,7 +240,7 @@ export default function HomePage() {
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </span>
         </div>
-        <h1 className="text-2xl font-bold md:text-3xl">Welcome back, {userProfile.user.first_name || "Traveller"}</h1>
+        <h1 className="text-2xl font-bold md:text-3xl">Welcome back, {userProfile.user.first_name || "Traveler"}</h1>
         <p className="mt-1 text-muted-foreground">Your Ethiopian adventure awaits</p>
       </section>
 

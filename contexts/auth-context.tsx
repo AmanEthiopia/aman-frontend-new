@@ -13,8 +13,8 @@ interface AuthContextType {
   isLoading: boolean
   isAuthReady: boolean
   login: (email: string, password: string) => Promise<void>
-  loginWithGoogle: (accessToken: string) => Promise<void>
-  registerWithGoogle: (accessToken: string, role?: "traveller" | "provider") => Promise<void>
+  loginWithGoogle: (idToken: string) => Promise<void>
+  registerWithGoogle: (idToken: string, role?: "traveler" | "provider") => Promise<void>
   register: (payload: authAPI.RegisterPayload) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
@@ -76,17 +76,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function loginWithGoogle(accessToken: string) {
+  async function loginWithGoogle(idToken: string) {
     setIsLoading(true)
     try {
-      const response = await authAPI.loginWithGoogle(accessToken)
+      const response = await authAPI.loginWithGoogle(idToken)
       setAuthCookie(response.access_token)
       setAuthCookie(response.refresh_token, true)
       setToken(response.access_token)
 
       const profileData = await authAPI.getCurrentUser()
       setUserProfile(profileData)
-      router.push("/home")
+      
+      // Redirect based on user role
+      const isProvider = profileData?.role?.is_provider
+      router.push(isProvider ? "/provider" : "/home")
     } catch (error) {
       throw error
     } finally {
@@ -94,17 +97,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function registerWithGoogle(accessToken: string, role?: "traveller" | "provider") {
+  async function registerWithGoogle(idToken: string, role?: "traveler" | "provider") {
     setIsLoading(true)
     try {
-      const response = await authAPI.registerWithGoogle(accessToken, role)
+      const response = await authAPI.registerWithGoogle(idToken, role)
       setAuthCookie(response.access_token)
       setAuthCookie(response.refresh_token, true)
       setToken(response.access_token)
 
       const profileData = await authAPI.getCurrentUser()
       setUserProfile(profileData)
-      router.push("/home")
+      
+      // Redirect based on user role
+      const isProvider = profileData?.role?.is_provider || role === "provider"
+      router.push(isProvider ? "/provider" : "/home")
     } catch (error) {
       throw error
     } finally {

@@ -44,7 +44,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
-  const [accountType, setAccountType] = useState<"traveller" | "provider">("traveller")
+  const [accountType, setAccountType] = useState<"traveler" | "provider">("traveler")
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -177,7 +177,7 @@ export default function RegisterPage() {
               <p className="text-sm text-muted-foreground">
                 We've sent a verification code to <strong>{formData.email}</strong>
               </p>
-              <p className="text-sm text-muted-foreground">The code expires in 30 minutes.</p>
+              <p className="text-sm text-muted-foreground">The code expires in 15 minutes.</p>
               <Button asChild className="w-full">
                 <Link href={`/verify-email?email=${encodeURIComponent(formData.email)}`}>Verify Email Now</Link>
               </Button>
@@ -206,11 +206,11 @@ export default function RegisterPage() {
               </Alert>
             )}
 
-            <Tabs value={accountType} onValueChange={(v) => setAccountType(v as "traveller" | "provider")}>
+            <Tabs value={accountType} onValueChange={(v) => setAccountType(v as "traveler" | "provider")}>
               <TabsList className="mb-6 grid w-full grid-cols-2">
-                <TabsTrigger value="traveller" className="gap-2">
+                <TabsTrigger value="traveler" className="gap-2">
                   <User className="h-4 w-4" />
-                  Traveller
+                  Traveler
                 </TabsTrigger>
                 <TabsTrigger value="provider" className="gap-2">
                   <Building2 className="h-4 w-4" />
@@ -388,7 +388,7 @@ export default function RegisterPage() {
                       Creating account...
                     </>
                   ) : (
-                    `Create ${accountType === "provider" ? "Provider" : "Traveller"} Account`
+                    `Create ${accountType === "provider" ? "Provider" : "Traveler"} Account`
                   )}
                 </Button>
               </form>

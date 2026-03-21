@@ -14,13 +14,13 @@ const demoUsers: Record<string, User> = {
     createdAt: new Date().toISOString(),
     preferences: { language: "en", currency: "USD", notifications: false },
   },
-  traveller: {
-    id: "user-demo-traveller",
-    email: "traveller@demo.com",
-    name: "Alex Traveller",
+  traveler: {
+    id: "user-demo-traveler",
+    email: "traveler@demo.com",
+    name: "Alex Traveler",
     avatar: "/placeholder.svg?height=40&width=40",
     phone: "+1 555 987 6543",
-    role: "traveller",
+    role: "traveler",
     isVerified: true,
     createdAt: "2024-06-15T10:00:00Z",
     preferences: { language: "en", currency: "USD", notifications: true },
@@ -42,7 +42,7 @@ interface AppContextType {
   // User & Role
   user: User
   isAuthenticated: boolean
-  switchRole: (role: "guest" | "traveller" | "provider") => void
+  switchRole: (role: "guest" | "traveler" | "provider") => void
 
   // Preferences
   language: "en" | "am"
@@ -71,7 +71,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const isAuthenticated = user.role !== "guest"
 
-  const switchRole = useCallback((role: "guest" | "traveller" | "provider") => {
+  const switchRole = useCallback((role: "guest" | "traveler" | "provider") => {
     setUser(demoUsers[role])
   }, [])
 

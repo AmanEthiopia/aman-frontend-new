@@ -77,7 +77,7 @@ export default function SettingsPage() {
             </h3>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
             <div className="mt-1 flex items-center gap-2">
-              <Badge variant="secondary">{userProfile?.role.is_provider ? "Provider" : "Traveller"}</Badge>
+              <Badge variant="secondary">{userProfile?.role.is_provider ? "Provider" : "Traveler"}</Badge>
               {user?.is_email_verified && (
                 <Badge variant="outline" className="text-green-600">
                   Verified

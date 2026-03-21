@@ -14,7 +14,8 @@ export interface RegisterPayload {
   first_name: string
   last_name: string
   phone?: string
-  role?: "traveller" | "provider"
+  // Updated to match API documentation - "traveler" not "traveller"
+  role?: "traveler" | "provider"
 }
 
 // FIX: Updated AuthResponse to match backend v1 structure
@@ -206,15 +207,18 @@ export function logout(): void {
 }
 
 export interface GoogleAuthPayload {
-  access_token: string
+  // API documentation specifies id_token, not access_token
+  id_token: string
+  role?: "traveler" | "provider"
 }
 
 /**
  * Authenticate with Google OAuth
- * No email verification required for Google auth
+ * Uses Google ID token (JWT from Google Identity Services)
+ * No email verification required - Google users are auto-verified
  */
-export async function loginWithGoogle(access_token: string): Promise<AuthResponse> {
-  const response = await apiPost<AuthResponse>("/auth/social/google/", { access_token })
+export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
+  const response = await apiPost<AuthResponse>("/auth/social/google/", { id_token: idToken })
 
   if (response.access_token) {
     saveToken(response.access_token)
@@ -228,10 +232,12 @@ export async function loginWithGoogle(access_token: string): Promise<AuthRespons
 
 /**
  * Register with Google OAuth
- * No email verification required for Google auth
+ * Uses Google ID token (JWT from Google Identity Services)
+ * Role is only used when creating a NEW account - existing accounts keep their role
+ * No email verification required - Google users are auto-verified
  */
-export async function registerWithGoogle(access_token: string, role?: "traveller" | "provider"): Promise<AuthResponse> {
-  const payload: any = { access_token }
+export async function registerWithGoogle(idToken: string, role?: "traveler" | "provider"): Promise<AuthResponse> {
+  const payload: GoogleAuthPayload = { id_token: idToken }
   if (role) {
     payload.role = role
   }

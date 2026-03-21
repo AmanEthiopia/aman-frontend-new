@@ -178,7 +178,7 @@ function VerifyEmailForm() {
             />
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              Code expires in 30 minutes
+              Code expires in 15 minutes
             </p>
           </div>
 

@@ -71,7 +71,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </Link>
               <Link href="/settings">
                 <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-transparent transition-all hover:ring-primary/20">
-                  <AvatarImage src="/traveller-avatar.jpg" />
+                  <AvatarImage src="/traveler-avatar.jpg" />
                   <AvatarFallback>{userProfile?.user?.first_name?.charAt(0) || "U"}</AvatarFallback>
                 </Avatar>
               </Link>
