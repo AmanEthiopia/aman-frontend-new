@@ -84,6 +84,14 @@ function LoginForm() {
   }
 
   const handleGoogleSignIn = async () => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    
+    if (!clientId) {
+      setError("Google Sign-In is not configured. Please contact support.")
+      console.error("[v0] Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID environment variable")
+      return
+    }
+
     if (!isGoogleLoaded || typeof window === "undefined" || !(window as any).google) {
       setError("Google Sign-In is not loaded yet. Please try again.")
       return
@@ -96,7 +104,7 @@ function LoginForm() {
     try {
       const google = (window as any).google
       const client = google.accounts.oauth2.initTokenClient({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
+        client_id: clientId,
         scope: "email profile openid",
         callback: async (response: any) => {
           console.log("[v0] Google OAuth response received:", { hasToken: !!response.access_token })
