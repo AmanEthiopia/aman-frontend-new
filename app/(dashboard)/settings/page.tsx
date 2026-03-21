@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
-import { User, Bell, Globe, Shield, CreditCard, HelpCircle, LogOut, ChevronRight, Sun, Key, Moon, Loader2 } from "lucide-react"
+import { User, Bell, Globe, Shield, CreditCard, HelpCircle, LogOut, ChevronRight, Sun, Key, Moon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "sonner"
 import { useApp } from "@/lib/contexts/app-context"
+import { updateNotificationPreferences } from "@/lib/api/users"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -111,23 +112,41 @@ export default function SettingsPage() {
     toast.success(`Currency changed to ${newCurrency}`)
   }, [setAppCurrency])
   
-  // Handle notification preference changes with immediate effect
-  const handleEmailNotificationsChange = useCallback((checked: boolean) => {
+  // Handle notification preference changes with immediate effect and backend sync
+  const handleEmailNotificationsChange = useCallback(async (checked: boolean) => {
     setEmailNotifications(checked)
     savePreferences("email_notifications", checked)
     toast.success(checked ? "Email notifications enabled" : "Email notifications disabled")
+    // Sync to backend silently
+    try {
+      await updateNotificationPreferences({ email_notifications: checked })
+    } catch (error) {
+      console.error("Failed to sync email notification preference:", error)
+    }
   }, [])
   
-  const handlePushNotificationsChange = useCallback((checked: boolean) => {
+  const handlePushNotificationsChange = useCallback(async (checked: boolean) => {
     setPushNotifications(checked)
     savePreferences("push_notifications", checked)
     toast.success(checked ? "Push notifications enabled" : "Push notifications disabled")
+    // Sync to backend silently
+    try {
+      await updateNotificationPreferences({ push_notifications: checked })
+    } catch (error) {
+      console.error("Failed to sync push notification preference:", error)
+    }
   }, [])
   
-  const handleMarketingEmailsChange = useCallback((checked: boolean) => {
+  const handleMarketingEmailsChange = useCallback(async (checked: boolean) => {
     setMarketingEmails(checked)
     savePreferences("marketing_emails", checked)
     toast.success(checked ? "Marketing emails enabled" : "Marketing emails disabled")
+    // Sync to backend silently
+    try {
+      await updateNotificationPreferences({ marketing_emails: checked })
+    } catch (error) {
+      console.error("Failed to sync marketing email preference:", error)
+    }
   }, [])
 
   const user = userProfile?.user

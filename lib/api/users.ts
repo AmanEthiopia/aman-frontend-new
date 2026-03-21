@@ -36,17 +36,18 @@ export interface UserProfile {
 export interface UpdateProfilePayload {
   first_name?: string
   last_name?: string
+  phone?: string
   bio?: string
-  date_of_birth?: string
-  gender?: string
-  nationality?: string
+  date_of_birth?: string | null
+  gender?: string | null
+  nationality?: string | null
   preferred_language?: string
   preferred_currency?: string
   timezone?: string
-  travel_style?: string
-  interests?: string[]
-  dietary_restrictions?: string[]
-  accessibility_needs?: string
+  travel_style?: string | null
+  interests?: string[] | null
+  dietary_restrictions?: string[] | null
+  accessibility_needs?: string | null
 }
 
 export interface EmergencyContact {
@@ -73,9 +74,48 @@ export async function getMyProfile(): Promise<UserProfile> {
 
 /**
  * Update current user profile
+ * Supports partial updates - only send fields that have changed
+ * Empty strings are converted to null for optional fields to avoid validation errors
  */
 export async function updateMyProfile(payload: UpdateProfilePayload): Promise<UserProfile> {
-  return apiPatch<UserProfile>("/users/profile/me/", payload)
+  // Clean the payload to handle partial updates properly
+  // Convert empty strings to null for optional fields to avoid backend validation issues
+  const cleanedPayload: Record<string, any> = {}
+  
+  for (const [key, value] of Object.entries(payload)) {
+    // Skip undefined values (not part of the update)
+    if (value === undefined) continue
+    
+    // For optional fields, convert empty strings to null
+    const optionalFields = [
+      'bio', 'date_of_birth', 'gender', 'nationality', 
+      'travel_style', 'accessibility_needs'
+    ]
+    
+    if (optionalFields.includes(key) && value === '') {
+      cleanedPayload[key] = null
+    } else if (Array.isArray(value) && value.length === 0) {
+      // Empty arrays can stay as empty arrays or null depending on backend
+      cleanedPayload[key] = value
+    } else {
+      cleanedPayload[key] = value
+    }
+  }
+  
+  return apiPatch<UserProfile>("/users/profile/me/", cleanedPayload)
+}
+
+/**
+ * Update user notification preferences
+ */
+export async function updateNotificationPreferences(preferences: {
+  email_notifications?: boolean
+  push_notifications?: boolean
+  marketing_emails?: boolean
+  booking_reminders?: boolean
+  review_requests?: boolean
+}): Promise<void> {
+  return apiPatch("/users/profile/me/notifications/", preferences)
 }
 
 /**

@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
-import { ArrowLeft, Camera, Loader2, Save, Trash2, User } from "lucide-react"
+import { ArrowLeft, Camera, Loader2, Save, Trash2, User, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,8 +14,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/contexts/auth-context"
-import { updateMyProfile, uploadProfilePhoto, deleteProfilePhoto } from "@/lib/api/users"
+import { updateMyProfile, uploadProfilePhoto, deleteProfilePhoto, type UpdateProfilePayload } from "@/lib/api/users"
 import { sendPhoneOTP, verifyPhoneOTP } from "@/lib/api/auth"
+import { useApp } from "@/lib/contexts/app-context"
 import { toast } from "sonner"
 
 const API_BASE = "https://api.aman.yichalal.ai"
@@ -84,17 +84,23 @@ const DIETARY_RESTRICTIONS = [
 export default function ProfileEditPage() {
   const router = useRouter()
   const { userProfile, refreshUser } = useAuth()
+  const { setLanguage: setAppLanguage, setCurrency: setAppCurrency } = useApp()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [isLoading, setIsLoading] = useState(false)
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [savedFields, setSavedFields] = useState<Set<string>>(new Set())
   
   // Phone verification state
   const [showPhoneVerification, setShowPhoneVerification] = useState(false)
   const [phoneOtp, setPhoneOtp] = useState("")
   const [isSendingOtp, setIsSendingOtp] = useState(false)
   const [isVerifyingPhone, setIsVerifyingPhone] = useState(false)
+  
+  // Track original values for change detection
+  const [originalData, setOriginalData] = useState<Record<string, any>>({})
   
   const [formData, setFormData] = useState({
     first_name: "",
@@ -116,7 +122,7 @@ export default function ProfileEditPage() {
     if (userProfile) {
       const user = userProfile.user
       const profile = userProfile.profile
-      setFormData({
+      const initialData = {
         first_name: user?.first_name || "",
         last_name: user?.last_name || "",
         phone: user?.phone || "",
@@ -130,14 +136,35 @@ export default function ProfileEditPage() {
         interests: profile?.interests || [],
         dietary_restrictions: profile?.dietary_restrictions || [],
         accessibility_needs: profile?.accessibility_needs || "",
-      })
+      }
+      setFormData(initialData)
+      setOriginalData(initialData)
+      setHasChanges(false)
     }
   }, [userProfile])
 
-  const handleChange = (field: string, value: string | string[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+  const handleChange = useCallback((field: string, value: string | string[]) => {
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value }
+      // Check if data has changed from original
+      const hasAnyChange = Object.keys(newData).some(key => {
+        const original = originalData[key]
+        const current = newData[key as keyof typeof newData]
+        if (Array.isArray(original) && Array.isArray(current)) {
+          return JSON.stringify(original) !== JSON.stringify(current)
+        }
+        return original !== current
+      })
+      setHasChanges(hasAnyChange)
+      return newData
+    })
     setError(null)
-  }
+    setSavedFields(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(field)
+      return newSet
+    })
+  }, [originalData])
 
   const toggleArrayItem = (field: "interests" | "dietary_restrictions", item: string) => {
     setFormData(prev => {
@@ -155,12 +182,70 @@ export default function ProfileEditPage() {
     setError(null)
 
     try {
-      await updateMyProfile(formData)
+      // Only send fields that have actually changed (partial update)
+      const changedFields: UpdateProfilePayload = {}
+      
+      for (const [key, value] of Object.entries(formData)) {
+        const original = originalData[key]
+        const current = value
+        
+        // Check if the value has changed
+        let hasChanged = false
+        if (Array.isArray(original) && Array.isArray(current)) {
+          hasChanged = JSON.stringify(original) !== JSON.stringify(current)
+        } else {
+          hasChanged = original !== current
+        }
+        
+        if (hasChanged) {
+          (changedFields as any)[key] = value
+        }
+      }
+      
+      // If no changes, just go back
+      if (Object.keys(changedFields).length === 0) {
+        toast.info("No changes to save")
+        router.push("/settings")
+        return
+      }
+      
+      await updateMyProfile(changedFields)
+      
+      // Apply language and currency changes immediately to the app context
+      if (changedFields.preferred_language) {
+        setAppLanguage(changedFields.preferred_language as "en" | "am")
+      }
+      if (changedFields.preferred_currency) {
+        setAppCurrency(changedFields.preferred_currency as "USD" | "ETB")
+      }
+      
       await refreshUser()
+      
+      // Mark all changed fields as saved
+      setSavedFields(new Set(Object.keys(changedFields)))
+      setOriginalData({ ...formData })
+      setHasChanges(false)
+      
       toast.success("Profile updated successfully")
       router.push("/settings")
     } catch (err: any) {
-      setError(err.message || "Failed to update profile")
+      // Parse backend validation errors for better display
+      let errorMessage = "Failed to update profile"
+      if (err.message) {
+        try {
+          // Backend may return field-specific errors
+          const parsed = JSON.parse(err.message)
+          if (typeof parsed === 'object') {
+            const fieldErrors = Object.entries(parsed)
+              .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+              .join('; ')
+            errorMessage = fieldErrors || err.message
+          }
+        } catch {
+          errorMessage = err.message
+        }
+      }
+      setError(errorMessage)
       toast.error("Failed to update profile")
     } finally {
       setIsLoading(false)
@@ -588,16 +673,21 @@ export default function ProfileEditPage() {
           <Button type="button" variant="outline" onClick={() => router.back()} className="flex-1">
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading} className="flex-1">
+          <Button type="submit" disabled={isLoading || !hasChanges} className="flex-1">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </>
-            ) : (
+            ) : hasChanges ? (
               <>
                 <Save className="mr-2 h-4 w-4" />
                 Save Changes
+              </>
+            ) : (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                No Changes
               </>
             )}
           </Button>
