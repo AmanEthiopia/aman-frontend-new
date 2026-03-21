@@ -534,11 +534,112 @@ export async function deleteTrip(tripId: string): Promise<void> {
 }
 
 // ============================================================================
-// BOOKINGS API
+// BOOKINGS API (Using new booking management endpoints)
 // ============================================================================
 
+// Provider Dashboard Stats from Booking API
+export interface ProviderDashboardData {
+  pending_bookings: number
+  confirmed_bookings_this_month: number
+  revenue_this_month: string
+  occupancy_rate: number
+  average_rating: number
+  total_hotels: number
+  total_restaurants?: number
+}
+
+// Calendar booking entry
+export interface CalendarBookingEntry {
+  booking_id: string
+  booking_number: string
+  guest_name: string
+  check_in_date: string
+  check_out_date: string
+  total_nights: number
+  status: "pending" | "confirmed" | "rejected" | "cancelled" | "completed" | "no_show"
+  total_price: string
+}
+
+export interface CalendarMonthStats {
+  total_nights: number
+  total_guests: number
+  revenue: string
+}
+
+export interface CalendarData {
+  bookings: CalendarBookingEntry[]
+  month_stats: CalendarMonthStats
+}
+
+// Earnings data
+export interface EarningsTransaction {
+  id: string
+  booking_number: string
+  guest_name: string
+  amount: string
+  currency: string
+  status: string
+  date: string
+}
+
+export interface EarningsData {
+  period: string
+  total_revenue: string
+  total_bookings: number
+  avg_nightly_rate: string
+  occupancy_rate: number
+  pending_balance: string
+  transactions: EarningsTransaction[]
+}
+
 /**
- * Get provider's bookings
+ * Get provider dashboard stats
+ */
+export async function getProviderDashboardData(): Promise<ProviderDashboardData> {
+  const response = await apiGet<{ data: ProviderDashboardData }>("/bookings/provider/dashboard/")
+  return response.data
+}
+
+/**
+ * Get provider calendar view
+ */
+export async function getProviderCalendar(params: {
+  year?: number
+  month?: number
+  hotel_id?: string
+} = {}): Promise<CalendarData> {
+  const queryParams = new URLSearchParams()
+  if (params.year) queryParams.append("year", params.year.toString())
+  if (params.month) queryParams.append("month", params.month.toString())
+  if (params.hotel_id) queryParams.append("hotel_id", params.hotel_id)
+  
+  const queryString = queryParams.toString()
+  const endpoint = queryString ? `/bookings/provider/calendar/?${queryString}` : "/bookings/provider/calendar/"
+  
+  const response = await apiGet<{ data: CalendarData }>(endpoint)
+  return response.data
+}
+
+/**
+ * Get provider earnings
+ */
+export async function getProviderEarnings(params: {
+  period?: "this_month" | "last_month" | "this_year"
+  hotel_id?: string
+} = {}): Promise<EarningsData> {
+  const queryParams = new URLSearchParams()
+  if (params.period) queryParams.append("period", params.period)
+  if (params.hotel_id) queryParams.append("hotel_id", params.hotel_id)
+  
+  const queryString = queryParams.toString()
+  const endpoint = queryString ? `/bookings/provider/earnings/?${queryString}` : "/bookings/provider/earnings/"
+  
+  const response = await apiGet<{ data: EarningsData }>(endpoint)
+  return response.data
+}
+
+/**
+ * Get provider's bookings (legacy endpoint - still supported)
  */
 export async function getMyBookings(params: {
   status?: "pending" | "confirmed" | "cancelled" | "completed"
@@ -564,17 +665,97 @@ export async function getMyBookings(params: {
 }
 
 /**
- * Accept a booking
+ * Get provider hotel bookings (new API)
  */
-export async function acceptBooking(bookingId: string): Promise<ProviderBooking> {
-  return apiPost<ProviderBooking>(`/provider/bookings/${bookingId}/accept/`)
+export async function getProviderHotelBookings(params: {
+  status?: "pending" | "confirmed" | "rejected" | "cancelled" | "completed" | "no_show"
+  hotel_id?: string
+} = {}): Promise<ProviderBooking[]> {
+  const queryParams = new URLSearchParams()
+  if (params.status) queryParams.append("status", params.status)
+  if (params.hotel_id) queryParams.append("hotel_id", params.hotel_id)
+  
+  const queryString = queryParams.toString()
+  const endpoint = queryString ? `/bookings/provider/hotel/?${queryString}` : "/bookings/provider/hotel/"
+  
+  const response = await apiGet<{ data: ProviderBooking[] }>(endpoint)
+  return response.data || []
 }
 
 /**
- * Decline a booking
+ * Get provider restaurant reservations (new API)
+ */
+export async function getProviderRestaurantReservations(params: {
+  status?: "pending" | "confirmed" | "rejected" | "cancelled" | "completed" | "no_show"
+  restaurant_id?: string
+  date?: string
+} = {}): Promise<ProviderBooking[]> {
+  const queryParams = new URLSearchParams()
+  if (params.status) queryParams.append("status", params.status)
+  if (params.restaurant_id) queryParams.append("restaurant_id", params.restaurant_id)
+  if (params.date) queryParams.append("date", params.date)
+  
+  const queryString = queryParams.toString()
+  const endpoint = queryString ? `/bookings/provider/restaurant/?${queryString}` : "/bookings/provider/restaurant/"
+  
+  const response = await apiGet<{ data: ProviderBooking[] }>(endpoint)
+  return response.data || []
+}
+
+/**
+ * Confirm a hotel booking (new API)
+ */
+export async function confirmHotelBooking(bookingId: string): Promise<ProviderBooking> {
+  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/hotel/${bookingId}/confirm/`)
+  return response.data
+}
+
+/**
+ * Reject a hotel booking (new API)
+ */
+export async function rejectHotelBooking(bookingId: string, reason?: string): Promise<ProviderBooking> {
+  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/hotel/${bookingId}/reject/`, { reason })
+  return response.data
+}
+
+/**
+ * Confirm a restaurant reservation (new API)
+ */
+export async function confirmRestaurantReservation(reservationId: string): Promise<ProviderBooking> {
+  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/restaurant/${reservationId}/confirm/`)
+  return response.data
+}
+
+/**
+ * Reject a restaurant reservation (new API)
+ */
+export async function rejectRestaurantReservation(reservationId: string, reason?: string): Promise<ProviderBooking> {
+  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/restaurant/${reservationId}/reject/`, { reason })
+  return response.data
+}
+
+/**
+ * Accept a booking (legacy - redirects to appropriate new endpoint)
+ */
+export async function acceptBooking(bookingId: string): Promise<ProviderBooking> {
+  // Try hotel first, fall back to restaurant
+  try {
+    return await confirmHotelBooking(bookingId)
+  } catch {
+    return await confirmRestaurantReservation(bookingId)
+  }
+}
+
+/**
+ * Decline a booking (legacy - redirects to appropriate new endpoint)
  */
 export async function declineBooking(bookingId: string, reason?: string): Promise<ProviderBooking> {
-  return apiPost<ProviderBooking>(`/provider/bookings/${bookingId}/decline/`, { reason })
+  // Try hotel first, fall back to restaurant
+  try {
+    return await rejectHotelBooking(bookingId, reason)
+  } catch {
+    return await rejectRestaurantReservation(bookingId, reason)
+  }
 }
 
 /**
