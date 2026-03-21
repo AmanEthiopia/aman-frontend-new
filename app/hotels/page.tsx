@@ -106,23 +106,23 @@ export default function HotelsPage() {
                     Showing {hotels.length} hotel{hotels.length !== 1 ? "s" : ""}
                   </p>
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {hotels.map((hotel) => (
+                    {hotels.map((hotel: any) => (
                       <ListingCard
                         key={hotel.id}
                         id={hotel.id}
                         type="hotel"
                         name={hotel.name}
-                        imageUrl={hotel.images[0]?.url || "/grand-hotel-exterior.png"}
-                        location={hotel.area}
-                        city={hotel.city?.name || ""}
-                        description={hotel.description}
+                        imageUrl={hotel.cover_photo || hotel.images?.[0]?.url || "/grand-hotel-exterior.png"}
+                        location={hotel.area || hotel.address || ""}
+                        city={hotel.city_name || hotel.city?.name || ""}
+                        description={hotel.description || hotel.short_description || ""}
                         priceRange={hotel.priceRange}
-                        priceDisplay={`$${hotel.priceMin} - $${hotel.priceMax} / night`}
-                        rating={hotel.rating}
-                        reviewCount={hotel.reviewCount}
-                        isVerified={hotel.isVerified}
-                        isFeatured={hotel.isFeatured}
-                        tags={hotel.amenities.slice(0, 4)}
+                        priceDisplay={hotel.min_price ? `From $${hotel.min_price} / night` : hotel.priceMin ? `$${hotel.priceMin} - $${hotel.priceMax} / night` : "Contact for price"}
+                        rating={hotel.average_rating ? parseFloat(hotel.average_rating) : hotel.rating || 0}
+                        reviewCount={hotel.review_count || hotel.reviewCount || 0}
+                        isVerified={hotel.is_verified ?? hotel.isVerified ?? true}
+                        isFeatured={hotel.is_featured ?? hotel.isFeatured ?? false}
+                        tags={hotel.amenities?.slice(0, 4) || [hotel.category, `${hotel.star_rating || 0} Star`].filter(Boolean)}
                         safetyScore={hotel.safetyScore}
                       />
                     ))}
