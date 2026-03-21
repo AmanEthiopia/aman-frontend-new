@@ -88,6 +88,7 @@ function LoginForm() {
     
     if (!clientId) {
       setError("Google Sign-In is not configured. Please contact support.")
+      console.error("[v0] Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID environment variable")
       return
     }
 
@@ -102,80 +103,54 @@ function LoginForm() {
 
     try {
       const google = (window as any).google
-      
-      // Use Google Identity Services with ID token (more reliable for dynamic environments)
-      google.accounts.id.initialize({
+      const client = google.accounts.oauth2.initTokenClient({
         client_id: clientId,
+        scope: "email profile openid",
         callback: async (response: any) => {
-          if (response.credential) {
+          console.log("[v0] Google OAuth response received:", { hasToken: !!response.access_token })
+
+          if (response.access_token) {
             try {
-              // The credential is an ID token (JWT) - send to backend
-              await loginWithGoogle(response.credential)
+              console.log("[v0] Attempting Google login with backend...")
+              await loginWithGoogle(response.access_token)
+              console.log("[v0] Google login successful")
             } catch (err: any) {
+              console.error("[v0] Google login backend error:", err)
               setError(err.message || "Failed to sign in with Google. Please try again.")
               setGoogleLoading(false)
             }
+          } else if (response.error) {
+            console.error("[v0] Google OAuth error:", response.error)
+            if (response.error === "popup_closed_by_user") {
+              setError("Google Sign-In was cancelled. Please try again.")
+            } else {
+              setError(`Google Sign-In failed: ${response.error}`)
+            }
+            setGoogleLoading(false)
           } else {
-            setError("Failed to get Google credentials")
+            console.error("[v0] Google OAuth: No token received")
+            setError("Failed to get Google access token")
             setGoogleLoading(false)
           }
         },
-        auto_select: false,
-        cancel_on_tap_outside: true,
+        error_callback: (error: any) => {
+          console.error("[v0] Google OAuth error callback:", error)
+          if (error.type === "popup_closed") {
+            setError("Google Sign-In popup was closed. Please try again.")
+          } else {
+            setError("Google Sign-In failed. Please try again.")
+          }
+          setGoogleLoading(false)
+        },
       })
 
-      // Prompt the user to sign in
-      google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed()) {
-          // If One Tap is not displayed, show a more detailed error
-          const reason = notification.getNotDisplayedReason()
-          if (reason === "opt_out_or_no_session") {
-            setError("Please sign in to your Google account first, then try again.")
-          } else if (reason === "suppressed_by_user") {
-            setError("Google Sign-In was previously dismissed. Please clear your browser cookies and try again.")
-          } else {
-            // Fallback to popup method if One Tap fails
-            openGooglePopup(clientId)
-          }
-          setGoogleLoading(false)
-        } else if (notification.isSkippedMoment()) {
-          const reason = notification.getSkippedReason()
-          if (reason === "user_cancel") {
-            setError("Google Sign-In was cancelled.")
-          } else {
-            // Fallback to popup
-            openGooglePopup(clientId)
-          }
-          setGoogleLoading(false)
-        } else if (notification.isDismissedMoment()) {
-          setGoogleLoading(false)
-        }
-      })
+      console.log("[v0] Requesting Google access token...")
+      client.requestAccessToken({ prompt: "" }) // Empty prompt for smoother UX
     } catch (err: any) {
+      console.error("[v0] Google login initialization error:", err)
       setError(err.message || "Failed to initialize Google Sign-In")
       setGoogleLoading(false)
     }
-  }
-
-  // Fallback popup method using OAuth2 authorization endpoint directly
-  const openGooglePopup = (clientId: string) => {
-    const redirectUri = window.location.origin
-    const scope = encodeURIComponent("email profile openid")
-    const state = Math.random().toString(36).substring(7)
-    
-    // Store state for verification
-    sessionStorage.setItem("google_oauth_state", state)
-    
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri + "/auth/google/callback")}` +
-      `&response_type=code` +
-      `&scope=${scope}` +
-      `&state=${state}` +
-      `&prompt=select_account`
-    
-    // Open in same window for redirect flow
-    window.location.href = authUrl
   }
 
   const handleDemoLogin = (role: "traveler" | "provider") => {

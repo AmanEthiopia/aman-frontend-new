@@ -106,6 +106,7 @@ export default function RegisterPage() {
     
     if (!clientId) {
       setError("Google Sign-In is not configured. Please contact support.")
+      console.error("[v0] Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID environment variable")
       return
     }
 
@@ -119,66 +120,54 @@ export default function RegisterPage() {
 
     try {
       const google = (window as any).google
-      
-      // Store the selected account type for after OAuth
-      sessionStorage.setItem("google_register_role", accountType)
-      
-      // Use Google Identity Services with ID token
-      google.accounts.id.initialize({
+      const client = google.accounts.oauth2.initTokenClient({
         client_id: clientId,
+        scope: "email profile openid",
         callback: async (response: any) => {
-          if (response.credential) {
+          console.log("[v0] Google OAuth response received:", { hasToken: !!response.access_token })
+
+          if (response.access_token) {
             try {
-              const savedRole = sessionStorage.getItem("google_register_role") as "traveler" | "provider" || accountType
-              sessionStorage.removeItem("google_register_role")
-              await registerWithGoogle(response.credential, savedRole)
+              console.log("[v0] Attempting Google registration with backend...")
+              await registerWithGoogle(response.access_token, accountType)
+              console.log("[v0] Google registration successful")
             } catch (err: any) {
+              console.error("[v0] Google registration backend error:", err)
               setError(err.message || "Failed to register with Google. Please try again.")
               setGoogleLoading(false)
             }
+          } else if (response.error) {
+            console.error("[v0] Google OAuth error:", response.error)
+            if (response.error === "popup_closed_by_user") {
+              setError("Google Sign-In was cancelled. Please try again.")
+            } else {
+              setError(`Google Sign-In failed: ${response.error}`)
+            }
+            setGoogleLoading(false)
           } else {
-            setError("Failed to get Google credentials")
+            console.error("[v0] Google OAuth: No token received")
+            setError("Failed to get Google access token")
             setGoogleLoading(false)
           }
         },
-        auto_select: false,
-        cancel_on_tap_outside: true,
+        error_callback: (error: any) => {
+          console.error("[v0] Google OAuth error callback:", error)
+          if (error.type === "popup_closed") {
+            setError("Google Sign-In popup was closed. Please try again.")
+          } else {
+            setError("Google Sign-In failed. Please try again.")
+          }
+          setGoogleLoading(false)
+        },
       })
 
-      // Prompt the user to sign in
-      google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // Fallback to redirect flow
-          openGooglePopupForRegister(clientId)
-          setGoogleLoading(false)
-        } else if (notification.isDismissedMoment()) {
-          setGoogleLoading(false)
-        }
-      })
+      console.log("[v0] Requesting Google access token...")
+      client.requestAccessToken({ prompt: "" })
     } catch (err: any) {
+      console.error("[v0] Google registration initialization error:", err)
       setError(err.message || "Failed to initialize Google Sign-In")
       setGoogleLoading(false)
     }
-  }
-
-  // Fallback popup method for registration
-  const openGooglePopupForRegister = (clientId: string) => {
-    const redirectUri = window.location.origin
-    const scope = encodeURIComponent("email profile openid")
-    const state = Math.random().toString(36).substring(7)
-    
-    sessionStorage.setItem("google_oauth_state", state)
-    sessionStorage.setItem("google_register_role", accountType)
-    
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri + "/auth/google/callback")}` +
-      `&response_type=code` +
-      `&scope=${scope}` +
-      `&state=${state}` +
-      `&prompt=select_account`
-    
-    window.location.href = authUrl
   }
 
   if (success) {

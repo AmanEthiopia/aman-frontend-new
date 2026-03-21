@@ -4,7 +4,6 @@ import { Inter, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { AppProvider } from "@/lib/contexts/app-context"
 import { AuthProvider } from "@/contexts/auth-context"
-import { GoogleOAuthDebugPanel } from "@/components/debug/google-oauth-debug"
 import Script from "next/script"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -57,7 +56,6 @@ export default function RootLayout({
         <AppProvider>
           <AuthProvider>{children}</AuthProvider>
         </AppProvider>
-        <GoogleOAuthDebugPanel />
       </body>
     </html>
   )
