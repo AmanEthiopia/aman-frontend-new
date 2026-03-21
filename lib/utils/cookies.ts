@@ -35,6 +35,14 @@ export function getAuthCookie(isRefresh = false): string | null {
 }
 
 /**
+ * Get refresh token from cookie
+ * @returns Refresh token string or null if not found
+ */
+export function getRefreshCookie(): string | null {
+  return getAuthCookie(true)
+}
+
+/**
  * Clear all authentication cookies
  */
 export function clearAuthCookies(): void {

@@ -1,5 +1,7 @@
-import { apiGet } from "./client"
+import { apiFetch } from "./client"
 import type { Hotel, Room } from "@/lib/types"
+
+const API_BASE_URL = "https://api.aman.yichalal.ai/api/v1"
 
 export interface HotelSearchParams {
   city?: string
@@ -9,6 +11,8 @@ export interface HotelSearchParams {
   guests?: number
   search?: string
   limit?: number
+  page?: number
+  page_size?: number
 }
 
 export interface HotelSearchResponse {
@@ -20,6 +24,7 @@ export interface HotelSearchResponse {
 
 /**
  * Get hotels with optional filters
+ * This bypasses the standard apiGet to handle pagination response format
  */
 export async function getHotels(params: HotelSearchParams = {}): Promise<HotelSearchResponse> {
   return searchHotels(params)
@@ -27,6 +32,7 @@ export async function getHotels(params: HotelSearchParams = {}): Promise<HotelSe
 
 /**
  * Search hotels with filters
+ * The /hotels/ endpoint returns a paginated response with results array
  */
 export async function searchHotels(params: HotelSearchParams = {}): Promise<HotelSearchResponse> {
   const queryParams = new URLSearchParams()
@@ -39,20 +45,78 @@ export async function searchHotels(params: HotelSearchParams = {}): Promise<Hote
 
   const queryString = queryParams.toString()
   const endpoint = queryString ? `/hotels/?${queryString}` : "/hotels/"
+  const url = `${API_BASE_URL}${endpoint}`
 
-  return apiGet<HotelSearchResponse>(endpoint)
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch hotels: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    
+    // Handle different response formats
+    // Format 1: { success: true, data: { results: [...], count: N } }
+    // Format 2: { results: [...], count: N }
+    // Format 3: { success: true, data: [...] } (array directly)
+    
+    if (data.success !== undefined && data.data) {
+      // Envelope format
+      if (Array.isArray(data.data)) {
+        return {
+          results: data.data,
+          count: data.data.length,
+          next: null,
+          previous: null,
+        }
+      }
+      return data.data as HotelSearchResponse
+    }
+    
+    if (data.results) {
+      // Direct pagination format
+      return data as HotelSearchResponse
+    }
+    
+    if (Array.isArray(data)) {
+      // Direct array format
+      return {
+        results: data,
+        count: data.length,
+        next: null,
+        previous: null,
+      }
+    }
+    
+    // Fallback - return empty
+    return {
+      results: [],
+      count: 0,
+      next: null,
+      previous: null,
+    }
+  } catch (error) {
+    console.error("[v0] Hotels API error:", error)
+    throw error
+  }
 }
 
 /**
  * Get hotel by ID
  */
 export async function getHotelById(id: string): Promise<Hotel> {
-  return apiGet<Hotel>(`/hotels/${id}/`)
+  return apiFetch<Hotel>(`/hotels/${id}/`)
 }
 
 /**
  * Get rooms for a hotel
  */
 export async function getHotelRooms(hotelId: string): Promise<Room[]> {
-  return apiGet<Room[]>(`/hotels/${hotelId}/rooms/`)
+  return apiFetch<Room[]>(`/hotels/${hotelId}/rooms/`)
 }

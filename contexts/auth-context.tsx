@@ -35,22 +35,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loadUserFromCookie() {
     const savedToken = getAuthCookie()
+    const refreshToken = getAuthCookie(true)
 
-    if (!savedToken) {
+    // If we have no tokens at all, mark as ready
+    if (!savedToken && !refreshToken) {
       setIsAuthReady(true)
       return
     }
 
     setIsLoading(true)
     try {
-      setToken(savedToken)
+      // Set token if we have one (even if expired - the API client will refresh it)
+      if (savedToken) {
+        setToken(savedToken)
+      }
+      
+      // Try to get user profile - the API client will automatically refresh the token if needed
       const profileData = await authAPI.getCurrentUser()
       setUserProfile(profileData)
-    } catch (error) {
+      
+      // Update token in case it was refreshed
+      const newToken = getAuthCookie()
+      if (newToken) {
+        setToken(newToken)
+      }
+    } catch (error: any) {
       console.error("[v0] Failed to load user from cookie:", error)
-      clearAuthCookies()
-      setToken(null)
-      setUserProfile(null)
+      
+      // Only clear cookies if it's a 401 (unauthorized) error
+      // Other errors might be network issues
+      if (error?.status === 401) {
+        clearAuthCookies()
+        setToken(null)
+        setUserProfile(null)
+      }
     } finally {
       setIsLoading(false)
       setIsAuthReady(true)

@@ -1,4 +1,4 @@
-import { apiGet } from "./client"
+import { apiGet, apiPost } from "./client"
 
 export interface City {
   id: string
@@ -133,6 +133,23 @@ export async function getCities(params?: { is_popular?: boolean; search?: string
   if (params?.search) query.append("search", params.search)
 
   return apiGet<City[]>(`/content/cities/${query.toString() ? `?${query}` : ""}`)
+}
+
+/**
+ * Create a new city (for providers adding hotels in unlisted cities)
+ */
+export interface CreateCityPayload {
+  name: string
+  nickname?: string // Amharic name
+  country?: string
+  short_description?: string
+}
+
+export async function createCity(payload: CreateCityPayload): Promise<City> {
+  return apiPost<City>("/content/cities/", {
+    ...payload,
+    country: payload.country || "Ethiopia",
+  })
 }
 
 /**

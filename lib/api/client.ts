@@ -1,9 +1,9 @@
 /**
  * Centralized API client for AMAN platform
- * Handles authentication, headers, and error responses
+ * Handles authentication, headers, error responses, and automatic token refresh
  */
 
-import { getAuthCookie, setAuthCookie, clearAuthCookies } from "@/lib/utils/cookies"
+import { getAuthCookie, setAuthCookie, clearAuthCookies, getRefreshCookie } from "@/lib/utils/cookies"
 
 const API_BASE_URL = "https://api.aman.yichalal.ai/api/v1"
 
@@ -25,17 +25,101 @@ export interface APIResponse<T = any> {
   error?: any
 }
 
+// Track if we're currently refreshing to avoid multiple refresh attempts
+let isRefreshing = false
+let refreshPromise: Promise<string | null> | null = null
+
 /**
- * Core fetch wrapper with auth and error handling
+ * Attempt to refresh the access token using the refresh token
  */
-export async function apiFetch<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = getRefreshCookie()
+  
+  if (!refreshToken) {
+    return null
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh-token/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    })
+    
+    if (!response.ok) {
+      // Refresh token is invalid, clear all auth
+      clearAuthCookies()
+      return null
+    }
+    
+    const data = await response.json()
+    const newAccessToken = data.data?.access_token || data.access_token
+    
+    if (newAccessToken) {
+      setAuthCookie(newAccessToken)
+      return newAccessToken
+    }
+    
+    return null
+  } catch (error) {
+    console.error("[v0] Token refresh failed:", error)
+    clearAuthCookies()
+    return null
+  }
+}
+
+/**
+ * Get a valid access token, refreshing if necessary
+ */
+async function getValidToken(): Promise<string | null> {
+  const token = getAuthCookie()
+  
+  if (token) {
+    // Check if token is expired by decoding JWT
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]))
+      const expiresAt = payload.exp * 1000 // Convert to milliseconds
+      const now = Date.now()
+      const buffer = 60 * 1000 // 1 minute buffer
+      
+      if (expiresAt - now > buffer) {
+        // Token is still valid
+        return token
+      }
+    } catch {
+      // If we can't decode, assume it's valid and let the API check
+      return token
+    }
+  }
+  
+  // Token is missing or expired, try to refresh
+  if (isRefreshing && refreshPromise) {
+    // Wait for ongoing refresh
+    return refreshPromise
+  }
+  
+  isRefreshing = true
+  refreshPromise = refreshAccessToken()
+  
+  try {
+    const newToken = await refreshPromise
+    return newToken
+  } finally {
+    isRefreshing = false
+    refreshPromise = null
+  }
+}
+
+/**
+ * Core fetch wrapper with auth, error handling, and automatic token refresh
+ */
+export async function apiFetch<T = any>(endpoint: string, options: RequestInit = {}, retryCount = 0): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
 
-  // Get token from cookie
-  const token = getAuthCookie()
-
-  // API request logging (enable for debugging)
-  // console.log(`[v0] API Request: ${options.method || "GET"} ${endpoint}`)
+  // Get valid token (will refresh if needed)
+  const token = await getValidToken()
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -61,6 +145,19 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
     // Handle non-JSON responses
     const contentType = response.headers.get("content-type")
     const isJson = contentType?.includes("application/json")
+
+    // Handle 401 Unauthorized - try to refresh token and retry
+    if (response.status === 401 && retryCount < 1) {
+      const newToken = await refreshAccessToken()
+      if (newToken) {
+        // Retry the request with the new token
+        return apiFetch<T>(endpoint, options, retryCount + 1)
+      }
+      
+      // Refresh failed, clear auth and throw
+      clearAuthCookies()
+      throw new APIError("Session expired. Please sign in again.", 401)
+    }
 
     if (!response.ok) {
       const errorData: APIResponse = isJson ? await response.json() : { success: false, message: response.statusText }
