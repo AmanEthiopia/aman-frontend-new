@@ -4,7 +4,6 @@ import { Inter, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { AppProvider } from "@/lib/contexts/app-context"
 import { AuthProvider } from "@/contexts/auth-context"
-import Script from "next/script"
 
 const inter = Inter({ subsets: ["latin"] })
 const geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -49,9 +48,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
-      </head>
       <body className={`font-sans antialiased`}>
         <AppProvider>
           <AuthProvider>{children}</AuthProvider>

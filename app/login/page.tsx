@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense } from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Header } from "@/components/ui/header"
@@ -14,23 +14,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/contexts/auth-context"
 import { useApp } from "@/lib/contexts/app-context"
 import { Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, Info } from "lucide-react"
+import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google"
 
-function useGoogleAuth() {
-  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false)
-
-  useEffect(() => {
-    const checkGoogleLoaded = () => {
-      if (typeof window !== "undefined" && (window as any).google) {
-        setIsGoogleLoaded(true)
-      } else {
-        setTimeout(checkGoogleLoaded, 100)
-      }
-    }
-    checkGoogleLoaded()
-  }, [])
-
-  return isGoogleLoaded
-}
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
 
 function LoginForm() {
   const router = useRouter()
@@ -40,7 +26,6 @@ function LoginForm() {
 
   const { login, loginWithGoogle, isLoading: authLoading } = useAuth()
   const { switchRole } = useApp()
-  const isGoogleLoaded = useGoogleAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showVerifyNotice, setShowVerifyNotice] = useState(!!verifyParam)
@@ -64,8 +49,6 @@ function LoginForm() {
     try {
       await login(formData.email, formData.password)
     } catch (err: any) {
-      console.error("[v0] Login error:", err)
-
       if (
         err.message.includes("Email not verified") ||
         err.message.includes("not verified") ||
@@ -83,17 +66,12 @@ function LoginForm() {
     }
   }
 
-  const handleGoogleSignIn = async () => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+  // Handle Google Sign-In success - receives ID token (credential) from Google
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    const idToken = credentialResponse.credential
     
-    if (!clientId) {
-      setError("Google Sign-In is not configured. Please contact support.")
-      console.error("[v0] Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID environment variable")
-      return
-    }
-
-    if (!isGoogleLoaded || typeof window === "undefined" || !(window as any).google) {
-      setError("Google Sign-In is not loaded yet. Please try again.")
+    if (!idToken) {
+      setError("Failed to get Google credentials. Please try again.")
       return
     }
 
@@ -102,55 +80,17 @@ function LoginForm() {
     setShowVerifyNotice(false)
 
     try {
-      const google = (window as any).google
-      const client = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: "email profile openid",
-        callback: async (response: any) => {
-          console.log("[v0] Google OAuth response received:", { hasToken: !!response.access_token })
-
-          if (response.access_token) {
-            try {
-              console.log("[v0] Attempting Google login with backend...")
-              await loginWithGoogle(response.access_token)
-              console.log("[v0] Google login successful")
-            } catch (err: any) {
-              console.error("[v0] Google login backend error:", err)
-              setError(err.message || "Failed to sign in with Google. Please try again.")
-              setGoogleLoading(false)
-            }
-          } else if (response.error) {
-            console.error("[v0] Google OAuth error:", response.error)
-            if (response.error === "popup_closed_by_user") {
-              setError("Google Sign-In was cancelled. Please try again.")
-            } else {
-              setError(`Google Sign-In failed: ${response.error}`)
-            }
-            setGoogleLoading(false)
-          } else {
-            console.error("[v0] Google OAuth: No token received")
-            setError("Failed to get Google access token")
-            setGoogleLoading(false)
-          }
-        },
-        error_callback: (error: any) => {
-          console.error("[v0] Google OAuth error callback:", error)
-          if (error.type === "popup_closed") {
-            setError("Google Sign-In popup was closed. Please try again.")
-          } else {
-            setError("Google Sign-In failed. Please try again.")
-          }
-          setGoogleLoading(false)
-        },
-      })
-
-      console.log("[v0] Requesting Google access token...")
-      client.requestAccessToken({ prompt: "" }) // Empty prompt for smoother UX
+      // Send ID token to backend - backend verifies with Google and returns JWT tokens
+      await loginWithGoogle(idToken)
     } catch (err: any) {
-      console.error("[v0] Google login initialization error:", err)
-      setError(err.message || "Failed to initialize Google Sign-In")
+      setError(err.message || "Failed to sign in with Google. Please try again.")
+    } finally {
       setGoogleLoading(false)
     }
+  }
+
+  const handleGoogleError = () => {
+    setError("Google Sign-In failed. Please try again.")
   }
 
   const handleDemoLogin = (role: "traveler" | "provider") => {
@@ -187,20 +127,27 @@ function LoginForm() {
           </Alert>
         )}
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full mb-4 bg-transparent"
-          onClick={handleGoogleSignIn}
-          disabled={authLoading || googleLoading || !isGoogleLoaded}
-        >
+        {/* Google Sign-In Button - Uses @react-oauth/google which provides ID token */}
+        <div className="mb-4">
           {googleLoading ? (
-            <>
+            <Button variant="outline" className="w-full bg-transparent" disabled>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Signing in with Google...
-            </>
+            </Button>
+          ) : GOOGLE_CLIENT_ID ? (
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap
+                theme="outline"
+                size="large"
+                width="100%"
+                text="continue_with"
+              />
+            </div>
           ) : (
-            <>
+            <Button variant="outline" className="w-full bg-transparent" disabled>
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -219,10 +166,10 @@ function LoginForm() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Continue with Google
-            </>
+              Google Sign-In not configured
+            </Button>
           )}
-        </Button>
+        </div>
 
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
@@ -334,14 +281,16 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <main className="flex flex-1 items-center justify-center px-4 py-12">
-        <Suspense fallback={<div>Loading...</div>}>
-          <LoginForm />
-        </Suspense>
-      </main>
-      <Footer />
-    </div>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex flex-1 items-center justify-center px-4 py-12">
+          <Suspense fallback={<div>Loading...</div>}>
+            <LoginForm />
+          </Suspense>
+        </main>
+        <Footer />
+      </div>
+    </GoogleOAuthProvider>
   )
 }

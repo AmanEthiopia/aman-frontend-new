@@ -215,10 +215,16 @@ export interface GoogleAuthPayload {
 /**
  * Authenticate with Google OAuth
  * Uses Google ID token (JWT from Google Identity Services)
+ * Backend verifies the token with Google's servers
  * No email verification required - Google users are auto-verified
+ * 
+ * Flow:
+ * 1. Frontend gets ID token from Google (credentialResponse.credential)
+ * 2. Send to backend: POST /api/v1/auth/google/ { id_token: "..." }
+ * 3. Backend verifies with Google, creates/finds user, returns JWT tokens
  */
 export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
-  const response = await apiPost<AuthResponse>("/auth/social/google/", { id_token: idToken })
+  const response = await apiPost<AuthResponse>("/auth/google/", { id_token: idToken })
 
   if (response.access_token) {
     saveToken(response.access_token)
@@ -235,6 +241,11 @@ export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
  * Uses Google ID token (JWT from Google Identity Services)
  * Role is only used when creating a NEW account - existing accounts keep their role
  * No email verification required - Google users are auto-verified
+ * 
+ * Flow:
+ * 1. Frontend gets ID token from Google (credentialResponse.credential)
+ * 2. Send to backend: POST /api/v1/auth/google/ { id_token: "...", role: "traveler"|"provider" }
+ * 3. Backend verifies with Google, creates user with role, returns JWT tokens
  */
 export async function registerWithGoogle(idToken: string, role?: "traveler" | "provider"): Promise<AuthResponse> {
   const payload: GoogleAuthPayload = { id_token: idToken }
@@ -242,7 +253,7 @@ export async function registerWithGoogle(idToken: string, role?: "traveler" | "p
     payload.role = role
   }
 
-  const response = await apiPost<AuthResponse>("/auth/social/google/", payload)
+  const response = await apiPost<AuthResponse>("/auth/google/", payload)
 
   if (response.access_token) {
     saveToken(response.access_token)
