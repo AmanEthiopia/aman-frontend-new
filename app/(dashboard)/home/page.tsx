@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { getUserBookings } from "@/lib/api/bookings"
+import { getAllMyBookings, flattenBookings } from "@/lib/api/bookings"
 import { getHotels } from "@/lib/api/hotels"
 import { FEATURES } from "@/lib/config/features"
 import { useAuth } from "@/contexts/auth-context"
@@ -155,16 +155,19 @@ export default function HomePage() {
 
       console.log("[v0] HomePage: Fetching bookings...")
       try {
-        const bookings = await getUserBookings()
+        const allBookings = await getAllMyBookings()
+        const bookings = flattenBookings(allBookings)
         console.log("[v0] HomePage: Bookings received:", bookings.length)
 
-        const upcoming = bookings.filter((b) => {
+        const upcoming = bookings.filter((b: any) => {
           const isConfirmed = b.status === "confirmed"
-          const isFuture = new Date(b.check_in) > new Date()
+          // Handle different booking types - hotels have check_in_date, restaurants have reservation_date
+          const dateField = b.check_in_date || b.reservation_date || b.start_date || b.pickup_datetime
+          const isFuture = dateField ? new Date(dateField) > new Date() : false
           return isConfirmed && isFuture
         })
         console.log("[v0] HomePage: Upcoming bookings:", upcoming.length)
-        setUpcomingBookings(upcoming)
+        setUpcomingBookings(upcoming as any)
       } catch (err: any) {
         console.error("[v0] HomePage: Failed to load bookings:", err)
         setUpcomingBookings([])
