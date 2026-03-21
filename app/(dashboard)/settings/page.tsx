@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { User, Bell, Globe, Shield, CreditCard, HelpCircle, LogOut, ChevronRight, Sun, Key } from "lucide-react"
+import { useTheme } from "next-themes"
+import { User, Bell, Globe, Shield, CreditCard, HelpCircle, LogOut, ChevronRight, Sun, Key, Moon, Loader2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
@@ -12,6 +13,8 @@ import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/contexts/auth-context"
+import { toast } from "sonner"
+import { useApp } from "@/lib/contexts/app-context"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -21,6 +24,27 @@ function getMediaUrl(path: string | null | undefined): string {
   if (path.startsWith("/media/")) return `${API_BASE}${path}`
   if (!path.startsWith("/")) return `${API_BASE}/media/${path}`
   return `${API_BASE}${path}`
+}
+
+// Persist preferences to localStorage
+function savePreferences(key: string, value: any) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(`aman_pref_${key}`, JSON.stringify(value))
+  }
+}
+
+function loadPreference<T>(key: string, defaultValue: T): T {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(`aman_pref_${key}`)
+    if (stored) {
+      try {
+        return JSON.parse(stored) as T
+      } catch {
+        return defaultValue
+      }
+    }
+  }
+  return defaultValue
 }
 
 const settingsGroups = [
@@ -48,11 +72,63 @@ const settingsGroups = [
 
 export default function SettingsPage() {
   const { userProfile, logout } = useAuth()
-  const [language, setLanguage] = useState<"en" | "am">("en")
-  const [currency, setCurrency] = useState<"USD" | "ETB" | "EUR">("USD")
+  const { theme, setTheme } = useTheme()
+  const { language: appLanguage, setLanguage: setAppLanguage, currency: appCurrency, setCurrency: setAppCurrency } = useApp()
+  const [mounted, setMounted] = useState(false)
+  
+  // Initialize from localStorage or defaults
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [pushNotifications, setPushNotifications] = useState(true)
   const [marketingEmails, setMarketingEmails] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  
+  useEffect(() => {
+    setMounted(true)
+    // Load saved preferences
+    setEmailNotifications(loadPreference("email_notifications", true))
+    setPushNotifications(loadPreference("push_notifications", true))
+    setMarketingEmails(loadPreference("marketing_emails", false))
+  }, [])
+  
+  // Handle dark mode toggle with immediate effect
+  const handleThemeChange = useCallback((isDark: boolean) => {
+    const newTheme = isDark ? "dark" : "light"
+    setTheme(newTheme)
+    toast.success(`Switched to ${newTheme} mode`)
+  }, [setTheme])
+  
+  // Handle language change with immediate effect
+  const handleLanguageChange = useCallback((newLang: "en" | "am") => {
+    setAppLanguage(newLang)
+    savePreferences("language", newLang)
+    toast.success(`Language changed to ${newLang === "en" ? "English" : "Amharic"}`)
+  }, [setAppLanguage])
+  
+  // Handle currency change with immediate effect
+  const handleCurrencyChange = useCallback((newCurrency: "USD" | "ETB") => {
+    setAppCurrency(newCurrency)
+    savePreferences("currency", newCurrency)
+    toast.success(`Currency changed to ${newCurrency}`)
+  }, [setAppCurrency])
+  
+  // Handle notification preference changes with immediate effect
+  const handleEmailNotificationsChange = useCallback((checked: boolean) => {
+    setEmailNotifications(checked)
+    savePreferences("email_notifications", checked)
+    toast.success(checked ? "Email notifications enabled" : "Email notifications disabled")
+  }, [])
+  
+  const handlePushNotificationsChange = useCallback((checked: boolean) => {
+    setPushNotifications(checked)
+    savePreferences("push_notifications", checked)
+    toast.success(checked ? "Push notifications enabled" : "Push notifications disabled")
+  }, [])
+  
+  const handleMarketingEmailsChange = useCallback((checked: boolean) => {
+    setMarketingEmails(checked)
+    savePreferences("marketing_emails", checked)
+    toast.success(checked ? "Marketing emails enabled" : "Marketing emails disabled")
+  }, [])
 
   const user = userProfile?.user
   const profile = userProfile?.profile

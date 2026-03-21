@@ -1,14 +1,14 @@
 "use client"
 
 import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Search, X, SlidersHorizontal } from "lucide-react"
-import { mockCities } from "@/lib/mock-data/cities"
-import { useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { getCities, type City } from "@/lib/api/content"
 
 interface DiscoveryFiltersProps {
   basePath: string
@@ -23,6 +23,20 @@ export function DiscoveryFilters({ basePath, additionalFilters }: DiscoveryFilte
   const router = useRouter()
   const searchParams = useSearchParams()
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [cities, setCities] = useState<City[]>([])
+
+  // Fetch real cities from API
+  useEffect(() => {
+    async function loadCities() {
+      try {
+        const citiesData = await getCities()
+        setCities(citiesData)
+      } catch (error) {
+        console.error("Failed to load cities:", error)
+      }
+    }
+    loadCities()
+  }, [])
 
   const currentCity = searchParams.get("city") || ""
   const currentPriceRange = searchParams.get("priceRange") || ""
@@ -70,7 +84,7 @@ export function DiscoveryFilters({ basePath, additionalFilters }: DiscoveryFilte
         </div>
       </div>
 
-      {/* City Filter */}
+      {/* City Filter - uses slug for API filtering */}
       <div>
         <Label htmlFor="city" className="sr-only">
           City
@@ -81,9 +95,10 @@ export function DiscoveryFilters({ basePath, additionalFilters }: DiscoveryFilte
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Cities</SelectItem>
-            {mockCities.map((city) => (
-              <SelectItem key={city.id} value={city.name}>
+            {cities.map((city) => (
+              <SelectItem key={city.id} value={city.slug}>
                 {city.name}
+                {city.nickname && <span className="ml-1 text-muted-foreground">({city.nickname})</span>}
               </SelectItem>
             ))}
           </SelectContent>
@@ -208,8 +223,8 @@ export function DiscoveryFilters({ basePath, additionalFilters }: DiscoveryFilte
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Cities</SelectItem>
-                    {mockCities.map((city) => (
-                      <SelectItem key={city.id} value={city.name}>
+                    {cities.map((city) => (
+                      <SelectItem key={city.id} value={city.slug}>
                         {city.name}
                       </SelectItem>
                     ))}

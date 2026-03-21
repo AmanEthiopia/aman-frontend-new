@@ -46,8 +46,8 @@ const amenityIcons: Record<string, React.ReactNode> = {
 
 export default function HotelDetailPage() {
   const params = useParams()
-  const id = params.id as string
-  const [hotel, setHotel] = useState<Hotel | null>(null)
+  const slug = params.id as string // Can be slug or id
+  const [hotel, setHotel] = useState<any>(null) // Use any to handle API response variations
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -60,13 +60,20 @@ export default function HotelDetailPage() {
       setError(null)
 
       try {
-        const [hotelData, roomsData] = await Promise.all([
-          getHotelById(id),
-          getHotelRooms(id).catch(() => []), // Rooms are optional
-        ])
-
+        // API supports both slug and id lookup
+        const hotelData = await getHotelById(slug)
         setHotel(hotelData)
-        setRooms(roomsData)
+        
+        // Try to load rooms if hotel id is available
+        if (hotelData?.id) {
+          try {
+            const roomsData = await getHotelRooms(hotelData.id)
+            setRooms(roomsData || [])
+          } catch {
+            // Rooms are optional
+            setRooms([])
+          }
+        }
       } catch (err) {
         console.error("[v0] Failed to load hotel:", err)
         if (err instanceof APIError) {
@@ -80,7 +87,7 @@ export default function HotelDetailPage() {
     }
 
     loadHotel()
-  }, [id])
+  }, [slug])
 
   if (loading) {
     return (
@@ -167,34 +174,53 @@ export default function HotelDetailPage() {
 
         {/* Gallery */}
         <section className="container mx-auto px-4 py-6">
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="md:col-span-3">
-              <div className="overflow-hidden rounded-xl">
-                <img
-                  src={hotel.images[selectedImage]?.url || "/placeholder.svg?height=500&width=800&query=hotel room"}
-                  alt={hotel.images[selectedImage]?.alt || hotel.name}
-                  className="h-[400px] w-full object-cover"
-                />
+          {(() => {
+            // Handle different image formats from API
+            const images = hotel.images || hotel.photos || []
+            const coverPhoto = hotel.cover_photo || hotel.cover_photo_url
+            const mainImage = images[selectedImage]?.url || images[selectedImage]?.photo_url || coverPhoto || "/placeholder.svg?height=500&width=800&query=hotel room"
+            
+            return (
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="md:col-span-3">
+                  <div className="overflow-hidden rounded-xl">
+                    <img
+                      src={mainImage}
+                      alt={images[selectedImage]?.alt || hotel.name}
+                      className="h-[400px] w-full object-cover"
+                    />
+                  </div>
+                </div>
+                <div className="hidden gap-4 md:grid">
+                  {images.length > 0 ? (
+                    images.slice(0, 3).map((image: any, index: number) => (
+                      <button
+                        key={image.id || index}
+                        onClick={() => setSelectedImage(index)}
+                        className={`overflow-hidden rounded-lg border-2 transition-all ${
+                          selectedImage === index ? "border-primary" : "border-transparent"
+                        }`}
+                      >
+                        <img
+                          src={image.url || image.photo_url || "/placeholder.svg?height=150&width=150&query=hotel"}
+                          alt={image.alt || `${hotel.name} photo ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </button>
+                    ))
+                  ) : coverPhoto ? (
+                    <div className="overflow-hidden rounded-lg border-2 border-primary">
+                      <img
+                        src={coverPhoto}
+                        alt={hotel.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : null}
+                </div>
               </div>
-            </div>
-            <div className="hidden gap-4 md:grid">
-              {hotel.images.slice(0, 3).map((image, index) => (
-                <button
-                  key={image.id}
-                  onClick={() => setSelectedImage(index)}
-                  className={`overflow-hidden rounded-lg border-2 transition-all ${
-                    selectedImage === index ? "border-primary" : "border-transparent"
-                  }`}
-                >
-                  <img
-                    src={image.url || "/placeholder.svg?height=150&width=150&query=hotel"}
-                    alt={image.alt}
-                    className="h-full w-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
+            )
+          })()}
         </section>
 
         {/* Content */}
@@ -205,27 +231,32 @@ export default function HotelDetailPage() {
               {/* Header */}
               <div className="mb-6">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                  {hotel.isVerified && (
+                  {(hotel.is_verified ?? hotel.isVerified) && (
                     <Badge className="flex items-center gap-1 bg-primary text-primary-foreground">
                       <Shield className="h-3 w-3" />
                       Verified
                     </Badge>
                   )}
-                  {hotel.isFeatured && <Badge variant="secondary">Featured</Badge>}
-                  <Badge variant="outline">{priceRangeLabels[hotel.priceRange]}</Badge>
+                  {(hotel.is_featured ?? hotel.isFeatured) && <Badge variant="secondary">Featured</Badge>}
+                  {hotel.star_rating && (
+                    <Badge variant="outline">{hotel.star_rating} Star</Badge>
+                  )}
+                  {hotel.category && (
+                    <Badge variant="outline" className="capitalize">{hotel.category}</Badge>
+                  )}
                 </div>
                 <h1 className="mb-2 text-3xl font-bold tracking-tight md:text-4xl">{hotel.name}</h1>
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4" />
                     <span>
-                      {hotel.area}, {hotel.city?.name || hotel.cityId}
+                      {hotel.address || hotel.area || ""}{hotel.address || hotel.area ? ", " : ""}{hotel.city_name || hotel.city?.name || ""}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Star className="h-4 w-4 fill-primary text-primary" />
-                    <span className="font-medium">{hotel.rating.toFixed(1)}</span>
-                    <span className="text-muted-foreground">({hotel.reviewCount} reviews)</span>
+                    <span className="font-medium">{(hotel.average_rating || hotel.rating || 0).toFixed ? (hotel.average_rating || hotel.rating || 0).toFixed(1) : parseFloat(hotel.average_rating || hotel.rating || 0).toFixed(1)}</span>
+                    <span className="text-muted-foreground">({hotel.review_count || hotel.reviewCount || 0} reviews)</span>
                   </div>
                 </div>
               </div>
@@ -244,21 +275,23 @@ export default function HotelDetailPage() {
               {/* Description */}
               <div className="mb-8">
                 <h2 className="mb-3 text-lg font-semibold">About This Hotel</h2>
-                <p className="leading-relaxed text-muted-foreground">{hotel.description}</p>
+                <p className="leading-relaxed text-muted-foreground">{hotel.description || hotel.short_description || "No description available."}</p>
               </div>
 
               {/* Amenities */}
-              <div className="mb-8">
-                <h2 className="mb-4 text-lg font-semibold">Amenities</h2>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {hotel.amenities.map((amenity) => (
-                    <div key={amenity} className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
-                      {amenityIcons[amenity] || <Sparkles className="h-4 w-4 text-primary" />}
-                      <span className="text-sm">{amenity}</span>
-                    </div>
-                  ))}
+              {(hotel.amenities?.length > 0 || hotel.facilities?.length > 0) && (
+                <div className="mb-8">
+                  <h2 className="mb-4 text-lg font-semibold">Amenities</h2>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {(hotel.amenities || hotel.facilities || []).map((amenity: string) => (
+                      <div key={amenity} className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
+                        {amenityIcons[amenity] || <Sparkles className="h-4 w-4 text-primary" />}
+                        <span className="text-sm">{amenity}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Rooms */}
               {rooms.length > 0 && (
@@ -297,18 +330,47 @@ export default function HotelDetailPage() {
               )}
 
               {/* Safety */}
-              <div className="mb-8">
-                <h2 className="mb-4 text-lg font-semibold">Safety Information</h2>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-primary" />
-                      <span className="font-medium">Safety Score: {hotel.safetyScore}%</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{hotel.safetyNotes}</p>
-                  </CardContent>
-                </Card>
-              </div>
+              {(hotel.safetyScore || hotel.safety_score) && (
+                <div className="mb-8">
+                  <h2 className="mb-4 text-lg font-semibold">Safety Information</h2>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="mb-3 flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-primary" />
+                        <span className="font-medium">Safety Score: {hotel.safetyScore || hotel.safety_score}%</span>
+                      </div>
+                      {(hotel.safetyNotes || hotel.safety_notes) && (
+                        <p className="text-sm text-muted-foreground">{hotel.safetyNotes || hotel.safety_notes}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Check-in/Check-out Times */}
+              {(hotel.check_in_time || hotel.check_out_time) && (
+                <div className="mb-8">
+                  <h2 className="mb-4 text-lg font-semibold">Hotel Policies</h2>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {hotel.check_in_time && (
+                          <div>
+                            <span className="text-sm text-muted-foreground">Check-in Time</span>
+                            <p className="font-medium">{hotel.check_in_time}</p>
+                          </div>
+                        )}
+                        {hotel.check_out_time && (
+                          <div>
+                            <span className="text-sm text-muted-foreground">Check-out Time</span>
+                            <p className="font-medium">{hotel.check_out_time}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
 
             {/* Sidebar - Booking Card */}
@@ -318,16 +380,28 @@ export default function HotelDetailPage() {
                   <CardContent className="p-6">
                     <div className="mb-4 border-b border-border pb-4">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold">${hotel.priceMin}</span>
-                        <span className="text-muted-foreground">- ${hotel.priceMax}</span>
-                        <span className="text-sm text-muted-foreground">/ night</span>
+                        {hotel.min_price ? (
+                          <>
+                            <span className="text-sm text-muted-foreground">From</span>
+                            <span className="text-3xl font-bold">${hotel.min_price}</span>
+                            <span className="text-sm text-muted-foreground">/ night</span>
+                          </>
+                        ) : hotel.priceMin ? (
+                          <>
+                            <span className="text-3xl font-bold">${hotel.priceMin}</span>
+                            <span className="text-muted-foreground">- ${hotel.priceMax}</span>
+                            <span className="text-sm text-muted-foreground">/ night</span>
+                          </>
+                        ) : (
+                          <span className="text-lg font-medium">Contact for pricing</span>
+                        )}
                       </div>
                     </div>
 
                     <Button size="lg" className="mb-4 w-full" asChild>
-                      <Link href={`/book/hotel/${hotel.id}`}>
+                      <Link href={`/book/hotel/${hotel.slug || hotel.id}`}>
                         <Calendar className="mr-2 h-4 w-4" />
-                        Request Booking
+                        Book Now
                       </Link>
                     </Button>
 
@@ -347,22 +421,22 @@ export default function HotelDetailPage() {
                     {/* Contact Info */}
                     <div className="space-y-3 border-t border-border pt-4">
                       <h3 className="font-semibold">Contact Hotel</h3>
-                      {hotel.contactPhone && (
+                      {(hotel.contactPhone || hotel.phone || hotel.contact_phone) && (
                         <a
-                          href={`tel:${hotel.contactPhone}`}
+                          href={`tel:${hotel.contactPhone || hotel.phone || hotel.contact_phone}`}
                           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
                         >
                           <Phone className="h-4 w-4" />
-                          {hotel.contactPhone}
+                          {hotel.contactPhone || hotel.phone || hotel.contact_phone}
                         </a>
                       )}
-                      {hotel.contactEmail && (
+                      {(hotel.contactEmail || hotel.email || hotel.contact_email) && (
                         <a
-                          href={`mailto:${hotel.contactEmail}`}
+                          href={`mailto:${hotel.contactEmail || hotel.email || hotel.contact_email}`}
                           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
                         >
                           <Mail className="h-4 w-4" />
-                          {hotel.contactEmail}
+                          {hotel.contactEmail || hotel.email || hotel.contact_email}
                         </a>
                       )}
                       {hotel.website && (

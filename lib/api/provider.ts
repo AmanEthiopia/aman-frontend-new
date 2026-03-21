@@ -9,7 +9,7 @@ import { apiGet, apiPost, apiPatch, apiDelete, apiFetch } from "./client"
 // TYPES
 // ============================================================================
 
-export type PropertyCategory = "hotel" | "restaurant" | "driver" | "trip"
+export type PropertyCategory = "hotel" | "restaurant" | "driver" | "trip" | "tour_guide" | "translator" | "event"
 
 export interface PropertyBase {
   id: string
@@ -176,6 +176,72 @@ export interface CreateDriverPayload {
   is_available_24h?: boolean
 }
 
+// Tour Guide Types
+export interface ProviderTourGuide extends PropertyBase {
+  category: "tour_guide"
+  languages: string[]
+  specializations: string[] // e.g., "Historical Sites", "Cultural Tours", "Adventure"
+  experience_years: number
+  certifications?: string[]
+  price_per_hour?: number
+  price_per_day?: number
+  cities_covered: string[]
+  availability: string // e.g., "Weekdays", "Weekends", "Flexible"
+  bio?: string
+}
+
+export interface CreateTourGuidePayload {
+  name: string
+  nickname?: string
+  description: string
+  category: "tour_guide"
+  languages: string[]
+  specializations: string[]
+  experience_years: number
+  certifications?: string[]
+  city_id: string
+  address: string
+  price_per_hour?: number
+  price_per_day?: number
+  cities_covered: string[]
+  availability?: string
+  bio?: string
+}
+
+// Translator Types
+export interface ProviderTranslator extends PropertyBase {
+  category: "translator"
+  languages: string[] // Languages they can translate
+  language_pairs: { from: string; to: string }[]
+  specializations: string[] // e.g., "Business", "Legal", "Medical", "Tourism"
+  experience_years: number
+  certifications?: string[]
+  price_per_hour?: number
+  price_per_day?: number
+  is_certified: boolean
+  availability: string
+  bio?: string
+}
+
+export interface CreateTranslatorPayload {
+  name: string
+  nickname?: string
+  description: string
+  category: "translator"
+  languages: string[]
+  language_pairs?: { from: string; to: string }[]
+  specializations: string[]
+  experience_years: number
+  certifications?: string[]
+  city_id: string
+  address: string
+  price_per_hour?: number
+  price_per_day?: number
+  is_certified?: boolean
+  availability?: string
+  bio?: string
+}
+
 // Trip/Event Types
 export interface ProviderTrip extends PropertyBase {
   category: "trip"
@@ -194,6 +260,9 @@ export interface ProviderTrip extends PropertyBase {
   itinerary: TripItineraryDay[]
   available_dates?: string[]
   is_customizable: boolean
+  terms_conditions?: string // Terms & conditions
+  important_info?: string // Important info participants should know
+  additional_features?: string[] // Additional features/services
 }
 
 export interface TripItineraryDay {
@@ -233,6 +302,9 @@ export interface CreateTripPayload {
   excluded_services?: string[]
   itinerary: TripItineraryDay[]
   is_customizable?: boolean
+  terms_conditions?: string
+  important_info?: string
+  additional_features?: string[]
 }
 
 // Provider Stats
@@ -531,6 +603,100 @@ export async function updateTrip(tripId: string, payload: Partial<CreateTripPayl
  */
 export async function deleteTrip(tripId: string): Promise<void> {
   return apiDelete(`/trips/${tripId}/`)
+}
+
+// ============================================================================
+// TOUR GUIDES API
+// ============================================================================
+
+/**
+ * Create a new tour guide listing
+ */
+export async function createTourGuide(payload: CreateTourGuidePayload): Promise<ProviderTourGuide> {
+  return apiPost<ProviderTourGuide>("/tour-guides/", payload)
+}
+
+/**
+ * Get provider's tour guide listings
+ */
+export async function getMyTourGuides(params: {
+  is_active?: boolean
+  page?: number
+  page_size?: number
+} = {}): Promise<PaginatedResponse<ProviderTourGuide>> {
+  const queryParams = new URLSearchParams()
+  
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      queryParams.append(key, String(value))
+    }
+  })
+
+  const queryString = queryParams.toString()
+  const endpoint = queryString ? `/provider/tour-guides/?${queryString}` : "/provider/tour-guides/"
+  
+  return apiGet<PaginatedResponse<ProviderTourGuide>>(endpoint)
+}
+
+/**
+ * Update a tour guide listing
+ */
+export async function updateTourGuide(tourGuideId: string, payload: Partial<CreateTourGuidePayload>): Promise<ProviderTourGuide> {
+  return apiPatch<ProviderTourGuide>(`/tour-guides/${tourGuideId}/`, payload)
+}
+
+/**
+ * Delete a tour guide listing
+ */
+export async function deleteTourGuide(tourGuideId: string): Promise<void> {
+  return apiDelete(`/tour-guides/${tourGuideId}/`)
+}
+
+// ============================================================================
+// TRANSLATORS API
+// ============================================================================
+
+/**
+ * Create a new translator listing
+ */
+export async function createTranslator(payload: CreateTranslatorPayload): Promise<ProviderTranslator> {
+  return apiPost<ProviderTranslator>("/translators/", payload)
+}
+
+/**
+ * Get provider's translator listings
+ */
+export async function getMyTranslators(params: {
+  is_active?: boolean
+  page?: number
+  page_size?: number
+} = {}): Promise<PaginatedResponse<ProviderTranslator>> {
+  const queryParams = new URLSearchParams()
+  
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      queryParams.append(key, String(value))
+    }
+  })
+
+  const queryString = queryParams.toString()
+  const endpoint = queryString ? `/provider/translators/?${queryString}` : "/provider/translators/"
+  
+  return apiGet<PaginatedResponse<ProviderTranslator>>(endpoint)
+}
+
+/**
+ * Update a translator listing
+ */
+export async function updateTranslator(translatorId: string, payload: Partial<CreateTranslatorPayload>): Promise<ProviderTranslator> {
+  return apiPatch<ProviderTranslator>(`/translators/${translatorId}/`, payload)
+}
+
+/**
+ * Delete a translator listing
+ */
+export async function deleteTranslator(translatorId: string): Promise<void> {
+  return apiDelete(`/translators/${translatorId}/`)
 }
 
 // ============================================================================

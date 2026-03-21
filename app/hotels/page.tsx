@@ -110,6 +110,7 @@ export default function HotelsPage() {
                       <ListingCard
                         key={hotel.id}
                         id={hotel.id}
+                        slug={hotel.slug}
                         type="hotel"
                         name={hotel.name}
                         imageUrl={hotel.cover_photo || hotel.images?.[0]?.url || "/grand-hotel-exterior.png"}

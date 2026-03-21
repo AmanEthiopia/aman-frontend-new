@@ -21,6 +21,10 @@ import {
   X,
   Star,
   Info,
+  User,
+  Languages,
+  Calendar,
+  FileText,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -45,6 +49,8 @@ import type {
   CreateRestaurantPayload,
   CreateDriverPayload,
   CreateTripPayload,
+  CreateTourGuidePayload,
+  CreateTranslatorPayload,
   DriverService,
 } from "@/lib/api/provider"
 import type { City } from "@/lib/api/content"
@@ -106,8 +112,10 @@ const CUISINE_TYPES = [
   "Vegetarian/Vegan",
   "Seafood",
   "BBQ/Grill",
-  "Café",
+  "Cafe",
   "Fast Food",
+  "Fusion",
+  "Traditional",
 ]
 
 // Driver services
@@ -146,6 +154,48 @@ const TRIP_SERVICES = [
   "Insurance",
   "Airport Pickup",
   "Photography",
+  "Other",
+]
+
+// Tour guide specializations
+const TOUR_GUIDE_SPECIALIZATIONS = [
+  "Historical Sites",
+  "Cultural Tours",
+  "Religious Sites",
+  "Nature & Wildlife",
+  "Adventure Tours",
+  "City Tours",
+  "Trekking & Hiking",
+  "Photography Tours",
+  "Food & Culinary",
+  "Art & Museums",
+  "Nightlife & Entertainment",
+  "Other",
+]
+
+// Translator specializations
+const TRANSLATOR_SPECIALIZATIONS = [
+  "Tourism",
+  "Business",
+  "Legal",
+  "Medical",
+  "Technical",
+  "Academic",
+  "Government",
+  "Real Estate",
+  "General",
+  "Other",
+]
+
+// Availability options
+const AVAILABILITY_OPTIONS = [
+  "Flexible",
+  "Weekdays Only",
+  "Weekends Only",
+  "Morning Only",
+  "Afternoon Only",
+  "Evening Only",
+  "24/7 Available",
 ]
 
 function PropertyTypeSelector({
@@ -165,7 +215,7 @@ function PropertyTypeSelector({
     {
       value: "restaurant",
       label: "Restaurant",
-      description: "List your restaurant, café, or food service",
+      description: "List your restaurant, cafe, or food service",
       icon: UtensilsCrossed,
     },
     {
@@ -179,6 +229,18 @@ function PropertyTypeSelector({
       label: "Trip / Event",
       description: "Create tour packages, trips, or events",
       icon: Map,
+    },
+    {
+      value: "tour_guide",
+      label: "Tour Guide",
+      description: "Offer guided tours and city exploration services",
+      icon: User,
+    },
+    {
+      value: "translator",
+      label: "Translator",
+      description: "Offer translation and interpretation services",
+      icon: Languages,
     },
   ]
 
@@ -627,6 +689,16 @@ function RestaurantForm({
     has_takeaway: false,
     has_dine_in: true,
   })
+  
+  // Custom city state
+  const [showAddCity, setShowAddCity] = useState(false)
+  const [newCityName, setNewCityName] = useState("")
+  const [newCityNickname, setNewCityNickname] = useState("")
+  const [isCreatingCity, setIsCreatingCity] = useState(false)
+  const [localCities, setLocalCities] = useState<City[]>(cities)
+  
+  // Custom cuisine state
+  const [customCuisine, setCustomCuisine] = useState("")
 
   const updateField = <K extends keyof CreateRestaurantPayload>(key: K, value: CreateRestaurantPayload[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }))
@@ -637,6 +709,36 @@ function RestaurantForm({
       updateField("cuisine_types", formData.cuisine_types.filter((c: string) => c !== cuisine))
     } else {
       updateField("cuisine_types", [...formData.cuisine_types, cuisine])
+    }
+  }
+  
+  const addCustomCuisine = () => {
+    if (customCuisine.trim() && !formData.cuisine_types.includes(customCuisine.trim())) {
+      updateField("cuisine_types", [...formData.cuisine_types, customCuisine.trim()])
+      setCustomCuisine("")
+    }
+  }
+  
+  const handleCreateCity = async () => {
+    if (!newCityName.trim()) return
+    
+    setIsCreatingCity(true)
+    try {
+      const newCity = await contentAPI.createCity({
+        name: newCityName.trim(),
+        nickname: newCityNickname.trim() || undefined,
+      })
+      
+      setLocalCities([...localCities, newCity])
+      updateField("city_id", newCity.id)
+      setShowAddCity(false)
+      setNewCityName("")
+      setNewCityNickname("")
+      toast.success(`City "${newCity.name}" created successfully`)
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create city")
+    } finally {
+      setIsCreatingCity(false)
     }
   }
 
@@ -708,21 +810,78 @@ function RestaurantForm({
             </div>
             <div className="space-y-2">
               <Label>City *</Label>
-              <Select
-                value={formData.city_id}
-                onValueChange={(v) => updateField("city_id", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a city" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cities.map((city) => (
-                    <SelectItem key={city.id} value={city.id}>
-                      {city.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {!showAddCity ? (
+                <div className="space-y-2">
+                  <Select
+                    value={formData.city_id}
+                    onValueChange={(v) => {
+                      if (v === "__add_new__") {
+                        setShowAddCity(true)
+                      } else {
+                        updateField("city_id", v)
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a city" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {localCities.map((city) => (
+                        <SelectItem key={city.id} value={city.id}>
+                          {city.name}
+                          {city.nickname && <span className="ml-1 text-muted-foreground">({city.nickname})</span>}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__add_new__">
+                        <div className="flex items-center gap-2 text-primary">
+                          <Plus className="h-4 w-4" />
+                          Add New City
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <Card className="border-primary/50">
+                  <CardContent className="space-y-3 p-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">Add New City</Label>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setShowAddCity(false)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Input
+                      placeholder="City name (e.g., Dire Dawa)"
+                      value={newCityName}
+                      onChange={(e) => setNewCityName(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Amharic name (optional)"
+                      value={newCityNickname}
+                      onChange={(e) => setNewCityNickname(e.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleCreateCity}
+                      disabled={!newCityName.trim() || isCreatingCity}
+                      className="w-full"
+                    >
+                      {isCreatingCity ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create City
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
 
@@ -755,9 +914,9 @@ function RestaurantForm({
       <Card>
         <CardHeader>
           <CardTitle>Cuisine Types *</CardTitle>
-          <CardDescription>Select the types of cuisine you offer</CardDescription>
+          <CardDescription>Select the types of cuisine you offer, or add your own</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
             {CUISINE_TYPES.map((cuisine) => (
               <Badge
@@ -766,9 +925,49 @@ function RestaurantForm({
                 className="cursor-pointer"
                 onClick={() => toggleCuisine(cuisine)}
               >
+                {formData.cuisine_types.includes(cuisine) && <Check className="mr-1 h-3 w-3" />}
                 {cuisine}
               </Badge>
             ))}
+          </div>
+          
+          {/* Custom cuisines */}
+          {formData.cuisine_types.filter(c => !CUISINE_TYPES.includes(c)).length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Custom Cuisines</Label>
+              <div className="flex flex-wrap gap-2">
+                {formData.cuisine_types.filter(c => !CUISINE_TYPES.includes(c)).map((cuisine) => (
+                  <Badge key={cuisine} variant="secondary" className="gap-1">
+                    {cuisine}
+                    <button
+                      type="button"
+                      onClick={() => updateField("cuisine_types", formData.cuisine_types.filter(c => c !== cuisine))}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Add custom cuisine */}
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add custom cuisine type (e.g., Eritrean)"
+              value={customCuisine}
+              onChange={(e) => setCustomCuisine(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  addCustomCuisine()
+                }
+              }}
+            />
+            <Button type="button" variant="outline" onClick={addCustomCuisine} disabled={!customCuisine.trim()}>
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -860,6 +1059,13 @@ function DriverForm({
     is_airport_pickup: false,
     is_available_24h: false,
   })
+  
+  // Custom city state
+  const [showAddCity, setShowAddCity] = useState(false)
+  const [newCityName, setNewCityName] = useState("")
+  const [newCityNickname, setNewCityNickname] = useState("")
+  const [isCreatingCity, setIsCreatingCity] = useState(false)
+  const [localCities, setLocalCities] = useState<City[]>(cities)
 
   const updateField = <K extends keyof CreateDriverPayload>(key: K, value: CreateDriverPayload[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }))
@@ -878,6 +1084,29 @@ function DriverForm({
       updateField("languages", formData.languages.filter((l: string) => l !== language))
     } else {
       updateField("languages", [...formData.languages, language])
+    }
+  }
+  
+  const handleCreateCity = async () => {
+    if (!newCityName.trim()) return
+    
+    setIsCreatingCity(true)
+    try {
+      const newCity = await contentAPI.createCity({
+        name: newCityName.trim(),
+        nickname: newCityNickname.trim() || undefined,
+      })
+      
+      setLocalCities([...localCities, newCity])
+      updateField("city_id", newCity.id)
+      setShowAddCity(false)
+      setNewCityName("")
+      setNewCityNickname("")
+      toast.success(`City "${newCity.name}" created successfully`)
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create city")
+    } finally {
+      setIsCreatingCity(false)
     }
   }
 
@@ -1162,7 +1391,28 @@ function TripForm({
     excluded_services: [],
     itinerary: [],
     is_customizable: true,
+    terms_conditions: "",
+    important_info: "",
+    additional_features: [],
   })
+  
+  // Custom city management
+  const [showAddCity, setShowAddCity] = useState(false)
+  const [newCityName, setNewCityName] = useState("")
+  const [newCityNickname, setNewCityNickname] = useState("")
+  const [isCreatingCity, setIsCreatingCity] = useState(false)
+  const [localCities, setLocalCities] = useState<City[]>(cities)
+  
+  // Custom included service
+  const [customService, setCustomService] = useState("")
+  
+  // Additional features
+  const [customFeature, setCustomFeature] = useState("")
+  
+  // Sync cities when prop changes
+  useEffect(() => {
+    setLocalCities(cities)
+  }, [cities])
 
   const updateField = <K extends keyof CreateTripPayload>(key: K, value: CreateTripPayload[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }))
@@ -1175,6 +1425,50 @@ function TripForm({
       updateField(key, services.filter((s: string) => s !== service))
     } else {
       updateField(key, [...services, service])
+    }
+  }
+  
+  const addCustomService = () => {
+    if (customService.trim() && !formData.included_services.includes(customService.trim())) {
+      updateField("included_services", [...formData.included_services, customService.trim()])
+      setCustomService("")
+    }
+  }
+  
+  const addCustomFeature = () => {
+    if (customFeature.trim() && !(formData.additional_features || []).includes(customFeature.trim())) {
+      updateField("additional_features", [...(formData.additional_features || []), customFeature.trim()])
+      setCustomFeature("")
+    }
+  }
+  
+  const removeFeature = (feature: string) => {
+    updateField("additional_features", (formData.additional_features || []).filter(f => f !== feature))
+  }
+  
+  const handleCreateCity = async () => {
+    if (!newCityName.trim()) return
+    
+    setIsCreatingCity(true)
+    try {
+      const newCity = await contentAPI.createCity({
+        name: newCityName.trim(),
+        nickname: newCityNickname.trim() || undefined,
+      })
+      
+      // Add to local cities list
+      setLocalCities([...localCities, newCity])
+      // Add to cities covered
+      updateField("cities_covered", [...formData.cities_covered, newCity.id])
+      
+      setShowAddCity(false)
+      setNewCityName("")
+      setNewCityNickname("")
+      toast.success(`City "${newCity.name}" created and added to trip`)
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create city")
+    } finally {
+      setIsCreatingCity(false)
     }
   }
 
@@ -1351,7 +1645,7 @@ function TripForm({
               <Label className="text-sm text-muted-foreground">Selected Cities ({formData.cities_covered.length})</Label>
               <div className="flex flex-wrap gap-2">
                 {formData.cities_covered.map((cityId) => {
-                  const city = cities.find(c => c.id === cityId)
+                  const city = localCities.find(c => c.id === cityId)
                   const isStartCity = cityId === formData.start_city_id
                   return (
                     <Badge 
@@ -1384,7 +1678,7 @@ function TripForm({
           <div className="space-y-2">
             <Label>Add Cities to Route</Label>
             <div className="flex flex-wrap gap-2">
-              {cities
+              {localCities
                 .filter(city => !formData.cities_covered.includes(city.id))
                 .map((city) => (
                   <Badge
@@ -1401,8 +1695,66 @@ function TripForm({
                   </Badge>
                 ))}
             </div>
-            {cities.filter(city => !formData.cities_covered.includes(city.id)).length === 0 && (
-              <p className="text-sm text-muted-foreground">All available cities have been added to this trip.</p>
+          </div>
+          
+          {/* Add custom city */}
+          <div className="space-y-2">
+            {!showAddCity ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddCity(true)}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add City Not Listed
+              </Button>
+            ) : (
+              <Card className="border-primary/50">
+                <CardContent className="space-y-3 p-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Add New City</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAddCity(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Input
+                    placeholder="City name (e.g., Jimma)"
+                    value={newCityName}
+                    onChange={(e) => setNewCityName(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Amharic name (optional)"
+                    value={newCityNickname}
+                    onChange={(e) => setNewCityNickname(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleCreateCity}
+                    disabled={!newCityName.trim() || isCreatingCity}
+                    className="w-full"
+                  >
+                    {isCreatingCity ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create & Add City
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
             )}
           </div>
         </CardContent>
@@ -1412,10 +1764,11 @@ function TripForm({
       <Card>
         <CardHeader>
           <CardTitle>What's Included</CardTitle>
+          <CardDescription>Select standard services or add your own custom inclusions</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {TRIP_SERVICES.map((service) => (
+            {TRIP_SERVICES.filter(s => s !== "Other").map((service) => (
               <Badge
                 key={service}
                 variant={formData.included_services.includes(service) ? "default" : "outline"}
@@ -1427,10 +1780,129 @@ function TripForm({
               </Badge>
             ))}
           </div>
+          
+          {/* Custom included services */}
+          {formData.included_services.filter(s => !TRIP_SERVICES.includes(s)).length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Custom Inclusions</Label>
+              <div className="flex flex-wrap gap-2">
+                {formData.included_services.filter(s => !TRIP_SERVICES.includes(s)).map((service) => (
+                  <Badge key={service} variant="secondary" className="gap-1">
+                    {service}
+                    <button
+                      type="button"
+                      onClick={() => updateField("included_services", formData.included_services.filter(s => s !== service))}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Add custom service */}
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add custom service (e.g., Private Chef)"
+              value={customService}
+              onChange={(e) => setCustomService(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  addCustomService()
+                }
+              }}
+            />
+            <Button type="button" variant="outline" onClick={addCustomService} disabled={!customService.trim()}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Customizable */}
+      {/* Additional Features */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Star className="h-5 w-5" />
+            Additional Features
+          </CardTitle>
+          <CardDescription>Highlight special features that make this trip unique</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {(formData.additional_features || []).length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {(formData.additional_features || []).map((feature) => (
+                <Badge key={feature} variant="secondary" className="gap-1">
+                  {feature}
+                  <button
+                    type="button"
+                    onClick={() => removeFeature(feature)}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+          
+          <div className="flex gap-2">
+            <Input
+              placeholder="e.g., Small group experience, Local family visit, Sunset viewpoint"
+              value={customFeature}
+              onChange={(e) => setCustomFeature(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  addCustomFeature()
+                }
+              }}
+            />
+            <Button type="button" variant="outline" onClick={addCustomFeature} disabled={!customFeature.trim()}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Terms & Important Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Terms & Important Information
+          </CardTitle>
+          <CardDescription>Important details participants should know before booking</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="important_info">Important Information for Participants</Label>
+            <Textarea
+              id="important_info"
+              value={formData.important_info || ""}
+              onChange={(e) => updateField("important_info", e.target.value)}
+              placeholder="e.g., Physical fitness requirements, items to bring, health advisories, meeting point details..."
+              rows={4}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="terms">Terms & Conditions</Label>
+            <Textarea
+              id="terms"
+              value={formData.terms_conditions || ""}
+              onChange={(e) => updateField("terms_conditions", e.target.value)}
+              placeholder="e.g., Cancellation policy, refund policy, liability information, booking requirements..."
+              rows={4}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Options */}
       <Card>
         <CardHeader>
           <CardTitle>Options</CardTitle>
@@ -1463,6 +1935,606 @@ function TripForm({
             <>
               <Check className="mr-2 h-4 w-4" />
               Create Trip
+            </>
+          )}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+function TourGuideForm({
+  cities,
+  onSubmit,
+  isSubmitting,
+}: {
+  cities: City[]
+  onSubmit: (data: CreateTourGuidePayload) => void
+  isSubmitting: boolean
+}) {
+  const [formData, setFormData] = useState<CreateTourGuidePayload>({
+    name: "",
+    nickname: "",
+    description: "",
+    category: "tour_guide",
+    languages: [],
+    specializations: [],
+    experience_years: 1,
+    city_id: "",
+    address: "",
+    cities_covered: [],
+    availability: "Flexible",
+  })
+  
+  const [customSpecialization, setCustomSpecialization] = useState("")
+  const [showAddCity, setShowAddCity] = useState(false)
+  const [newCityName, setNewCityName] = useState("")
+
+  const updateField = <K extends keyof CreateTourGuidePayload>(key: K, value: CreateTourGuidePayload[K]) => {
+    setFormData((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const toggleLanguage = (lang: string) => {
+    if (formData.languages.includes(lang)) {
+      updateField("languages", formData.languages.filter((l) => l !== lang))
+    } else {
+      updateField("languages", [...formData.languages, lang])
+    }
+  }
+
+  const toggleSpecialization = (spec: string) => {
+    if (formData.specializations.includes(spec)) {
+      updateField("specializations", formData.specializations.filter((s) => s !== spec))
+    } else {
+      updateField("specializations", [...formData.specializations, spec])
+    }
+  }
+
+  const addCustomSpecialization = () => {
+    if (customSpecialization.trim() && !formData.specializations.includes(customSpecialization.trim())) {
+      updateField("specializations", [...formData.specializations, customSpecialization.trim()])
+      setCustomSpecialization("")
+    }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(formData)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Basic Information
+          </CardTitle>
+          <CardDescription>Tell us about yourself as a tour guide</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => updateField("name", e.target.value)}
+                placeholder="e.g., Abebe Kebede"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nickname">Amharic Name (Optional)</Label>
+              <Input
+                id="nickname"
+                value={formData.nickname || ""}
+                onChange={(e) => updateField("nickname", e.target.value)}
+                placeholder="e.g., አበበ ከበደ"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio / Description *</Label>
+            <Textarea
+              id="bio"
+              value={formData.description}
+              onChange={(e) => updateField("description", e.target.value)}
+              placeholder="Tell travelers about yourself, your experience, and what makes your tours special..."
+              rows={4}
+              required
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Years of Experience *</Label>
+              <Input
+                type="number"
+                min={0}
+                value={formData.experience_years}
+                onChange={(e) => updateField("experience_years", Number(e.target.value))}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>City *</Label>
+              <Select value={formData.city_id} onValueChange={(v) => updateField("city_id", v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your base city" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cities.map((city) => (
+                    <SelectItem key={city.id} value={city.id}>
+                      {city.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address *</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => updateField("address", e.target.value)}
+              placeholder="Your location or meeting point"
+              required
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Languages */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Languages className="h-5 w-5" />
+            Languages Spoken
+          </CardTitle>
+          <CardDescription>Select all languages you can conduct tours in</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {LANGUAGES.map((lang) => (
+              <Badge
+                key={lang}
+                variant={formData.languages.includes(lang) ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => toggleLanguage(lang)}
+              >
+                {formData.languages.includes(lang) && <Check className="mr-1 h-3 w-3" />}
+                {lang}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Specializations */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Tour Specializations</CardTitle>
+          <CardDescription>What types of tours do you offer?</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {TOUR_GUIDE_SPECIALIZATIONS.map((spec) => (
+              <Badge
+                key={spec}
+                variant={formData.specializations.includes(spec) ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => toggleSpecialization(spec)}
+              >
+                {formData.specializations.includes(spec) && <Check className="mr-1 h-3 w-3" />}
+                {spec}
+              </Badge>
+            ))}
+          </div>
+          
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add custom specialization"
+              value={customSpecialization}
+              onChange={(e) => setCustomSpecialization(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  addCustomSpecialization()
+                }
+              }}
+            />
+            <Button type="button" variant="outline" onClick={addCustomSpecialization}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pricing & Availability */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Pricing & Availability
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Price per Hour (ETB)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={formData.price_per_hour || ""}
+                onChange={(e) => updateField("price_per_hour", Number(e.target.value) || undefined)}
+                placeholder="e.g., 500"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Price per Day (ETB)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={formData.price_per_day || ""}
+                onChange={(e) => updateField("price_per_day", Number(e.target.value) || undefined)}
+                placeholder="e.g., 3000"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Availability</Label>
+            <Select value={formData.availability} onValueChange={(v) => updateField("availability", v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AVAILABILITY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Cities Covered */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Cities You Can Guide In
+          </CardTitle>
+          <CardDescription>Select all cities where you can offer tour services</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {cities.map((city) => (
+              <Badge
+                key={city.id}
+                variant={formData.cities_covered.includes(city.id) ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => {
+                  if (formData.cities_covered.includes(city.id)) {
+                    updateField("cities_covered", formData.cities_covered.filter((c) => c !== city.id))
+                  } else {
+                    updateField("cities_covered", [...formData.cities_covered, city.id])
+                  }
+                }}
+              >
+                {formData.cities_covered.includes(city.id) && <Check className="mr-1 h-3 w-3" />}
+                {city.name}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end gap-3">
+        <Link href="/provider/properties">
+          <Button type="button" variant="outline">Cancel</Button>
+        </Link>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Check className="mr-2 h-4 w-4" />
+              Create Tour Guide Profile
+            </>
+          )}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+function TranslatorForm({
+  cities,
+  onSubmit,
+  isSubmitting,
+}: {
+  cities: City[]
+  onSubmit: (data: CreateTranslatorPayload) => void
+  isSubmitting: boolean
+}) {
+  const [formData, setFormData] = useState<CreateTranslatorPayload>({
+    name: "",
+    nickname: "",
+    description: "",
+    category: "translator",
+    languages: [],
+    specializations: [],
+    experience_years: 1,
+    city_id: "",
+    address: "",
+    availability: "Flexible",
+  })
+  
+  const [customSpecialization, setCustomSpecialization] = useState("")
+
+  const updateField = <K extends keyof CreateTranslatorPayload>(key: K, value: CreateTranslatorPayload[K]) => {
+    setFormData((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const toggleLanguage = (lang: string) => {
+    if (formData.languages.includes(lang)) {
+      updateField("languages", formData.languages.filter((l) => l !== lang))
+    } else {
+      updateField("languages", [...formData.languages, lang])
+    }
+  }
+
+  const toggleSpecialization = (spec: string) => {
+    if (formData.specializations.includes(spec)) {
+      updateField("specializations", formData.specializations.filter((s) => s !== spec))
+    } else {
+      updateField("specializations", [...formData.specializations, spec])
+    }
+  }
+
+  const addCustomSpecialization = () => {
+    if (customSpecialization.trim() && !formData.specializations.includes(customSpecialization.trim())) {
+      updateField("specializations", [...formData.specializations, customSpecialization.trim()])
+      setCustomSpecialization("")
+    }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(formData)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Languages className="h-5 w-5" />
+            Basic Information
+          </CardTitle>
+          <CardDescription>Tell us about yourself as a translator</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => updateField("name", e.target.value)}
+                placeholder="e.g., Tigist Alemayehu"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nickname">Amharic Name (Optional)</Label>
+              <Input
+                id="nickname"
+                value={formData.nickname || ""}
+                onChange={(e) => updateField("nickname", e.target.value)}
+                placeholder="e.g., ትግስት አለማየሁ"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio / Description *</Label>
+            <Textarea
+              id="bio"
+              value={formData.description}
+              onChange={(e) => updateField("description", e.target.value)}
+              placeholder="Tell clients about your translation experience, qualifications, and expertise areas..."
+              rows={4}
+              required
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Years of Experience *</Label>
+              <Input
+                type="number"
+                min={0}
+                value={formData.experience_years}
+                onChange={(e) => updateField("experience_years", Number(e.target.value))}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>City *</Label>
+              <Select value={formData.city_id} onValueChange={(v) => updateField("city_id", v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your base city" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cities.map((city) => (
+                    <SelectItem key={city.id} value={city.id}>
+                      {city.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address *</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => updateField("address", e.target.value)}
+              placeholder="Your location"
+              required
+            />
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="certified"
+              checked={formData.is_certified}
+              onCheckedChange={(checked) => updateField("is_certified", !!checked)}
+            />
+            <Label htmlFor="certified">I am a certified translator</Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Languages */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Languages className="h-5 w-5" />
+            Languages
+          </CardTitle>
+          <CardDescription>Select all languages you can translate between</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {LANGUAGES.map((lang) => (
+              <Badge
+                key={lang}
+                variant={formData.languages.includes(lang) ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => toggleLanguage(lang)}
+              >
+                {formData.languages.includes(lang) && <Check className="mr-1 h-3 w-3" />}
+                {lang}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Specializations */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Translation Specializations</CardTitle>
+          <CardDescription>What areas do you specialize in?</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {TRANSLATOR_SPECIALIZATIONS.map((spec) => (
+              <Badge
+                key={spec}
+                variant={formData.specializations.includes(spec) ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => toggleSpecialization(spec)}
+              >
+                {formData.specializations.includes(spec) && <Check className="mr-1 h-3 w-3" />}
+                {spec}
+              </Badge>
+            ))}
+          </div>
+          
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add custom specialization"
+              value={customSpecialization}
+              onChange={(e) => setCustomSpecialization(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  addCustomSpecialization()
+                }
+              }}
+            />
+            <Button type="button" variant="outline" onClick={addCustomSpecialization}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pricing & Availability */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Pricing & Availability
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Price per Hour (ETB)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={formData.price_per_hour || ""}
+                onChange={(e) => updateField("price_per_hour", Number(e.target.value) || undefined)}
+                placeholder="e.g., 400"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Price per Day (ETB)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={formData.price_per_day || ""}
+                onChange={(e) => updateField("price_per_day", Number(e.target.value) || undefined)}
+                placeholder="e.g., 2500"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Availability</Label>
+            <Select value={formData.availability} onValueChange={(v) => updateField("availability", v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AVAILABILITY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end gap-3">
+        <Link href="/provider/properties">
+          <Button type="button" variant="outline">Cancel</Button>
+        </Link>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Check className="mr-2 h-4 w-4" />
+              Create Translator Profile
             </>
           )}
         </Button>
@@ -1512,7 +2584,7 @@ function AddPropertyContent() {
       setCities([
         { id: "1", name: "Addis Ababa", nickname: "አዲስ አበባ", slug: "addis-ababa", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 1, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
         { id: "2", name: "Lalibela", nickname: "ላሊበላ", slug: "lalibela", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 2, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
-        { id: "3", name: "Gondar", nickname: "ጎንደር", slug: "gondar", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 3, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
+        { id: "3", name: "Gondar", nickname: "ጎን��ር", slug: "gondar", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 3, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
         { id: "4", name: "Axum", nickname: "አክሱም", slug: "axum", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 4, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
         { id: "5", name: "Harar", nickname: "ሐረር", slug: "harar", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 5, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
         { id: "6", name: "Bahir Dar", nickname: "ባሕር ዳር", slug: "bahir-dar", country: "Ethiopia", short_description: "", cover_photo_url: "", is_popular: true, display_order: 6, hotels_count: 0, restaurants_count: 0, experiences_count: 0 },
@@ -1583,6 +2655,34 @@ function AddPropertyContent() {
     }
   }
 
+  const handleSubmitTourGuide = async (data: CreateTourGuidePayload) => {
+    setIsSubmitting(true)
+    try {
+      await providerAPI.createTourGuide(data)
+      toast.success("Tour guide service created successfully!")
+      router.push("/provider/properties")
+    } catch (error) {
+      console.error("[v0] Failed to create tour guide:", error)
+      toast.error("Failed to create tour guide service. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSubmitTranslator = async (data: CreateTranslatorPayload) => {
+    setIsSubmitting(true)
+    try {
+      await providerAPI.createTranslator(data)
+      toast.success("Translator service created successfully!")
+      router.push("/provider/properties")
+    } catch (error) {
+      console.error("[v0] Failed to create translator:", error)
+      toast.error("Failed to create translator service. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -1646,6 +2746,14 @@ function AddPropertyContent() {
 
       {step === 2 && propertyType === "trip" && (
         <TripForm cities={cities} onSubmit={handleSubmitTrip} isSubmitting={isSubmitting} />
+      )}
+
+      {step === 2 && propertyType === "tour_guide" && (
+        <TourGuideForm cities={cities} onSubmit={handleSubmitTourGuide} isSubmitting={isSubmitting} />
+      )}
+
+      {step === 2 && propertyType === "translator" && (
+        <TranslatorForm cities={cities} onSubmit={handleSubmitTranslator} isSubmitting={isSubmitting} />
       )}
     </div>
   )

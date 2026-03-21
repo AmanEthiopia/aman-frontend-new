@@ -9,13 +9,14 @@ import { useApp } from "@/lib/contexts/app-context"
 
 interface ListingCardProps {
   id: string
+  slug?: string // Use slug for URL if available
   type: "hotel" | "restaurant" | "transport" | "experience"
   name: string
   imageUrl: string
   location: string
   city: string
   description: string
-  priceRange: "budget" | "mid-range" | "luxury"
+  priceRange?: "budget" | "mid-range" | "luxury"
   priceDisplay: string
   rating: number
   reviewCount: number
@@ -33,6 +34,7 @@ const priceRangeLabels: Record<string, { label: string; color: string }> = {
 
 export function ListingCard({
   id,
+  slug,
   type,
   name,
   imageUrl,
@@ -49,8 +51,9 @@ export function ListingCard({
   safetyScore,
 }: ListingCardProps) {
   const { toggleSavedItem, isItemSaved } = useApp()
-  const priceInfo = priceRangeLabels[priceRange] || priceRangeLabels["mid-range"]
-  const href = `/${type}s/${id}`
+  const priceInfo = priceRange ? priceRangeLabels[priceRange] : priceRangeLabels["mid-range"]
+  // Use slug for URL if available, fallback to id
+  const href = `/${type}s/${slug || id}`
   const saved = isItemSaved(id)
 
   return (

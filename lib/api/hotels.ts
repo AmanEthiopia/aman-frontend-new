@@ -108,10 +108,11 @@ export async function searchHotels(params: HotelSearchParams = {}): Promise<Hote
 }
 
 /**
- * Get hotel by ID
+ * Get hotel by ID or slug
+ * The API supports both UUID and slug lookup
  */
-export async function getHotelById(id: string): Promise<Hotel> {
-  return apiFetch<Hotel>(`/hotels/${id}/`)
+export async function getHotelById(idOrSlug: string): Promise<Hotel> {
+  return apiFetch<Hotel>(`/hotels/${idOrSlug}/`)
 }
 
 /**
