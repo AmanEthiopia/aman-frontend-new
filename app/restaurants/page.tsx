@@ -7,7 +7,7 @@ import { Footer } from "@/components/ui/footer"
 import { ListingCard } from "@/components/shared/listing-card"
 import { DiscoveryFilters } from "@/components/shared/discovery-filters"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
-import { fetchRestaurants } from "@/lib/api/mock-api"
+import { getRestaurants } from "@/lib/api/restaurants"
 import type { Restaurant } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -45,17 +45,21 @@ export default function RestaurantsPage() {
   useEffect(() => {
     async function loadRestaurants() {
       setLoading(true)
-      const params = {
-        city: searchParams.get("city") || undefined,
-        priceRange: searchParams.get("priceRange") || undefined,
-        cuisine: searchParams.get("cuisine") || undefined,
-        search: searchParams.get("search") || undefined,
+      try {
+        // City filter uses slug from URL params
+        const data = await getRestaurants({
+          city: searchParams.get("city") || undefined,
+          priceRange: searchParams.get("priceRange") || undefined,
+          cuisine: searchParams.get("cuisine") || undefined,
+          search: searchParams.get("search") || undefined,
+        })
+        setRestaurants(data)
+      } catch (error) {
+        console.error("[v0] Failed to load restaurants:", error)
+        setRestaurants([])
+      } finally {
+        setLoading(false)
       }
-      const response = await fetchRestaurants(params)
-      if (response.data) {
-        setRestaurants(response.data)
-      }
-      setLoading(false)
     }
     loadRestaurants()
   }, [searchParams])
@@ -94,23 +98,24 @@ export default function RestaurantsPage() {
                     Showing {restaurants.length} restaurant{restaurants.length !== 1 ? "s" : ""}
                   </p>
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {restaurants.map((restaurant) => (
+                    {restaurants.map((restaurant: any) => (
                       <ListingCard
                         key={restaurant.id}
                         id={restaurant.id}
+                        slug={restaurant.slug}
                         type="restaurant"
                         name={restaurant.name}
-                        imageUrl={restaurant.images[0]?.url || "/cozy-italian-restaurant.png"}
-                        location={restaurant.area}
-                        city={restaurant.city?.name || ""}
-                        description={restaurant.description}
-                        priceRange={restaurant.priceRange}
-                        priceDisplay={`$${restaurant.priceMin} - $${restaurant.priceMax} / person`}
-                        rating={restaurant.rating}
-                        reviewCount={restaurant.reviewCount}
-                        isVerified={restaurant.isVerified}
-                        isFeatured={restaurant.isFeatured}
-                        tags={restaurant.cuisineTypes}
+                        imageUrl={restaurant.cover_photo || restaurant.images?.[0]?.url || "/cozy-italian-restaurant.png"}
+                        location={restaurant.area || restaurant.address || ""}
+                        city={restaurant.city_name || restaurant.city?.name || ""}
+                        description={restaurant.description || restaurant.short_description || ""}
+                        priceRange={restaurant.priceRange || restaurant.price_range}
+                        priceDisplay={restaurant.price_min ? `$${restaurant.price_min} - $${restaurant.price_max} / person` : "Contact for prices"}
+                        rating={restaurant.average_rating ? parseFloat(restaurant.average_rating) : restaurant.rating || 0}
+                        reviewCount={restaurant.review_count || restaurant.reviewCount || 0}
+                        isVerified={restaurant.is_verified ?? restaurant.isVerified ?? true}
+                        isFeatured={restaurant.is_featured ?? restaurant.isFeatured ?? false}
+                        tags={restaurant.cuisine_types || restaurant.cuisineTypes || []}
                         safetyScore={restaurant.safetyScore}
                       />
                     ))}

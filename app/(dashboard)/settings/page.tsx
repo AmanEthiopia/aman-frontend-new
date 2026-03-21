@@ -171,22 +171,37 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Quick Settings</CardTitle>
+          <CardDescription>Changes apply immediately</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Sun className="h-5 w-5 text-muted-foreground" />
-              <Label htmlFor="theme">Dark Mode</Label>
+              {mounted && theme === "dark" ? (
+                <Moon className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <Sun className="h-5 w-5 text-muted-foreground" />
+              )}
+              <div>
+                <Label htmlFor="theme">Dark Mode</Label>
+                <p className="text-xs text-muted-foreground">Switch between light and dark themes</p>
+              </div>
             </div>
-            <Switch id="theme" />
+            <Switch 
+              id="theme" 
+              checked={mounted && theme === "dark"}
+              onCheckedChange={handleThemeChange}
+            />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Globe className="h-5 w-5 text-muted-foreground" />
-              <Label>Language</Label>
+              <div>
+                <Label>Language</Label>
+                <p className="text-xs text-muted-foreground">Interface language</p>
+              </div>
             </div>
-            <Select value={language} onValueChange={(value: "en" | "am") => setLanguage(value)}>
+            <Select value={appLanguage} onValueChange={handleLanguageChange}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -200,16 +215,18 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <CreditCard className="h-5 w-5 text-muted-foreground" />
-              <Label>Currency</Label>
+              <div>
+                <Label>Currency</Label>
+                <p className="text-xs text-muted-foreground">Display prices in</p>
+              </div>
             </div>
-            <Select value={currency} onValueChange={(value: "USD" | "ETB" | "EUR") => setCurrency(value)}>
+            <Select value={appCurrency} onValueChange={handleCurrencyChange}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="USD">USD ($)</SelectItem>
                 <SelectItem value="ETB">ETB (Br)</SelectItem>
-                <SelectItem value="EUR">EUR (€)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -228,7 +245,7 @@ export default function SettingsPage() {
               <Label>Email Notifications</Label>
               <p className="text-sm text-muted-foreground">Booking confirmations & updates</p>
             </div>
-            <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
+            <Switch checked={emailNotifications} onCheckedChange={handleEmailNotificationsChange} />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -236,7 +253,7 @@ export default function SettingsPage() {
               <Label>Push Notifications</Label>
               <p className="text-sm text-muted-foreground">Real-time alerts on your device</p>
             </div>
-            <Switch checked={pushNotifications} onCheckedChange={setPushNotifications} />
+            <Switch checked={pushNotifications} onCheckedChange={handlePushNotificationsChange} />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -244,7 +261,7 @@ export default function SettingsPage() {
               <Label>Marketing Emails</Label>
               <p className="text-sm text-muted-foreground">Deals, tips, and travel inspiration</p>
             </div>
-            <Switch checked={marketingEmails} onCheckedChange={setMarketingEmails} />
+            <Switch checked={marketingEmails} onCheckedChange={handleMarketingEmailsChange} />
           </div>
         </CardContent>
       </Card>

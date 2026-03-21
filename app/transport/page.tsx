@@ -7,7 +7,7 @@ import { Footer } from "@/components/ui/footer"
 import { ListingCard } from "@/components/shared/listing-card"
 import { DiscoveryFilters } from "@/components/shared/discovery-filters"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
-import { fetchTransport } from "@/lib/api/mock-api"
+import { getTransports } from "@/lib/api/transport"
 import type { Transport } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -44,16 +44,20 @@ export default function TransportPage() {
   useEffect(() => {
     async function loadTransport() {
       setLoading(true)
-      const params = {
-        city: searchParams.get("city") || undefined,
-        type: searchParams.get("type") || undefined,
-        search: searchParams.get("search") || undefined,
+      try {
+        // City filter uses slug from URL params
+        const data = await getTransports({
+          city: searchParams.get("city") || undefined,
+          service_type: searchParams.get("type") || undefined,
+          search: searchParams.get("search") || undefined,
+        })
+        setTransport(data)
+      } catch (error) {
+        console.error("[v0] Failed to load transport:", error)
+        setTransport([])
+      } finally {
+        setLoading(false)
       }
-      const response = await fetchTransport(params)
-      if (response.data) {
-        setTransport(response.data)
-      }
-      setLoading(false)
     }
     loadTransport()
   }, [searchParams])
@@ -92,23 +96,30 @@ export default function TransportPage() {
                     Showing {transport.length} transport option{transport.length !== 1 ? "s" : ""}
                   </p>
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {transport.map((item) => (
+                    {transport.map((item: any) => (
                       <ListingCard
                         key={item.id}
                         id={item.id}
+                        slug={item.slug}
                         type="transport"
                         name={item.name}
-                        imageUrl={item.images[0]?.url || "/car-driver.jpg"}
-                        location={item.city?.name || ""}
-                        city={item.city?.name || ""}
-                        description={item.description}
-                        priceRange={item.priceRange}
-                        priceDisplay={item.pricePerTrip ? `$${item.pricePerTrip} / trip` : `$${item.pricePerDay} / day`}
-                        rating={item.rating}
-                        reviewCount={item.reviewCount}
-                        isVerified={item.isVerified}
-                        isFeatured={item.isFeatured}
-                        tags={[item.type.replace("-", " "), ...(item.languages || []).slice(0, 2)]}
+                        imageUrl={item.cover_photo || item.images?.[0]?.url || "/car-driver.jpg"}
+                        location={item.city_name || item.city?.name || ""}
+                        city={item.city_name || item.city?.name || ""}
+                        description={item.description || ""}
+                        priceRange={item.priceRange || item.price_range}
+                        priceDisplay={
+                          item.price_per_day ? `$${item.price_per_day} / day` :
+                          item.price_per_hour ? `$${item.price_per_hour} / hour` :
+                          item.pricePerTrip ? `$${item.pricePerTrip} / trip` :
+                          item.pricePerDay ? `$${item.pricePerDay} / day` :
+                          "Contact for price"
+                        }
+                        rating={item.average_rating ? parseFloat(item.average_rating) : item.rating || 0}
+                        reviewCount={item.review_count || item.reviewCount || 0}
+                        isVerified={item.is_verified ?? item.isVerified ?? true}
+                        isFeatured={item.is_featured ?? item.isFeatured ?? false}
+                        tags={[item.vehicle_type || item.type, ...(item.languages || []).slice(0, 2)].filter(Boolean)}
                         safetyScore={item.safetyScore}
                       />
                     ))}

@@ -253,3 +253,121 @@ export async function registerWithGoogle(idToken: string, role?: "traveler" | "p
 
   return response
 }
+
+// ============================================================================
+// TWO-FACTOR AUTHENTICATION (2FA)
+// ============================================================================
+
+export interface TwoFactorSetupResponse {
+  secret: string
+  qr_code_url: string
+  backup_codes?: string[]
+}
+
+export interface TwoFactorStatusResponse {
+  is_enabled: boolean
+  enabled_at?: string
+}
+
+/**
+ * Get 2FA status for current user
+ */
+export async function get2FAStatus(): Promise<TwoFactorStatusResponse> {
+  return apiGet<TwoFactorStatusResponse>("/auth/2fa/status/")
+}
+
+/**
+ * Initiate 2FA setup - returns QR code and secret
+ */
+export async function setup2FA(): Promise<TwoFactorSetupResponse> {
+  return apiPost<TwoFactorSetupResponse>("/auth/2fa/setup/", {})
+}
+
+/**
+ * Enable 2FA after verifying with code from authenticator app
+ */
+export async function enable2FA(code: string): Promise<{ backup_codes: string[] }> {
+  return apiPost<{ backup_codes: string[] }>("/auth/2fa/enable/", { code })
+}
+
+/**
+ * Disable 2FA (requires password confirmation)
+ */
+export async function disable2FA(password: string): Promise<void> {
+  return apiPost("/auth/2fa/disable/", { password })
+}
+
+/**
+ * Verify 2FA code during login
+ */
+export async function verify2FA(code: string, temp_token: string): Promise<AuthResponse> {
+  const response = await apiPost<AuthResponse>("/auth/2fa/verify/", { code, temp_token })
+
+  if (response.access_token) {
+    saveToken(response.access_token)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aman_refresh_token", response.refresh_token)
+    }
+  }
+
+  return response
+}
+
+/**
+ * Regenerate backup codes
+ */
+export async function regenerateBackupCodes(password: string): Promise<{ backup_codes: string[] }> {
+  return apiPost<{ backup_codes: string[] }>("/auth/2fa/backup-codes/regenerate/", { password })
+}
+
+/**
+ * Use a backup code to login
+ */
+export async function useBackupCode(backup_code: string, temp_token: string): Promise<AuthResponse> {
+  const response = await apiPost<AuthResponse>("/auth/2fa/backup-codes/use/", { backup_code, temp_token })
+
+  if (response.access_token) {
+    saveToken(response.access_token)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aman_refresh_token", response.refresh_token)
+    }
+  }
+
+  return response
+}
+
+// ============================================================================
+// ACTIVE SESSIONS
+// ============================================================================
+
+export interface ActiveSession {
+  id: string
+  device_name: string
+  device_type: "mobile" | "desktop" | "tablet"
+  browser: string
+  ip_address: string
+  location?: string
+  last_active: string
+  is_current: boolean
+}
+
+/**
+ * Get all active sessions for current user
+ */
+export async function getActiveSessions(): Promise<ActiveSession[]> {
+  return apiGet<ActiveSession[]>("/auth/sessions/")
+}
+
+/**
+ * Revoke a specific session
+ */
+export async function revokeSession(sessionId: string): Promise<void> {
+  return apiPost(`/auth/sessions/${sessionId}/revoke/`, {})
+}
+
+/**
+ * Revoke all other sessions (except current)
+ */
+export async function revokeAllOtherSessions(): Promise<void> {
+  return apiPost("/auth/sessions/revoke-all/", {})
+}

@@ -7,7 +7,7 @@ import { Footer } from "@/components/ui/footer"
 import { ListingCard } from "@/components/shared/listing-card"
 import { DiscoveryFilters } from "@/components/shared/discovery-filters"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
-import { fetchExperiences } from "@/lib/api/mock-api"
+import { getExperiences } from "@/lib/api/experiences"
 import type { Experience } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -45,17 +45,20 @@ export default function ExperiencesPage() {
   useEffect(() => {
     async function loadExperiences() {
       setLoading(true)
-      const params = {
-        city: searchParams.get("city") || undefined,
-        category: searchParams.get("category") || undefined,
-        priceRange: searchParams.get("priceRange") || undefined,
-        search: searchParams.get("search") || undefined,
+      try {
+        // City filter uses slug from URL params
+        const data = await getExperiences({
+          city: searchParams.get("city") || undefined,
+          category: searchParams.get("category") || undefined,
+          search: searchParams.get("search") || undefined,
+        })
+        setExperiences(data)
+      } catch (error) {
+        console.error("[v0] Failed to load experiences:", error)
+        setExperiences([])
+      } finally {
+        setLoading(false)
       }
-      const response = await fetchExperiences(params)
-      if (response.data) {
-        setExperiences(response.data)
-      }
-      setLoading(false)
     }
     loadExperiences()
   }, [searchParams])
@@ -92,23 +95,28 @@ export default function ExperiencesPage() {
                     Showing {experiences.length} experience{experiences.length !== 1 ? "s" : ""}
                   </p>
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {experiences.map((experience) => (
+                    {experiences.map((experience: any) => (
                       <ListingCard
                         key={experience.id}
                         id={experience.id}
+                        slug={experience.slug}
                         type="experience"
                         name={experience.name}
-                        imageUrl={experience.images[0]?.url || "/tour-experience.jpg"}
-                        location={experience.city?.name || ""}
-                        city={experience.city?.name || ""}
-                        description={experience.description}
-                        priceRange={experience.priceRange}
-                        priceDisplay={`$${experience.price} / person`}
-                        rating={experience.rating}
-                        reviewCount={experience.reviewCount}
-                        isVerified={experience.isVerified}
-                        isFeatured={experience.isFeatured}
-                        tags={[experience.category, experience.duration]}
+                        imageUrl={experience.cover_photo || experience.images?.[0]?.url || "/tour-experience.jpg"}
+                        location={experience.city_name || experience.city?.name || ""}
+                        city={experience.city_name || experience.city?.name || ""}
+                        description={experience.description || experience.short_description || ""}
+                        priceRange={experience.priceRange || experience.price_range}
+                        priceDisplay={
+                          experience.price_per_person ? `$${experience.price_per_person} / person` :
+                          experience.price ? `$${experience.price} / person` :
+                          "Contact for price"
+                        }
+                        rating={experience.average_rating ? parseFloat(experience.average_rating) : experience.rating || 0}
+                        reviewCount={experience.review_count || experience.reviewCount || 0}
+                        isVerified={experience.is_verified ?? experience.isVerified ?? true}
+                        isFeatured={experience.is_featured ?? experience.isFeatured ?? false}
+                        tags={[experience.trip_type || experience.category, experience.duration_days ? `${experience.duration_days} days` : experience.duration].filter(Boolean)}
                         safetyScore={experience.safetyScore}
                       />
                     ))}
