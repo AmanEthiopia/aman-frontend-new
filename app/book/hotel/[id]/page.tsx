@@ -425,7 +425,7 @@ export default function BookHotelPage() {
                     <CardContent className="p-4">
                       <div className="mb-4 overflow-hidden rounded-lg">
                         <img
-                          src={hotel.images[0]?.url || "/grand-hotel-exterior.png"}
+                          src={hotel.images?.[0]?.url || hotel.images?.[0]?.image_url || hotel.cover_photo || "/grand-hotel-exterior.png"}
                           alt={hotel.name}
                           className="h-40 w-full object-cover"
                         />
@@ -436,7 +436,7 @@ export default function BookHotelPage() {
                         {hotel.area}, {hotel.city?.name}
                       </div>
                       <div className="mb-4 flex items-center gap-2 text-sm">
-                        {hotel.isVerified && (
+                        {(hotel.isVerified || hotel.is_verified) && (
                           <span className="flex items-center gap-1 text-primary">
                             <Shield className="h-3.5 w-3.5" />
                             Verified
@@ -444,7 +444,7 @@ export default function BookHotelPage() {
                         )}
                         <span className="flex items-center gap-1">
                           <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-                          {hotel.rating.toFixed(1)}
+                          {(hotel.rating || hotel.average_rating || 0).toFixed(1)}
                         </span>
                       </div>
                       <div className="border-t border-border pt-4">
