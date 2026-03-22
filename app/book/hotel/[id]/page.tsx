@@ -444,7 +444,7 @@ export default function BookHotelPage() {
                         )}
                         <span className="flex items-center gap-1">
                           <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-                          {(hotel.rating || hotel.average_rating || 0).toFixed(1)}
+                          {parseFloat(String(hotel.rating || hotel.average_rating || 0)).toFixed(1)}
                         </span>
                       </div>
                       <div className="border-t border-border pt-4">
