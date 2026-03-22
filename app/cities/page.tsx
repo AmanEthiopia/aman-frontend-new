@@ -1,14 +1,24 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
-import { Compass, Loader2, AlertCircle } from "lucide-react"
+import { Compass, Loader2, AlertCircle, Hotel, Utensils } from "lucide-react"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { getCities, type City } from "@/lib/api/content"
+import { searchHotels } from "@/lib/api/hotels"
+import { getRestaurants } from "@/lib/api/restaurants"
+import { getExperiences } from "@/lib/api/experiences"
+
+interface CityCounts {
+  hotels: number
+  restaurants: number
+  experiences: number
+  loading: boolean
+}
 
 function getMediaUrl(path: string | null | undefined): string {
   if (!path) return ""
@@ -22,6 +32,45 @@ export default function CitiesPage() {
   const [cities, setCities] = useState<City[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [liveCounts, setLiveCounts] = useState<Record<string, CityCounts>>({})
+
+  // Fetch live counts for a single city
+  const fetchCityCounts = useCallback(async (city: City) => {
+    const citySlug = city.slug
+    
+    setLiveCounts(prev => ({
+      ...prev,
+      [citySlug]: {
+        hotels: city.hotels_count || 0,
+        restaurants: city.restaurants_count || 0,
+        experiences: city.experiences_count || 0,
+        loading: true,
+      }
+    }))
+
+    try {
+      const [hotelsRes, restaurants, experiences] = await Promise.all([
+        searchHotels({ city: citySlug, page_size: 1 }).catch(() => ({ count: 0 })),
+        getRestaurants({ city: citySlug }).catch(() => []),
+        getExperiences({ city: citySlug }).catch(() => []),
+      ])
+
+      setLiveCounts(prev => ({
+        ...prev,
+        [citySlug]: {
+          hotels: hotelsRes.count ?? city.hotels_count ?? 0,
+          restaurants: Array.isArray(restaurants) ? restaurants.length : (city.restaurants_count ?? 0),
+          experiences: Array.isArray(experiences) ? experiences.length : (city.experiences_count ?? 0),
+          loading: false,
+        }
+      }))
+    } catch {
+      setLiveCounts(prev => ({
+        ...prev,
+        [citySlug]: { ...prev[citySlug], loading: false }
+      }))
+    }
+  }, [])
 
   useEffect(() => {
     loadCities()
@@ -33,6 +82,8 @@ export default function CitiesPage() {
       setError(null)
       const data = await getCities()
       setCities(data)
+      // Fetch live counts for all cities
+      data.forEach(city => fetchCityCounts(city))
     } catch (err: any) {
       setError(err.message || "Failed to load cities")
     } finally {
@@ -107,12 +158,42 @@ export default function CitiesPage() {
                         <p className="text-sm font-medium text-white/90">{city.nickname}</p>
                       )}
                       <p className="text-white/80">{city.country}</p>
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-white/70">
-                        <span>{city.hotels_count || 0} Hotels</span>
-                        <span>•</span>
-                        <span>{city.restaurants_count || 0} Restaurants</span>
-                        <span>•</span>
-                        <span>{city.experiences_count || 0} Experiences</span>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/80">
+                        {liveCounts[city.slug]?.loading ? (
+                          <>
+                            <span className="inline-flex items-center gap-1">
+                              <Hotel className="h-3 w-3" />
+                              <span className="inline-block h-3 w-4 animate-pulse rounded bg-white/30" />
+                            </span>
+                            <span className="text-white/50">•</span>
+                            <span className="inline-flex items-center gap-1">
+                              <Utensils className="h-3 w-3" />
+                              <span className="inline-block h-3 w-4 animate-pulse rounded bg-white/30" />
+                            </span>
+                            <span className="text-white/50">•</span>
+                            <span className="inline-flex items-center gap-1">
+                              <Compass className="h-3 w-3" />
+                              <span className="inline-block h-3 w-4 animate-pulse rounded bg-white/30" />
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="inline-flex items-center gap-1">
+                              <Hotel className="h-3 w-3" />
+                              {liveCounts[city.slug]?.hotels ?? city.hotels_count ?? 0} Hotels
+                            </span>
+                            <span className="text-white/50">•</span>
+                            <span className="inline-flex items-center gap-1">
+                              <Utensils className="h-3 w-3" />
+                              {liveCounts[city.slug]?.restaurants ?? city.restaurants_count ?? 0} Restaurants
+                            </span>
+                            <span className="text-white/50">•</span>
+                            <span className="inline-flex items-center gap-1">
+                              <Compass className="h-3 w-3" />
+                              {liveCounts[city.slug]?.experiences ?? city.experiences_count ?? 0} Experiences
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </Link>
