@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Shield, MapPin, Star, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useApp } from "@/lib/contexts/app-context"
+import { SafeCardImage } from "@/components/ui/safe-image"
 
 interface ListingCardProps {
   id: string
@@ -59,33 +60,36 @@ export function ListingCard({
   return (
     <Card className="group h-full overflow-hidden transition-shadow hover:shadow-lg">
       <Link href={href}>
-        <div className="relative aspect-[4/3] overflow-hidden">
-          <img
-            src={imageUrl || "/placeholder.svg?height=300&width=400&query=travel destination"}
-            alt={name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-          {/* Badges */}
-          <div className="absolute left-3 top-3 flex gap-2">
-            {isVerified && (
-              <Badge className="flex items-center gap-1 bg-primary text-primary-foreground">
-                <Shield className="h-3 w-3" />
-                Verified
-              </Badge>
-            )}
-            {isFeatured && <Badge variant="secondary">Featured</Badge>}
-          </div>
-          {/* Price Badge */}
-          <div className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-medium ${priceInfo.color}`}>
-            {priceInfo.label}
-          </div>
-          {/* Safety Score */}
-          {safetyScore && safetyScore >= 90 && (
-            <div className="absolute bottom-3 left-3 rounded-full bg-green-500/90 px-2 py-1 text-xs font-medium text-white">
-              Safety: {safetyScore}%
-            </div>
-          )}
-        </div>
+        <SafeCardImage
+          src={imageUrl || "/placeholder.svg?height=300&width=400&query=travel destination"}
+          alt={name}
+          aspectRatio="aspect-[4/3]"
+          enableHoverZoom={true}
+          overlay={
+            <>
+              {/* Badges */}
+              <div className="absolute left-3 top-3 flex gap-2">
+                {isVerified && (
+                  <Badge className="flex items-center gap-1 bg-primary text-primary-foreground">
+                    <Shield className="h-3 w-3" />
+                    Verified
+                  </Badge>
+                )}
+                {isFeatured && <Badge variant="secondary">Featured</Badge>}
+              </div>
+              {/* Price Badge */}
+              <div className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-medium ${priceInfo.color}`}>
+                {priceInfo.label}
+              </div>
+              {/* Safety Score */}
+              {safetyScore && safetyScore >= 90 && (
+                <div className="absolute bottom-3 left-3 rounded-full bg-green-500/90 px-2 py-1 text-xs font-medium text-white">
+                  Safety: {safetyScore}%
+                </div>
+              )}
+            </>
+          }
+        />
       </Link>
       <CardContent className="p-4">
         <div className="mb-2 flex items-start justify-between gap-2">

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Shield, MapPin, Wifi, Car, Utensils } from "lucide-react"
 import type { Hotel, City } from "@/lib/types"
+import { SafeCardImage } from "@/components/ui/safe-image"
 
 interface HotelCardProps {
   hotel: Hotel & { city?: City }
@@ -28,25 +29,28 @@ export function HotelCard({ hotel }: HotelCardProps) {
   return (
     <Link href={`/hotels/${hotel.id}`}>
       <Card className="group h-full overflow-hidden transition-shadow hover:shadow-lg">
-        <div className="relative aspect-[4/3] overflow-hidden">
-          <img
-            src={hotel.images?.[0]?.image_url || "/placeholder.svg?height=300&width=400&query=hotel room interior"}
-            alt={hotel.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-          <div className="absolute left-3 top-3 flex gap-2">
-            {hotel.is_verified && (
-              <Badge className="flex items-center gap-1 bg-primary text-primary-foreground">
-                <Shield className="h-3 w-3" />
-                Verified
-              </Badge>
-            )}
-            {hotel.is_featured && <Badge variant="secondary">Featured</Badge>}
-          </div>
-          <div className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-medium ${priceInfo.color}`}>
-            {priceInfo.label}
-          </div>
-        </div>
+        <SafeCardImage
+          src={hotel.images?.[0]?.image_url || "/placeholder.svg?height=300&width=400&query=hotel room interior"}
+          alt={hotel.name}
+          aspectRatio="aspect-[4/3]"
+          enableHoverZoom={true}
+          overlay={
+            <>
+              <div className="absolute left-3 top-3 flex gap-2">
+                {hotel.is_verified && (
+                  <Badge className="flex items-center gap-1 bg-primary text-primary-foreground">
+                    <Shield className="h-3 w-3" />
+                    Verified
+                  </Badge>
+                )}
+                {hotel.is_featured && <Badge variant="secondary">Featured</Badge>}
+              </div>
+              <div className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-medium ${priceInfo.color}`}>
+                {priceInfo.label}
+              </div>
+            </>
+          }
+        />
         <CardContent className="p-4">
           <div className="mb-2 flex items-start justify-between gap-2">
             <h3 className="line-clamp-1 font-semibold text-foreground group-hover:text-primary">{hotel.name}</h3>
