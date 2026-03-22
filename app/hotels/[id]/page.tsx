@@ -283,12 +283,24 @@ export default function HotelDetailPage() {
                 <div className="mb-8">
                   <h2 className="mb-4 text-lg font-semibold">Amenities</h2>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {(hotel.amenities || hotel.facilities || []).map((amenity: string) => (
-                      <div key={amenity} className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
-                        {amenityIcons[amenity] || <Sparkles className="h-4 w-4 text-primary" />}
-                        <span className="text-sm">{amenity}</span>
-                      </div>
-                    ))}
+                    {(hotel.amenities || hotel.facilities || []).map((amenity: any, index: number) => {
+                      // Handle both string format and object format from API
+                      const amenityName = typeof amenity === 'string' 
+                        ? amenity 
+                        : (amenity?.amenity_type || amenity?.name || 'Unknown')
+                      const amenityKey = typeof amenity === 'string' 
+                        ? amenity 
+                        : (amenity?.id || `amenity-${index}`)
+                      const isFree = typeof amenity === 'object' && amenity?.is_free
+                      
+                      return (
+                        <div key={amenityKey} className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
+                          {amenityIcons[amenityName] || <Sparkles className="h-4 w-4 text-primary" />}
+                          <span className="text-sm">{amenityName}</span>
+                          {isFree && <Badge variant="outline" className="text-xs">Free</Badge>}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}

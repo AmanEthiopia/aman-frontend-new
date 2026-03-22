@@ -66,12 +66,22 @@ export function HotelCard({ hotel }: HotelCardProps) {
           {/* Amenities */}
           {displayAmenities.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
-              {displayAmenities.map((amenity) => (
-                <span key={amenity} className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
-                  {amenityIcons[amenity] || null}
-                  {amenity}
-                </span>
-              ))}
+              {displayAmenities.map((amenity: any, index: number) => {
+                // Handle both string format and object format from API
+                const amenityName = typeof amenity === 'string' 
+                  ? amenity 
+                  : (amenity?.amenity_type || amenity?.name || 'Unknown')
+                const amenityKey = typeof amenity === 'string' 
+                  ? amenity 
+                  : (amenity?.id || `amenity-${index}`)
+                
+                return (
+                  <span key={amenityKey} className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
+                    {amenityIcons[amenityName] || null}
+                    {amenityName}
+                  </span>
+                )
+              })}
               {hotel.amenities && hotel.amenities.length > 4 && (
                 <span className="rounded-md bg-muted px-2 py-1 text-xs">+{hotel.amenities.length - 4} more</span>
               )}

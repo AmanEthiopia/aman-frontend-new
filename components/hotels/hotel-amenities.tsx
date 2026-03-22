@@ -18,8 +18,17 @@ import {
   Users,
 } from "lucide-react"
 
+// Amenity can be a string or an object from the API
+type AmenityItem = string | {
+  id?: string
+  amenity_type?: string
+  name?: string
+  is_free?: boolean
+  description?: string
+}
+
 interface HotelAmenitiesProps {
-  amenities: string[]
+  amenities: AmenityItem[]
 }
 
 const amenityConfig: Record<string, { icon: React.ElementType; label: string }> = {
@@ -60,11 +69,19 @@ export function HotelAmenities({ amenities }: HotelAmenitiesProps) {
     <div className="rounded-xl border border-border bg-card p-6">
       <h2 className="mb-4 text-lg font-semibold">Amenities</h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-        {amenities.map((amenity) => {
-          const config = amenityConfig[amenity] || { icon: Sparkles, label: amenity }
+        {amenities.map((amenity, index) => {
+          // Handle both string format and object format from API
+          const amenityName = typeof amenity === 'string' 
+            ? amenity 
+            : (amenity?.amenity_type || amenity?.name || 'Unknown')
+          const amenityKey = typeof amenity === 'string' 
+            ? amenity 
+            : (amenity?.id || `amenity-${index}`)
+          
+          const config = amenityConfig[amenityName] || { icon: Sparkles, label: amenityName }
           const Icon = config.icon
           return (
-            <div key={amenity} className="flex items-center gap-3">
+            <div key={amenityKey} className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                 <Icon className="h-5 w-5 text-primary" />
               </div>
