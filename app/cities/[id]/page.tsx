@@ -8,10 +8,21 @@ import { Footer } from "@/components/ui/footer"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getCityDetail, getAttractions, getSafetyInfo, type CityDetail, type Attraction, type SafetyInfo } from "@/lib/api/content"
-import { ArrowLeft, Hotel, Utensils, Compass, Shield, MapPin, Loader2 } from "lucide-react"
+import { searchHotels } from "@/lib/api/hotels"
+import { getRestaurants } from "@/lib/api/restaurants"
+import { getExperiences } from "@/lib/api/experiences"
+import { ArrowLeft, Hotel, Utensils, Compass, Shield, MapPin, Loader2, Car } from "lucide-react"
 import { notFound } from "next/navigation"
 
 const API_BASE = "https://api.aman.yichalal.ai"
+
+// Live counts fetched using the same endpoints as listing pages
+interface LiveCounts {
+  hotels: number
+  restaurants: number
+  experiences: number
+  attractions: number
+}
 
 function getMediaUrl(path: string | null | undefined): string {
   if (!path) return ""
@@ -30,24 +41,44 @@ export default function CityDetailPage() {
   const [safetyInfo, setSafetyInfo] = useState<SafetyInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [liveCounts, setLiveCounts] = useState<LiveCounts>({
+    hotels: 0,
+    restaurants: 0,
+    experiences: 0,
+    attractions: 0,
+  })
+  const [countsLoading, setCountsLoading] = useState(true)
 
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true)
+        setCountsLoading(true)
         const cityData = await getCityDetail(slug)
         setCity(cityData)
         
-        // Load attractions and safety info for this city
+        // Load attractions and safety info for this city using slug for consistent filtering
         const [attractionsData, safetyData] = await Promise.all([
-          getAttractions({ city: cityData.id }).catch(() => []),
-          getSafetyInfo({ city: cityData.id }).catch(() => [])
+          getAttractions({ city: slug }).catch(() => []),
+          getSafetyInfo({ city: slug }).catch(() => [])
         ])
         
         setAttractions(attractionsData)
         setSafetyInfo(safetyData)
+        
+        // Set initial counts from city detail (may be cached/stale)
+        setLiveCounts({
+          hotels: cityData.hotels_count || 0,
+          restaurants: cityData.restaurants_count || 0,
+          experiences: cityData.experiences_count || 0,
+          attractions: attractionsData.length,
+        })
+        setCountsLoading(false)
+        
+        // Fetch live counts from the same endpoints used by listing pages
+        // This ensures counts match what users see when they click through
+        fetchLiveCounts(slug)
       } catch (err) {
-        console.error("Failed to load city:", err)
         setError("City not found")
       } finally {
         setLoading(false)
@@ -58,6 +89,26 @@ export default function CityDetailPage() {
       loadData()
     }
   }, [slug])
+  
+  // Fetch live counts using the same API endpoints as listing pages
+  async function fetchLiveCounts(citySlug: string) {
+    try {
+      const [hotelsRes, restaurants, experiences] = await Promise.all([
+        searchHotels({ city: citySlug, page_size: 1 }).catch(() => ({ count: 0 })),
+        getRestaurants({ city: citySlug }).catch(() => []),
+        getExperiences({ city: citySlug }).catch(() => []),
+      ])
+      
+      setLiveCounts(prev => ({
+        ...prev,
+        hotels: hotelsRes.count ?? 0,
+        restaurants: Array.isArray(restaurants) ? restaurants.length : 0,
+        experiences: Array.isArray(experiences) ? experiences.length : 0,
+      }))
+    } catch {
+      // Keep the counts from city detail if live fetch fails
+    }
+  }
 
   if (loading) {
     return (
@@ -102,23 +153,48 @@ export default function CityDetailPage() {
                 <p className="text-xl font-medium text-white/90">{city.nickname}</p>
               )}
               <p className="mt-2 max-w-2xl text-white/70">{city.description || city.short_description}</p>
-              <div className="mt-4 flex flex-wrap gap-4">
-                <div className="flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm text-white">
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href={`/hotels?city=${city.slug}`}
+                  className="flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm text-white transition-colors hover:bg-white/30"
+                >
                   <Hotel className="h-4 w-4" />
-                  {city.hotels_count || 0} Hotels
-                </div>
-                <div className="flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm text-white">
+                  {countsLoading ? (
+                    <span className="inline-block h-4 w-6 animate-pulse rounded bg-white/30" />
+                  ) : (
+                    <span className="font-medium">{liveCounts.hotels}</span>
+                  )}
+                  <span>Hotels</span>
+                </Link>
+                <Link
+                  href={`/restaurants?city=${city.slug}`}
+                  className="flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm text-white transition-colors hover:bg-white/30"
+                >
                   <Utensils className="h-4 w-4" />
-                  {city.restaurants_count || 0} Restaurants
-                </div>
-                <div className="flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm text-white">
+                  {countsLoading ? (
+                    <span className="inline-block h-4 w-6 animate-pulse rounded bg-white/30" />
+                  ) : (
+                    <span className="font-medium">{liveCounts.restaurants}</span>
+                  )}
+                  <span>Restaurants</span>
+                </Link>
+                <Link
+                  href={`/experiences?city=${city.slug}`}
+                  className="flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm text-white transition-colors hover:bg-white/30"
+                >
                   <Compass className="h-4 w-4" />
-                  {city.experiences_count || 0} Experiences
-                </div>
-                {city.attractions_count > 0 && (
+                  {countsLoading ? (
+                    <span className="inline-block h-4 w-6 animate-pulse rounded bg-white/30" />
+                  ) : (
+                    <span className="font-medium">{liveCounts.experiences}</span>
+                  )}
+                  <span>Experiences</span>
+                </Link>
+                {liveCounts.attractions > 0 && (
                   <div className="flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm text-white">
                     <MapPin className="h-4 w-4" />
-                    {city.attractions_count} Attractions
+                    <span className="font-medium">{liveCounts.attractions}</span>
+                    <span>Attractions</span>
                   </div>
                 )}
               </div>
@@ -194,12 +270,15 @@ export default function CityDetailPage() {
                   <Hotel className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mb-2 text-lg font-semibold">Hotels in {city.name}</h3>
                   <p className="text-muted-foreground">
-                    {city.hotels_count > 0 
-                      ? `Explore ${city.hotels_count} verified hotels in ${city.name}.`
-                      : `We're working on adding hotels in ${city.name}.`
-                    }
+                    {countsLoading ? (
+                      <span className="inline-block h-4 w-48 animate-pulse rounded bg-muted" />
+                    ) : liveCounts.hotels > 0 ? (
+                      `Explore ${liveCounts.hotels} verified hotels in ${city.name}.`
+                    ) : (
+                      `We're working on adding hotels in ${city.name}.`
+                    )}
                   </p>
-                  {city.hotels_count > 0 && (
+                  {liveCounts.hotels > 0 && (
                     <Link 
                       href={`/hotels?city=${city.slug}`}
                       className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
@@ -215,12 +294,15 @@ export default function CityDetailPage() {
                   <Utensils className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mb-2 text-lg font-semibold">Restaurants in {city.name}</h3>
                   <p className="text-muted-foreground">
-                    {city.restaurants_count > 0 
-                      ? `Discover ${city.restaurants_count} restaurants in ${city.name}.`
-                      : `We're working on adding restaurants in ${city.name}.`
-                    }
+                    {countsLoading ? (
+                      <span className="inline-block h-4 w-48 animate-pulse rounded bg-muted" />
+                    ) : liveCounts.restaurants > 0 ? (
+                      `Discover ${liveCounts.restaurants} restaurants in ${city.name}.`
+                    ) : (
+                      `We're working on adding restaurants in ${city.name}.`
+                    )}
                   </p>
-                  {city.restaurants_count > 0 && (
+                  {liveCounts.restaurants > 0 && (
                     <Link 
                       href={`/restaurants?city=${city.slug}`}
                       className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
@@ -236,12 +318,15 @@ export default function CityDetailPage() {
                   <Compass className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mb-2 text-lg font-semibold">Experiences in {city.name}</h3>
                   <p className="text-muted-foreground">
-                    {city.experiences_count > 0 
-                      ? `Find ${city.experiences_count} unique experiences in ${city.name}.`
-                      : `We're working on adding experiences in ${city.name}.`
-                    }
+                    {countsLoading ? (
+                      <span className="inline-block h-4 w-48 animate-pulse rounded bg-muted" />
+                    ) : liveCounts.experiences > 0 ? (
+                      `Find ${liveCounts.experiences} unique experiences in ${city.name}.`
+                    ) : (
+                      `We're working on adding experiences in ${city.name}.`
+                    )}
                   </p>
-                  {city.experiences_count > 0 && (
+                  {liveCounts.experiences > 0 && (
                     <Link 
                       href={`/experiences?city=${city.slug}`}
                       className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
