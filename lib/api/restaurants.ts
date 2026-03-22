@@ -22,6 +22,14 @@ export interface PaginatedRestaurants {
  * City filter uses slug, not UUID
  */
 export async function getRestaurants(filters: RestaurantFilters = {}): Promise<Restaurant[]> {
+  const response = await getRestaurantsPaginated(filters)
+  return response.results
+}
+
+/**
+ * Fetch restaurants with pagination info (includes total count)
+ */
+export async function getRestaurantsPaginated(filters: RestaurantFilters = {}): Promise<PaginatedRestaurants> {
   const params = new URLSearchParams()
   
   if (filters.city && filters.city !== "all") {
@@ -47,20 +55,23 @@ export async function getRestaurants(filters: RestaurantFilters = {}): Promise<R
   const endpoint = queryString ? `/restaurants/?${queryString}` : "/restaurants/"
   
   try {
-    // Try paginated response first
     const response = await apiFetch<PaginatedRestaurants | Restaurant[]>(endpoint)
     
     // Handle both paginated and array responses
     if (Array.isArray(response)) {
-      return response
+      return {
+        count: response.length,
+        next: null,
+        previous: null,
+        results: response,
+      }
     }
     if (response && "results" in response) {
-      return response.results
+      return response
     }
-    return []
+    return { count: 0, next: null, previous: null, results: [] }
   } catch (error) {
-    console.error("[v0] Failed to fetch restaurants:", error)
-    return []
+    return { count: 0, next: null, previous: null, results: [] }
   }
 }
 

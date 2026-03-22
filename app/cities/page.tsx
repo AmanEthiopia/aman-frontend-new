@@ -10,8 +10,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { getCities, type City } from "@/lib/api/content"
 import { searchHotels } from "@/lib/api/hotels"
-import { getRestaurants } from "@/lib/api/restaurants"
-import { getExperiences } from "@/lib/api/experiences"
+import { getRestaurantsPaginated } from "@/lib/api/restaurants"
+import { getExperiencesPaginated } from "@/lib/api/experiences"
 
 interface CityCounts {
   hotels: number
@@ -49,18 +49,19 @@ export default function CitiesPage() {
     }))
 
     try {
-      const [hotelsRes, restaurants, experiences] = await Promise.all([
-        searchHotels({ city: citySlug, page_size: 1 }).catch(() => ({ count: 0 })),
-        getRestaurants({ city: citySlug }).catch(() => []),
-        getExperiences({ city: citySlug }).catch(() => []),
+      // Use paginated endpoints to get accurate total counts
+      const [hotelsRes, restaurantsRes, experiencesRes] = await Promise.all([
+        searchHotels({ city: citySlug }).catch(() => ({ count: 0 })),
+        getRestaurantsPaginated({ city: citySlug }).catch(() => ({ count: 0 })),
+        getExperiencesPaginated({ city: citySlug }).catch(() => ({ count: 0 })),
       ])
 
       setLiveCounts(prev => ({
         ...prev,
         [citySlug]: {
           hotels: hotelsRes.count ?? city.hotels_count ?? 0,
-          restaurants: Array.isArray(restaurants) ? restaurants.length : (city.restaurants_count ?? 0),
-          experiences: Array.isArray(experiences) ? experiences.length : (city.experiences_count ?? 0),
+          restaurants: restaurantsRes.count ?? city.restaurants_count ?? 0,
+          experiences: experiencesRes.count ?? city.experiences_count ?? 0,
           loading: false,
         }
       }))

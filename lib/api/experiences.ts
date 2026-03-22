@@ -20,8 +20,18 @@ export interface PaginatedExperiences {
 /**
  * Fetch experiences/trips with optional filters
  * City filter uses slug, not UUID
+ * Tries multiple endpoints: /experiences/, /trips/
  */
 export async function getExperiences(filters: ExperienceFilters = {}): Promise<Experience[]> {
+  const response = await getExperiencesPaginated(filters)
+  return response.results
+}
+
+/**
+ * Fetch experiences with pagination info (includes total count)
+ * Tries /experiences/ endpoint first, falls back to /trips/
+ */
+export async function getExperiencesPaginated(filters: ExperienceFilters = {}): Promise<PaginatedExperiences> {
   const params = new URLSearchParams()
   
   if (filters.city && filters.city !== "all") {
@@ -44,22 +54,35 @@ export async function getExperiences(filters: ExperienceFilters = {}): Promise<E
   }
 
   const queryString = params.toString()
-  const endpoint = queryString ? `/trips/?${queryString}` : "/trips/"
   
-  try {
-    const response = await apiFetch<PaginatedExperiences | Experience[]>(endpoint)
-    
-    if (Array.isArray(response)) {
-      return response
+  // Try /experiences/ first, then /trips/ as fallback
+  const endpoints = [
+    queryString ? `/experiences/?${queryString}` : "/experiences/",
+    queryString ? `/trips/?${queryString}` : "/trips/",
+  ]
+  
+  for (const endpoint of endpoints) {
+    try {
+      const response = await apiFetch<PaginatedExperiences | Experience[]>(endpoint)
+      
+      if (Array.isArray(response)) {
+        return {
+          count: response.length,
+          next: null,
+          previous: null,
+          results: response,
+        }
+      }
+      if (response && "results" in response) {
+        return response
+      }
+    } catch {
+      // Try next endpoint
+      continue
     }
-    if (response && "results" in response) {
-      return response.results
-    }
-    return []
-  } catch (error) {
-    console.error("[v0] Failed to fetch experiences:", error)
-    return []
   }
+  
+  return { count: 0, next: null, previous: null, results: [] }
 }
 
 /**

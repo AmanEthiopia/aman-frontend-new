@@ -9,8 +9,8 @@ import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getCityDetail, getAttractions, getSafetyInfo, type CityDetail, type Attraction, type SafetyInfo } from "@/lib/api/content"
 import { searchHotels } from "@/lib/api/hotels"
-import { getRestaurants } from "@/lib/api/restaurants"
-import { getExperiences } from "@/lib/api/experiences"
+import { getRestaurantsPaginated } from "@/lib/api/restaurants"
+import { getExperiencesPaginated } from "@/lib/api/experiences"
 import { ArrowLeft, Hotel, Utensils, Compass, Shield, MapPin, Loader2, Car } from "lucide-react"
 import { notFound } from "next/navigation"
 
@@ -93,17 +93,17 @@ export default function CityDetailPage() {
   // Fetch live counts using the same API endpoints as listing pages
   async function fetchLiveCounts(citySlug: string) {
     try {
-      const [hotelsRes, restaurants, experiences] = await Promise.all([
-        searchHotels({ city: citySlug, page_size: 1 }).catch(() => ({ count: 0 })),
-        getRestaurants({ city: citySlug }).catch(() => []),
-        getExperiences({ city: citySlug }).catch(() => []),
+      const [hotelsRes, restaurantsRes, experiencesRes] = await Promise.all([
+        searchHotels({ city: citySlug }).catch(() => ({ count: 0 })),
+        getRestaurantsPaginated({ city: citySlug }).catch(() => ({ count: 0 })),
+        getExperiencesPaginated({ city: citySlug }).catch(() => ({ count: 0 })),
       ])
       
       setLiveCounts(prev => ({
         ...prev,
         hotels: hotelsRes.count ?? 0,
-        restaurants: Array.isArray(restaurants) ? restaurants.length : 0,
-        experiences: Array.isArray(experiences) ? experiences.length : 0,
+        restaurants: restaurantsRes.count ?? 0,
+        experiences: experiencesRes.count ?? 0,
       }))
     } catch {
       // Keep the counts from city detail if live fetch fails

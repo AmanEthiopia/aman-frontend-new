@@ -4,7 +4,17 @@ import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { Hotel, Utensils, Compass, Car, Loader2, RefreshCw } from "lucide-react"
 import { getCityDetail, getCities, type City, type CityDetail } from "@/lib/api/content"
+import { searchHotels } from "@/lib/api/hotels"
+import { getRestaurantsPaginated } from "@/lib/api/restaurants"
+import { getExperiencesPaginated } from "@/lib/api/experiences"
 import { cn } from "@/lib/utils"
+
+interface LiveCounts {
+  hotels: number
+  restaurants: number
+  experiences: number
+  transport: number
+}
 
 interface StatItemProps {
   icon: React.ReactNode
@@ -46,21 +56,45 @@ export function CityStatsBar({ citySlug, activeStat, className }: CityStatsBarPr
   const [cityData, setCityData] = useState<City | CityDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(false)
+  const [liveCounts, setLiveCounts] = useState<LiveCounts | null>(null)
 
   const loadCityStats = useCallback(async (slug: string) => {
     setIsLoading(true)
     setError(false)
     try {
-      // getCityDetail returns richer counts including experiences, restaurants
+      // Get city metadata first
       const data = await getCityDetail(slug)
       setCityData(data)
+      
+      // Fetch live counts from paginated APIs (same as listing pages)
+      const [hotelsRes, restaurantsRes, experiencesRes] = await Promise.all([
+        searchHotels({ city: slug }).catch(() => ({ count: 0 })),
+        getRestaurantsPaginated({ city: slug }).catch(() => ({ count: 0 })),
+        getExperiencesPaginated({ city: slug }).catch(() => ({ count: 0 })),
+      ])
+      
+      setLiveCounts({
+        hotels: hotelsRes.count ?? data.hotels_count ?? 0,
+        restaurants: restaurantsRes.count ?? data.restaurants_count ?? 0,
+        experiences: experiencesRes.count ?? data.experiences_count ?? 0,
+        transport: (data as any).transport_count ?? 0,
+      })
     } catch {
       // Fallback: try listing endpoint which also has counts
       try {
         const cities = await getCities()
         const match = cities.find((c) => c.slug === slug)
-        if (match) setCityData(match)
-        else setError(true)
+        if (match) {
+          setCityData(match)
+          setLiveCounts({
+            hotels: match.hotels_count ?? 0,
+            restaurants: match.restaurants_count ?? 0,
+            experiences: match.experiences_count ?? 0,
+            transport: 0,
+          })
+        } else {
+          setError(true)
+        }
       } catch {
         setError(true)
       }
@@ -95,9 +129,6 @@ export function CityStatsBar({ citySlug, activeStat, className }: CityStatsBarPr
     )
   }
 
-  const hotelCount = cityData?.hotels_count ?? 0
-  const restaurantCount = cityData?.restaurants_count ?? 0
-  const experienceCount = cityData?.experiences_count ?? 0
   const cityName = cityData?.name ?? citySlug
 
   const stats = [
@@ -105,28 +136,28 @@ export function CityStatsBar({ citySlug, activeStat, className }: CityStatsBarPr
       key: "hotels",
       icon: <Hotel className="h-4 w-4" />,
       label: "Hotels",
-      count: hotelCount,
+      count: liveCounts?.hotels ?? cityData?.hotels_count ?? 0,
       href: "/hotels",
     },
     {
       key: "restaurants",
       icon: <Utensils className="h-4 w-4" />,
       label: "Restaurants",
-      count: restaurantCount,
+      count: liveCounts?.restaurants ?? cityData?.restaurants_count ?? 0,
       href: "/restaurants",
     },
     {
       key: "experiences",
       icon: <Compass className="h-4 w-4" />,
       label: "Experiences",
-      count: experienceCount,
+      count: liveCounts?.experiences ?? cityData?.experiences_count ?? 0,
       href: "/experiences",
     },
     {
       key: "transport",
       icon: <Car className="h-4 w-4" />,
       label: "Transport",
-      count: (cityData as any)?.transport_count ?? 0,
+      count: liveCounts?.transport ?? (cityData as any)?.transport_count ?? 0,
       href: "/transport",
     },
   ] as const
