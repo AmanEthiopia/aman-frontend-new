@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrustBadge } from "@/components/shared/trust-badge"
 import { getHotelById } from "@/lib/api/hotels"
-import { createBooking } from "@/lib/api/bookings"
+import { createHotelBooking } from "@/lib/api/bookings"
 import { useAuth } from "@/contexts/auth-context"
 import type { Hotel } from "@/lib/types"
 import {
@@ -96,7 +96,7 @@ export default function BookHotelPage() {
     setError(null)
 
     try {
-      await createBooking({
+      await createHotelBooking({
         hotel_id: hotel.id,
         check_in: formData.checkInDate,
         check_out: formData.checkOutDate,
