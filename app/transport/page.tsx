@@ -10,6 +10,7 @@ import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { getTransports } from "@/lib/api/transport"
 import type { Transport } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { CityStatsBar } from "@/components/shared/city-stats-bar"
 
 const transportTypeOptions = [
   { value: "airport-pickup", label: "Airport Pickup" },
@@ -80,6 +81,12 @@ export default function TransportPage() {
             <DiscoveryFilters
               basePath="/transport"
               additionalFilters={[{ name: "type", label: "Transport Type", options: transportTypeOptions }]}
+            />
+
+            <CityStatsBar
+              citySlug={searchParams.get("city")}
+              activeStat="transport"
+              className="mt-4"
             />
 
             <div className="mt-8">

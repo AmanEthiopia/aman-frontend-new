@@ -10,6 +10,7 @@ import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { getRestaurants } from "@/lib/api/restaurants"
 import type { Restaurant } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { CityStatsBar } from "@/components/shared/city-stats-bar"
 
 const cuisineOptions = [
   { value: "ethiopian", label: "Ethiopian" },
@@ -82,6 +83,12 @@ export default function RestaurantsPage() {
             <DiscoveryFilters
               basePath="/restaurants"
               additionalFilters={[{ name: "cuisine", label: "Cuisine Type", options: cuisineOptions }]}
+            />
+
+            <CityStatsBar
+              citySlug={searchParams.get("city")}
+              activeStat="restaurants"
+              className="mt-4"
             />
 
             <div className="mt-8">

@@ -10,6 +10,7 @@ import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { getExperiences } from "@/lib/api/experiences"
 import type { Experience } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { CityStatsBar } from "@/components/shared/city-stats-bar"
 
 const categoryOptions = [
   { value: "cultural", label: "Cultural" },
@@ -79,6 +80,12 @@ export default function ExperiencesPage() {
             <DiscoveryFilters
               basePath="/experiences"
               additionalFilters={[{ name: "category", label: "Category", options: categoryOptions }]}
+            />
+
+            <CityStatsBar
+              citySlug={searchParams.get("city")}
+              activeStat="experiences"
+              className="mt-4"
             />
 
             <div className="mt-8">

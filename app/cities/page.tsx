@@ -31,12 +31,9 @@ export default function CitiesPage() {
     try {
       setLoading(true)
       setError(null)
-      console.log("[v0] Fetching cities from API...")
-      const data = await getCities({ is_popular: true })
-      console.log("[v0] Cities received:", data.length)
+      const data = await getCities()
       setCities(data)
     } catch (err: any) {
-      console.error("[v0] Failed to load cities:", err)
       setError(err.message || "Failed to load cities")
     } finally {
       setLoading(false)
@@ -99,7 +96,6 @@ export default function CitiesPage() {
                         alt={city.name}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         onError={(e) => {
-                          console.error("[v0] Image load error for city:", city.name)
                           e.currentTarget.src = "/vibrant-city-skyline.png"
                         }}
                       />

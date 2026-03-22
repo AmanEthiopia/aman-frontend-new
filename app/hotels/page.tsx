@@ -13,6 +13,7 @@ import type { Hotel } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import { CityStatsBar } from "@/components/shared/city-stats-bar"
 
 function HotelsLoading() {
   return (
@@ -84,6 +85,13 @@ export default function HotelsPage() {
         <section className="py-8">
           <div className="container mx-auto px-4">
             <DiscoveryFilters basePath="/hotels" />
+
+            {/* Live city stats — only visible when a city filter is active */}
+            <CityStatsBar
+              citySlug={searchParams.get("city")}
+              activeStat="hotels"
+              className="mt-4"
+            />
 
             <div className="mt-8">
               {error && (
