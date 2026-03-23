@@ -138,10 +138,10 @@ export function Header() {
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Button variant="ghost" size="sm" className="gap-2 cursor-pointer hover:bg-accent">
+                  <Link href={user?.role === "provider" ? "/provider" : "/home"} className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground hover:ring-2 hover:ring-primary/30 transition-all">
                     <span className="text-xs font-medium">{user?.name?.charAt(0) || "U"}</span>
-                  </div>
+                  </Link>
                   <span className="hidden xl:inline">{user?.name || "User"}</span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
@@ -188,6 +188,17 @@ export function Header() {
                         Profile & Settings
                       </Link>
                     </DropdownMenuItem>
+                    {FEATURES.PROVIDER_PORTAL && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/provider" className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4" />
+                            Switch to Provider
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </>
                 )}
                 {user?.role === "provider" && FEATURES.PROVIDER_PORTAL && (
@@ -196,6 +207,25 @@ export function Header() {
                       <Link href="/provider" className="flex items-center gap-2">
                         <Building2 className="h-4 w-4" />
                         Provider Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/provider/properties" className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        My Properties
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/provider/settings" className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Profile Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/home" className="flex items-center gap-2">
+                        <Compass className="h-4 w-4" />
+                        Switch to Traveler
                       </Link>
                     </DropdownMenuItem>
                   </>

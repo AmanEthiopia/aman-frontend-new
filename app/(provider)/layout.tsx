@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -45,6 +45,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useAuth } from "@/contexts/auth-context"
+import { getConversations } from "@/lib/api/messages"
+import { getMyBookings } from "@/lib/api/provider"
 
 interface NavItem {
   href: string
@@ -54,52 +56,81 @@ interface NavItem {
   children?: NavItem[]
 }
 
-const sidebarItems: NavItem[] = [
-  { href: "/provider", label: "Dashboard", icon: LayoutDashboard },
-  {
-    href: "/provider/properties",
-    label: "Properties",
-    icon: Building2,
-    children: [
-      { href: "/provider/properties", label: "All Properties", icon: Building2 },
-      { href: "/provider/properties/new?type=hotel", label: "Add Hotel", icon: Building2 },
-      { href: "/provider/properties/new?type=restaurant", label: "Add Restaurant", icon: UtensilsCrossed },
-      { href: "/provider/properties/new?type=driver", label: "Add Driver", icon: Car },
-      { href: "/provider/properties/new?type=trip", label: "Add Trip/Event", icon: Map },
-    ],
-  },
-  {
-    href: "/provider/guides",
-    label: "Guide Services",
-    icon: Map,
-    children: [
-      { href: "/provider/guides", label: "My Guides", icon: Map },
-      { href: "/provider/guides/new", label: "Add Guide Service", icon: Map },
-      { href: "/provider/guides/bookings", label: "Guide Bookings", icon: Calendar },
-    ],
-  },
-  {
-    href: "/provider/packages",
-    label: "Travel Packages",
-    icon: Package,
-    children: [
-      { href: "/provider/packages", label: "All Packages", icon: Package },
-      { href: "/provider/packages/new", label: "Create Package", icon: Plus },
-    ],
-  },
-  { href: "/provider/bookings", label: "Bookings", icon: Calendar, badge: 3 },
-  { href: "/provider/calendar", label: "Calendar", icon: Calendar },
-  { href: "/provider/messages", label: "Messages", icon: MessageSquare, badge: 2 },
-  { href: "/provider/notifications", label: "Notifications", icon: Bell },
-  { href: "/provider/earnings", label: "Earnings", icon: DollarSign },
-  { href: "/provider/reviews", label: "Reviews", icon: Star },
-  { href: "/provider/photos", label: "Photos", icon: ImageIcon },
-  { href: "/provider/settings", label: "Settings", icon: Settings },
-]
+function getSidebarItems(pendingBookings: number, unreadMessages: number): NavItem[] {
+  return [
+    { href: "/provider", label: "Dashboard", icon: LayoutDashboard },
+    {
+      href: "/provider/properties",
+      label: "Properties",
+      icon: Building2,
+      children: [
+        { href: "/provider/properties", label: "All Properties", icon: Building2 },
+        { href: "/provider/properties/new?type=hotel", label: "Add Hotel", icon: Building2 },
+        { href: "/provider/properties/new?type=restaurant", label: "Add Restaurant", icon: UtensilsCrossed },
+        { href: "/provider/properties/new?type=driver", label: "Add Driver", icon: Car },
+        { href: "/provider/properties/new?type=trip", label: "Add Trip/Event", icon: Map },
+      ],
+    },
+    {
+      href: "/provider/guides",
+      label: "Guide Services",
+      icon: Map,
+      children: [
+        { href: "/provider/guides", label: "My Guides", icon: Map },
+        { href: "/provider/guides/new", label: "Add Guide Service", icon: Map },
+        { href: "/provider/guides/bookings", label: "Guide Bookings", icon: Calendar },
+      ],
+    },
+    {
+      href: "/provider/packages",
+      label: "Travel Packages",
+      icon: Package,
+      children: [
+        { href: "/provider/packages", label: "All Packages", icon: Package },
+        { href: "/provider/packages/new", label: "Create Package", icon: Plus },
+      ],
+    },
+    { href: "/provider/bookings", label: "Bookings", icon: Calendar, badge: pendingBookings > 0 ? pendingBookings : undefined },
+    { href: "/provider/calendar", label: "Calendar", icon: Calendar },
+    { href: "/provider/messages", label: "Messages", icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : undefined },
+    { href: "/provider/notifications", label: "Notifications", icon: Bell },
+    { href: "/provider/earnings", label: "Earnings", icon: DollarSign },
+    { href: "/provider/reviews", label: "Reviews", icon: Star },
+    { href: "/provider/photos", label: "Photos", icon: ImageIcon },
+    { href: "/provider/settings", label: "Settings", icon: Settings },
+  ]
+}
 
-function SidebarNav({ onItemClick }: { onItemClick?: () => void }) {
+function SidebarNav({ onItemClick, items }: { onItemClick?: () => void; items: NavItem[] }) {
   const pathname = usePathname()
-  const [openItems, setOpenItems] = useState<string[]>(["/provider/properties"])
+  
+  // Auto-expand parent sections when on child pages
+  const getExpandedItems = useCallback(() => {
+    const expanded: string[] = []
+    items.forEach(item => {
+      if (item.children) {
+        const isChildActive = item.children.some(
+          child => pathname === child.href.split("?")[0] || pathname.startsWith(child.href.split("?")[0])
+        )
+        const isParentActive = pathname.startsWith(item.href)
+        if (isChildActive || isParentActive) {
+          expanded.push(item.href)
+        }
+      }
+    })
+    return expanded.length > 0 ? expanded : ["/provider/properties"]
+  }, [pathname, items])
+  
+  const [openItems, setOpenItems] = useState<string[]>(getExpandedItems())
+  
+  // Update open items when pathname changes
+  useEffect(() => {
+    const expanded = getExpandedItems()
+    setOpenItems(prev => {
+      const newItems = [...new Set([...prev, ...expanded])]
+      return newItems
+    })
+  }, [pathname, getExpandedItems])
 
   const toggleItem = (href: string) => {
     setOpenItems((prev) =>
@@ -109,7 +140,7 @@ function SidebarNav({ onItemClick }: { onItemClick?: () => void }) {
 
   return (
     <nav className="space-y-1 p-4">
-      {sidebarItems.map((item) => {
+      {items.map((item) => {
         const Icon = item.icon
         const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
         const hasChildren = item.children && item.children.length > 0
@@ -187,6 +218,39 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
   const { userProfile, logout, isAuthenticated, isAuthReady } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedProperty, setSelectedProperty] = useState("Sheraton Addis Hotel")
+  const [pendingBookings, setPendingBookings] = useState(0)
+  const [unreadMessages, setUnreadMessages] = useState(0)
+
+  // Fetch real counts for badges
+  useEffect(() => {
+    async function fetchCounts() {
+      if (!isAuthenticated) return
+      try {
+        // Fetch pending bookings count
+        const bookingsResponse = await getMyBookings({ status: "pending", page_size: 1 })
+        setPendingBookings(bookingsResponse?.meta?.pagination?.count || bookingsResponse?.count || 0)
+      } catch {
+        setPendingBookings(0)
+      }
+      try {
+        // Fetch unread messages count
+        const conversationsResponse = await getConversations()
+        const conversations = conversationsResponse?.results || conversationsResponse || []
+        const total = Array.isArray(conversations)
+          ? conversations.reduce((sum: number, c: any) => sum + (c?.unread_count || 0), 0)
+          : 0
+        setUnreadMessages(total)
+      } catch {
+        setUnreadMessages(0)
+      }
+    }
+    fetchCounts()
+    // Poll every 30 seconds
+    const interval = setInterval(fetchCounts, 30000)
+    return () => clearInterval(interval)
+  }, [isAuthenticated])
+
+  const sidebarItems = getSidebarItems(pendingBookings, unreadMessages)
 
   // Mock properties for dropdown - in production, this would come from API
   const mockProperties = [
@@ -225,7 +289,7 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
                     <span className="text-xl font-bold">AMAN</span>
                   </Link>
                 </div>
-                <SidebarNav onItemClick={() => setMobileMenuOpen(false)} />
+                <SidebarNav items={sidebarItems} onItemClick={() => setMobileMenuOpen(false)} />
               </SheetContent>
             </Sheet>
 
@@ -353,7 +417,7 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
       <div className="flex">
         {/* Sidebar */}
         <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] w-64 overflow-y-auto border-r bg-background lg:block">
-          <SidebarNav />
+          <SidebarNav items={sidebarItems} />
         </aside>
 
         {/* Mobile Bottom Nav */}
@@ -362,7 +426,7 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
             {[
               { href: "/provider", label: "Dashboard", icon: LayoutDashboard },
               { href: "/provider/properties", label: "Properties", icon: Building2 },
-              { href: "/provider/bookings", label: "Bookings", icon: Calendar, badge: 3 },
+              { href: "/provider/bookings", label: "Bookings", icon: Calendar, badge: pendingBookings > 0 ? pendingBookings : undefined },
               { href: "/provider/earnings", label: "Earnings", icon: DollarSign },
               { href: "/provider/settings", label: "Settings", icon: Settings },
             ].map((item) => {

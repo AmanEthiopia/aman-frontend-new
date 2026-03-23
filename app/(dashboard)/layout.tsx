@@ -72,7 +72,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     >
                       <Icon className="h-4 w-4" />
                       {item.label}
-                      {item.badge && (
+                      {item.badge !== undefined && item.badge > 0 && (
                         <Badge variant="destructive" className="h-5 min-w-5 px-1.5">
                           {item.badge}
                         </Badge>
@@ -120,7 +120,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.label}</span>
-                  {item.badge && (
+                  {item.badge !== undefined && item.badge > 0 && (
                     <span className="absolute -right-1 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] text-destructive-foreground">
                       {item.badge}
                     </span>
@@ -132,7 +132,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </nav>
 
         {/* Main Content */}
-        <main className="container pb-24 pt-6 md:pb-6">{children}</main>
+        <main className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-6 md:pb-6">{children}</main>
       </div>
     </ProtectedRoute>
   )

@@ -191,7 +191,7 @@ export default function ProviderReviewsPage() {
   useEffect(() => {
     async function loadProperties() {
       try {
-        const response = await getMyProperties({ limit: 100 })
+        const response = await getMyProperties({ page_size: 100 })
         const data = response?.results || response || []
         const propertyList: Property[] = data.map((p: any) => ({
           id: p.id,
