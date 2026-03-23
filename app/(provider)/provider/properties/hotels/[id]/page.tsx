@@ -69,6 +69,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import * as providerAPI from "@/lib/api/provider"
 import type { ProviderHotel, ProviderRoom, CreateRoomPayload } from "@/lib/api/provider"
+import { formatRating } from "@/lib/utils"
 
 // Room amenities
 const ROOM_AMENITIES = [
@@ -656,7 +657,7 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
             <CardContent>
               <div className="flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <span className="text-2xl font-bold text-primary">{hotel.rating?.toFixed(1) || "N/A"}</span>
+                  <span className="text-2xl font-bold text-primary">{hotel.rating ? formatRating(hotel.rating) : "N/A"}</span>
                 </div>
                 <div>
                   <div className="flex items-center gap-1">

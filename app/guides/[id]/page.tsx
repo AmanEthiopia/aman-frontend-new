@@ -27,6 +27,7 @@ import { SafeImage } from "@/components/ui/safe-image"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
 import { ContactDialog } from "@/components/messaging/contact-dialog"
+import { formatRating, toNumber } from "@/lib/utils"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -215,7 +216,7 @@ export default function GuideDetailPage() {
                   )}
                   <span className="flex items-center gap-1">
                     <Star className="h-4 w-4 fill-primary text-primary" />
-                    {parseFloat(guide.average_rating || "0").toFixed(1)} ({guide.review_count || 0} reviews)
+                    {formatRating(guide.average_rating)} ({guide.review_count || 0} reviews)
                   </span>
                 </div>
               </div>
@@ -300,7 +301,7 @@ export default function GuideDetailPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span className="text-2xl font-bold">
-                      ${parseFloat(guide.price).toFixed(0)}
+                      ${toNumber(guide.price).toFixed(0)}
                       <span className="text-base font-normal text-muted-foreground">
                         /{PRICING_TYPE_LABELS[guide.pricing_type].replace("Per ", "").toLowerCase()}
                       </span>

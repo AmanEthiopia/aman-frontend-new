@@ -39,6 +39,7 @@ import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
 import { ContactDialog } from "@/components/messaging/contact-dialog"
+import { formatRating } from "@/lib/utils"
 
 const CATEGORY_LABELS: Record<string, string> = {
   city_tour: "City Tour",
@@ -257,7 +258,7 @@ export default function ExperienceDetailPage() {
                 {pkg.average_rating && (
                   <Badge variant="secondary" className="flex items-center gap-1">
                     <Star className="h-3 w-3 fill-current" />
-                    {parseFloat(pkg.average_rating).toFixed(1)}
+                    {formatRating(pkg.average_rating)}
                     {pkg.review_count && <span className="text-muted-foreground">({pkg.review_count})</span>}
                   </Badge>
                 )}

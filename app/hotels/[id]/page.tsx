@@ -39,6 +39,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
+import { formatRating } from "@/lib/utils"
 
 const amenityIcons: Record<string, React.ReactNode> = {
   WiFi: <Wifi className="h-4 w-4" />,
@@ -263,7 +264,7 @@ export default function HotelDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Star className="h-4 w-4 fill-primary text-primary" />
-                    <span className="font-medium">{(hotel.average_rating || hotel.rating || 0).toFixed ? (hotel.average_rating || hotel.rating || 0).toFixed(1) : parseFloat(hotel.average_rating || hotel.rating || 0).toFixed(1)}</span>
+                    <span className="font-medium">{formatRating(hotel.average_rating || hotel.rating)}</span>
                     <span className="text-muted-foreground">({hotel.review_count || hotel.reviewCount || 0} reviews)</span>
                   </div>
                 </div>

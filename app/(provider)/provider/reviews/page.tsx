@@ -44,7 +44,7 @@ import {
   type ReviewableType,
 } from "@/lib/api/reviews"
 import { getProviderProperties } from "@/lib/api/provider"
-import { cn } from "@/lib/utils"
+import { cn, formatRating, toNumber } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
 interface Property {
@@ -410,11 +410,11 @@ export default function ProviderReviewsPage() {
                   <div className="flex items-center gap-4">
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                       <span className="text-2xl font-bold text-primary">
-                        {averageRating.toFixed(1)}
+                        {formatRating(averageRating)}
                       </span>
                     </div>
                     <div>
-                      <StarRating rating={Math.round(averageRating)} />
+                      <StarRating rating={Math.round(toNumber(averageRating))} />
                       <p className="mt-1 text-sm text-muted-foreground">
                         Based on {allReviews.length} reviews
                       </p>

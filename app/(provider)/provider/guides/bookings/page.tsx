@@ -38,6 +38,7 @@ import {
 } from "@/lib/api/guides"
 import { toast } from "sonner"
 import { format } from "date-fns"
+import { formatPrice } from "@/lib/utils"
 
 const STATUS_COLORS: Record<GuideBookingStatus, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -251,7 +252,7 @@ export default function ProviderGuideBookingsPage() {
                   {/* Price & Actions */}
                   <div className="flex flex-col items-end gap-3">
                     <div className="text-right">
-                      <p className="text-2xl font-bold">${parseFloat(booking.total_price).toFixed(2)}</p>
+                      <p className="text-2xl font-bold">${formatPrice(booking.total_price)}</p>
                       <p className="text-sm text-muted-foreground">{booking.currency}</p>
                     </div>
 

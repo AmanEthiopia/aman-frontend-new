@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { formatRating } from "@/lib/utils"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -173,7 +174,7 @@ function PropertyCard({
             {property.rating !== undefined && (
               <div className="flex items-center gap-1">
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                <span className="font-medium">{property.rating.toFixed(1)}</span>
+                <span className="font-medium">{formatRating(property.rating)}</span>
               </div>
             )}
             {property.review_count !== undefined && (

@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import { formatRating } from "@/lib/utils"
 import Link from "next/link"
 import {
   TrendingUp,
@@ -398,7 +399,7 @@ export default function ProviderDashboard() {
           trend="up"
           icon={DollarSign}
         />
-        <StatCard title="Average Rating" value={stats.average_rating.toFixed(1)} icon={Star} />
+        <StatCard title="Average Rating" value={formatRating(stats.average_rating)} icon={Star} />
       </div>
 
       {/* Two Column Layout */}

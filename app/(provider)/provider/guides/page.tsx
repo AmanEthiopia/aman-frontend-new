@@ -26,6 +26,7 @@ import {
   PRICING_TYPE_LABELS
 } from "@/lib/api/guides"
 import { toast } from "sonner"
+import { formatRating, toNumber } from "@/lib/utils"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -149,7 +150,7 @@ export default function ProviderGuidesPage() {
                   </div>
                   <div className="absolute bottom-3 right-3">
                     <Badge variant="outline" className="bg-background/80">
-                      ${parseFloat(guide.price).toFixed(0)}/{PRICING_TYPE_LABELS[guide.pricing_type].replace("Per ", "").toLowerCase()}
+                      ${toNumber(guide.price).toFixed(0)}/{PRICING_TYPE_LABELS[guide.pricing_type].replace("Per ", "").toLowerCase()}
                     </Badge>
                   </div>
                 </div>
@@ -215,7 +216,7 @@ export default function ProviderGuidesPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       <Star className="h-4 w-4 fill-primary text-primary" />
-                      <span className="font-medium">{parseFloat(guide.average_rating || "0").toFixed(1)}</span>
+                      <span className="font-medium">{formatRating(guide.average_rating)}</span>
                       <span className="text-sm text-muted-foreground">({guide.review_count || 0})</span>
                     </div>
                     {guide.languages && guide.languages.length > 0 && (

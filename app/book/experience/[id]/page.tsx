@@ -21,6 +21,7 @@ import {
 } from "@/lib/api/experiences"
 import { useAuth } from "@/contexts/auth-context"
 import { APIError } from "@/lib/api/client"
+import { formatRating } from "@/lib/utils"
 import {
   ArrowLeft,
   Calendar,
@@ -458,7 +459,7 @@ export default function BookExperiencePage() {
                     {pkg.average_rating && (
                       <span className="flex items-center gap-1">
                         <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-                        {parseFloat(pkg.average_rating).toFixed(1)}
+                        {formatRating(pkg.average_rating)}
                       </span>
                     )}
                     <span className="flex items-center gap-1">

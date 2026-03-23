@@ -27,6 +27,7 @@ import {
 } from "@/lib/api/guides"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "sonner"
+import { formatRating, formatPrice } from "@/lib/utils"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -371,7 +372,7 @@ export default function BookGuidePage() {
                           Submitting...
                         </>
                       ) : (
-                        <>Confirm Booking - ${totalPrice.toFixed(2)}</>
+                        <>Confirm Booking - ${formatPrice(totalPrice)}</>
                       )}
                     </Button>
                   </form>
@@ -404,7 +405,7 @@ export default function BookGuidePage() {
                     )}
                     <span className="flex items-center gap-1">
                       <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-                      {parseFloat(guide?.average_rating || "0").toFixed(1)}
+                      {formatRating(guide?.average_rating)}
                     </span>
                   </div>
 
@@ -425,7 +426,7 @@ export default function BookGuidePage() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Base Price</span>
-                      <span>${parseFloat(guide?.price || "0").toFixed(2)} {PRICING_TYPE_LABELS[guide?.pricing_type || "daily"].toLowerCase()}</span>
+                      <span>${formatPrice(guide?.price)} {PRICING_TYPE_LABELS[guide?.pricing_type || "daily"].toLowerCase()}</span>
                     </div>
                     {guide?.pricing_type === "hourly" && (
                       <div className="flex justify-between">
@@ -442,7 +443,7 @@ export default function BookGuidePage() {
                     <Separator />
                     <div className="flex justify-between font-semibold">
                       <span>Total</span>
-                      <span>${totalPrice.toFixed(2)}</span>
+                      <span>${formatPrice(totalPrice)}</span>
                     </div>
                   </div>
                 </CardContent>

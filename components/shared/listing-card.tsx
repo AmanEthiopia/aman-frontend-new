@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Shield, MapPin, Star, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useApp } from "@/lib/contexts/app-context"
+import { formatRating } from "@/lib/utils"
 import { SafeCardImage } from "@/components/ui/safe-image"
 
 interface ListingCardProps {
@@ -120,7 +121,7 @@ export function ListingCard({
         <div className="mb-2 flex items-center gap-2">
           <div className="flex items-center gap-1">
             <Star className="h-4 w-4 fill-primary text-primary" />
-            <span className="text-sm font-medium">{rating.toFixed(1)}</span>
+            <span className="text-sm font-medium">{formatRating(rating)}</span>
           </div>
           <span className="text-sm text-muted-foreground">({reviewCount} reviews)</span>
         </div>

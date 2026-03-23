@@ -26,7 +26,7 @@ import {
   type ReviewableType,
 } from "@/lib/api/reviews"
 import { useAuth } from "@/contexts/auth-context"
-import { cn } from "@/lib/utils"
+import { cn, formatRating, toNumber } from "@/lib/utils"
 
 interface ReviewsSectionProps {
   contentType: ReviewableType
@@ -336,7 +336,7 @@ export function ReviewsSection({
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <StarRating rating={averageRating} />
-            <span className="font-medium">{averageRating.toFixed(1)}</span>
+            <span className="font-medium">{formatRating(averageRating)}</span>
             <span className="text-muted-foreground">({reviewCount} reviews)</span>
           </div>
         </div>
@@ -376,8 +376,8 @@ export function ReviewsSection({
         {/* Rating Summary */}
         <div className="mb-8 grid gap-8 sm:grid-cols-2">
           <div className="flex flex-col items-center justify-center">
-            <div className="mb-2 text-5xl font-bold">{averageRating.toFixed(1)}</div>
-            <StarRating rating={averageRating} size="large" />
+            <div className="mb-2 text-5xl font-bold">{formatRating(averageRating)}</div>
+            <StarRating rating={toNumber(averageRating)} size="large" />
             <p className="mt-2 text-muted-foreground">{reviewCount} reviews</p>
           </div>
           <RatingBreakdown reviews={reviews} />

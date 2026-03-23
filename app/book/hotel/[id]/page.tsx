@@ -33,6 +33,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatRating } from "@/lib/utils"
 
 export default function BookHotelPage() {
   const params = useParams()
@@ -444,7 +445,7 @@ export default function BookHotelPage() {
                         )}
                         <span className="flex items-center gap-1">
                           <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-                          {parseFloat(String(hotel.rating || hotel.average_rating || 0)).toFixed(1)}
+                          {formatRating(hotel.rating || hotel.average_rating)}
                         </span>
                       </div>
                       <div className="border-t border-border pt-4">

@@ -27,6 +27,7 @@ import {
 import { getCities, type City } from "@/lib/api/content"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
 import { SafeCardImage } from "@/components/ui/safe-image"
+import { formatRating, formatPrice, toNumber } from "@/lib/utils"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -75,7 +76,7 @@ function GuideCard({ guide }: { guide: Guide }) {
                 </Badge>
               </div>
               <div className="absolute bottom-3 right-3 rounded-full bg-background/90 px-3 py-1.5 text-sm font-semibold">
-                ${parseFloat(guide.price).toFixed(0)}
+                ${toNumber(guide.price).toFixed(0)}
                 <span className="text-xs text-muted-foreground">/{PRICING_TYPE_LABELS[guide.pricing_type].replace("Per ", "").toLowerCase()}</span>
               </div>
             </>
@@ -116,7 +117,7 @@ function GuideCard({ guide }: { guide: Guide }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">
               <Star className="h-4 w-4 fill-primary text-primary" />
-              <span className="font-medium">{parseFloat(guide.average_rating || "0").toFixed(1)}</span>
+              <span className="font-medium">{formatRating(guide.average_rating)}</span>
               <span className="text-sm text-muted-foreground">({guide.review_count || 0})</span>
             </div>
             {guide.max_group_size && (
