@@ -8,7 +8,7 @@ import { apiPost, apiGet } from "./client"
 
 export type BookingStatus = "pending" | "confirmed" | "rejected" | "cancelled" | "completed" | "no_show"
 export type PaymentStatus = "unpaid" | "paid" | "refunded"
-export type BookingType = "hotel" | "restaurant" | "package" | "transport" | "experience"
+export type BookingType = "hotel" | "restaurant" | "package" | "transport" | "experience" | "guide"
 
 // Base booking interface
 export interface BookingBase {
@@ -141,8 +141,30 @@ export interface ExperienceBooking extends BookingBase {
   num_participants: number
 }
 
+// Guide booking types
+export interface GuideBookingGuide {
+  id: string
+  title: string
+  nickname?: string
+  service_type: string
+  pricing_type: string
+  price: string
+  price_currency: string
+  primary_photo_url?: string
+}
+
+export interface GuideBooking extends BookingBase {
+  type: "guide"
+  guide: GuideBookingGuide
+  booking_date: string
+  start_time?: string
+  hours_requested?: string
+  num_adults: number
+  num_children: number
+}
+
 // Union type for all bookings
-export type Booking = HotelBooking | RestaurantReservation | PackageBooking | TransportBooking | ExperienceBooking
+export type Booking = HotelBooking | RestaurantReservation | PackageBooking | TransportBooking | ExperienceBooking | GuideBooking
 
 // Payment response
 export interface PaymentInfo {
@@ -494,14 +516,19 @@ export interface AllBookingsResponse {
   restaurant: RestaurantReservation[]
   package: PackageBooking[]
   transport: TransportBooking[]
+  guide: GuideBooking[]
 }
 
 export async function getAllMyBookings(): Promise<AllBookingsResponse> {
-  const [hotel, restaurant, packageBookings, transport] = await Promise.allSettled([
+  // Import guide bookings function dynamically to avoid circular dependency
+  const { getMyGuideBookings } = await import("./guides")
+  
+  const [hotel, restaurant, packageBookings, transport, guideBookings] = await Promise.allSettled([
     getMyHotelBookings(),
     getMyRestaurantReservations(),
     getMyPackageBookings(),
     getMyTransportBookings(),
+    getMyGuideBookings(),
   ])
 
   return {
@@ -509,6 +536,7 @@ export async function getAllMyBookings(): Promise<AllBookingsResponse> {
     restaurant: restaurant.status === "fulfilled" ? restaurant.value : [],
     package: packageBookings.status === "fulfilled" ? packageBookings.value : [],
     transport: transport.status === "fulfilled" ? transport.value : [],
+    guide: guideBookings.status === "fulfilled" ? guideBookings.value : [],
   }
 }
 
@@ -518,7 +546,8 @@ export function flattenBookings(bookings: AllBookingsResponse): Booking[] {
   const restaurantBookings: Booking[] = bookings.restaurant.map(b => ({ ...b, type: "restaurant" as const }))
   const packageBookingsList: Booking[] = bookings.package.map(b => ({ ...b, type: "package" as const }))
   const transportBookings: Booking[] = bookings.transport.map(b => ({ ...b, type: "transport" as const }))
+  const guideBookings: Booking[] = bookings.guide.map(b => ({ ...b, type: "guide" as const }))
   
-  return [...hotelBookings, ...restaurantBookings, ...packageBookingsList, ...transportBookings]
+  return [...hotelBookings, ...restaurantBookings, ...packageBookingsList, ...transportBookings, ...guideBookings]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }

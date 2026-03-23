@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
-import { Hotel, Utensils, Compass, Car, Loader2, RefreshCw } from "lucide-react"
+import { Hotel, Utensils, Compass, Car, Map, Loader2, RefreshCw } from "lucide-react"
 import { getCityDetail, getCities, type City, type CityDetail } from "@/lib/api/content"
 import { searchHotels } from "@/lib/api/hotels"
 import { getRestaurantsPaginated } from "@/lib/api/restaurants"
 import { getExperiencesPaginated } from "@/lib/api/experiences"
+import { searchGuides } from "@/lib/api/guides"
 import { cn } from "@/lib/utils"
 
 interface LiveCounts {
@@ -14,6 +15,7 @@ interface LiveCounts {
   restaurants: number
   experiences: number
   transport: number
+  guides: number
 }
 
 interface StatItemProps {
@@ -48,7 +50,7 @@ interface CityStatsBarProps {
   /** The city slug from the active URL filter (e.g. "addis-ababa") */
   citySlug?: string | null
   /** Which stat to highlight as "current" (the page the user is on) */
-  activeStat?: "hotels" | "restaurants" | "experiences" | "transport"
+  activeStat?: "hotels" | "restaurants" | "experiences" | "transport" | "guides"
   className?: string
 }
 
@@ -67,10 +69,11 @@ export function CityStatsBar({ citySlug, activeStat, className }: CityStatsBarPr
       setCityData(data)
       
       // Fetch live counts from paginated APIs (same as listing pages)
-      const [hotelsRes, restaurantsRes, experiencesRes] = await Promise.all([
+      const [hotelsRes, restaurantsRes, experiencesRes, guidesRes] = await Promise.all([
         searchHotels({ city: slug }).catch(() => ({ count: 0 })),
         getRestaurantsPaginated({ city: slug }).catch(() => ({ count: 0 })),
         getExperiencesPaginated({ city: slug }).catch(() => ({ count: 0 })),
+        searchGuides({ city: slug }).catch(() => ({ count: 0 })),
       ])
       
       setLiveCounts({
@@ -78,6 +81,7 @@ export function CityStatsBar({ citySlug, activeStat, className }: CityStatsBarPr
         restaurants: restaurantsRes.count ?? data.restaurants_count ?? 0,
         experiences: experiencesRes.count ?? data.experiences_count ?? 0,
         transport: (data as any).transport_count ?? 0,
+        guides: guidesRes.count ?? 0,
       })
     } catch {
       // Fallback: try listing endpoint which also has counts
@@ -91,6 +95,7 @@ export function CityStatsBar({ citySlug, activeStat, className }: CityStatsBarPr
             restaurants: match.restaurants_count ?? 0,
             experiences: match.experiences_count ?? 0,
             transport: 0,
+            guides: 0,
           })
         } else {
           setError(true)
@@ -159,6 +164,13 @@ export function CityStatsBar({ citySlug, activeStat, className }: CityStatsBarPr
       label: "Transport",
       count: liveCounts?.transport ?? (cityData as any)?.transport_count ?? 0,
       href: "/transport",
+    },
+    {
+      key: "guides",
+      icon: <Map className="h-4 w-4" />,
+      label: "Guides",
+      count: liveCounts?.guides ?? 0,
+      href: "/guides",
     },
   ] as const
 

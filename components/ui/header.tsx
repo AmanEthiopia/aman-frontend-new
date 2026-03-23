@@ -26,6 +26,8 @@ import {
   Building2,
   ChevronDown,
   LogOut,
+  Map,
+  MapPin,
 } from "lucide-react"
 import { useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
@@ -42,6 +44,8 @@ export function Header() {
     ...(FEATURES.RESTAURANTS ? [{ href: "/restaurants", label: "Restaurants", icon: Utensils }] : []),
     ...(FEATURES.TRANSPORT ? [{ href: "/transport", label: "Transport", icon: Car }] : []),
     ...(FEATURES.EXPERIENCES ? [{ href: "/experiences", label: "Experiences", icon: Compass }] : []),
+    ...(FEATURES.GUIDES ? [{ href: "/guides", label: "Tour Guides", icon: Map }] : []),
+    ...(FEATURES.ATTRACTIONS ? [{ href: "/attractions", label: "Attractions", icon: MapPin }] : []),
   ]
 
   return (

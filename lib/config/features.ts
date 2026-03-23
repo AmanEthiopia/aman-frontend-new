@@ -22,6 +22,8 @@ export const FEATURES = {
   TRANSPORT: true,
   EXPERIENCES: true,
   RESTAURANTS: true,
+  GUIDES: true, // Tour guides, interpreters, drivers
+  ATTRACTIONS: true, // Tourist attractions
 } as const
 
 export type FeatureFlag = keyof typeof FEATURES
@@ -43,6 +45,8 @@ export const API_ENDPOINTS = {
   RESTAURANTS: "/api/restaurants",
   TRANSPORT: "/api/transport",
   EXPERIENCES: "/api/experiences",
+  GUIDES: "/api/guides",
+  ATTRACTIONS: "/api/attractions",
   CITIES: "/api/cities",
 
   // Bookings

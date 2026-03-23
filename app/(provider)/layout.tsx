@@ -67,6 +67,16 @@ const sidebarItems: NavItem[] = [
       { href: "/provider/properties/new?type=trip", label: "Add Trip/Event", icon: Map },
     ],
   },
+  {
+    href: "/provider/guides",
+    label: "Guide Services",
+    icon: Map,
+    children: [
+      { href: "/provider/guides", label: "My Guides", icon: Map },
+      { href: "/provider/guides/new", label: "Add Guide Service", icon: Map },
+      { href: "/provider/guides/bookings", label: "Guide Bookings", icon: Calendar },
+    ],
+  },
   { href: "/provider/bookings", label: "Bookings", icon: Calendar, badge: 3 },
   { href: "/provider/calendar", label: "Calendar", icon: Calendar },
   { href: "/provider/messages", label: "Messages", icon: MessageSquare, badge: 2 },

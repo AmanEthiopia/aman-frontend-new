@@ -162,12 +162,20 @@ export async function getCityDetail(slug: string): Promise<CityDetail> {
 /**
  * List attractions
  */
-export async function getAttractions(params?: { city?: string; category?: string }): Promise<Attraction[]> {
+export async function getAttractions(params?: { city?: string; category?: string; search?: string }): Promise<Attraction[]> {
   const query = new URLSearchParams()
   if (params?.city) query.append("city", params.city)
   if (params?.category) query.append("category", params.category)
+  if (params?.search) query.append("search", params.search)
 
   return apiGet<Attraction[]>(`/content/attractions/${query.toString() ? `?${query}` : ""}`)
+}
+
+/**
+ * Get attraction by slug
+ */
+export async function getAttractionBySlug(slug: string): Promise<Attraction> {
+  return apiGet<Attraction>(`/content/attractions/${slug}/`)
 }
 
 /**

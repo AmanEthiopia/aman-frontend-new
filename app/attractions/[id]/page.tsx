@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { TrustBadge } from "@/components/shared/trust-badge"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { getAttractions } from "@/lib/api/content"
+import { getAttractionBySlug, getAttractions } from "@/lib/api/content"
 import { APIError } from "@/lib/api/client"
 import type { Attraction } from "@/lib/types"
 import {
@@ -47,17 +47,24 @@ export default function AttractionDetailPage() {
       setError(null)
 
       try {
-        const attractionsData = await getAttractions({ search: slug })
-        const found = attractionsData.find((a: Attraction) => 
-          a.slug === slug || a.id === slug || a.name?.toLowerCase().includes(slug.toLowerCase())
-        )
-        
-        if (!found) {
-          throw new APIError(404, "Attraction not found")
-        }
-        
-        setAttraction(found)
+        // Try to fetch by slug first
+        const data = await getAttractionBySlug(slug)
+        setAttraction(data)
       } catch (err) {
+        // Fallback to search if direct slug fails
+        try {
+          const attractionsData = await getAttractions({ search: slug })
+          const found = attractionsData.find((a: Attraction) => 
+            a.slug === slug || a.id === slug || a.name?.toLowerCase().includes(slug.toLowerCase())
+          )
+          
+          if (found) {
+            setAttraction(found)
+            return
+          }
+        } catch {}
+        
+        // If both methods fail, show error
         if (err instanceof APIError) {
           setError(err.message)
         } else {
