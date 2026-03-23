@@ -1,4 +1,5 @@
-import { apiPost, apiGet, saveToken, clearToken } from "./client"
+import { apiPost, apiGet } from "./client"
+import { setAuthCookie, clearAuthCookies, getRefreshCookie } from "@/lib/utils/cookies"
 import type { CompleteUserProfile } from "@/lib/types"
 
 export interface LoginCredentials {
@@ -39,23 +40,15 @@ export interface RegisterResponse {
  * Backend returns: { access_token, refresh_token, user }
  */
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
-  // FIX: Backend returns access_token and refresh_token, not just token
   const response = await apiPost<AuthResponse>("/auth/login/", credentials)
 
-  console.log("[v0] Auth API: Login response", {
-    hasAccessToken: !!response.access_token,
-    hasRefreshToken: !!response.refresh_token,
-    hasUser: !!response.user,
-  })
-
   if (response.access_token) {
-    saveToken(response.access_token)
-    console.log("[v0] Auth API: Token saved to localStorage")
-
-    // FIX: Store refresh token separately
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aman_refresh_token", response.refresh_token)
-      console.log("[v0] Auth API: Refresh token saved to localStorage")
+    // Store access token in cookie
+    setAuthCookie(response.access_token, false)
+    
+    // Store refresh token in cookie (longer expiry)
+    if (response.refresh_token) {
+      setAuthCookie(response.refresh_token, true)
     }
   }
 
@@ -94,7 +87,7 @@ export async function resendVerification(email: string): Promise<void> {
  * Refresh access token using refresh token
  */
 export async function refreshAccessToken(): Promise<{ access_token: string }> {
-  const refreshToken = typeof window !== "undefined" ? localStorage.getItem("aman_refresh_token") : null
+  const refreshToken = getRefreshCookie()
 
   if (!refreshToken) {
     throw new Error("No refresh token available")
@@ -105,7 +98,7 @@ export async function refreshAccessToken(): Promise<{ access_token: string }> {
   })
 
   if (response.access_token) {
-    saveToken(response.access_token)
+    setAuthCookie(response.access_token, false)
   }
 
   return response
@@ -116,7 +109,7 @@ export async function refreshAccessToken(): Promise<{ access_token: string }> {
  * Backend requires refresh_token to blacklist it
  */
 export async function logoutAPI(): Promise<void> {
-  const refreshToken = typeof window !== "undefined" ? localStorage.getItem("aman_refresh_token") : null
+  const refreshToken = getRefreshCookie()
 
   if (refreshToken) {
     try {
@@ -126,11 +119,8 @@ export async function logoutAPI(): Promise<void> {
     }
   }
 
-  // Clear tokens locally regardless of API success
-  clearToken()
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("aman_refresh_token")
-  }
+  // Clear all auth cookies
+  clearAuthCookies()
 }
 
 /**
@@ -200,10 +190,7 @@ export async function verifyPhoneOTP(phone: string, otp_code: string): Promise<v
  * This is the synchronous version for local cleanup
  */
 export function logout(): void {
-  clearToken()
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("aman_refresh_token")
-  }
+  clearAuthCookies()
 }
 
 export interface GoogleAuthPayload {
@@ -227,9 +214,9 @@ export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
   const response = await apiPost<AuthResponse>("/auth/social/google/", { id_token: idToken })
 
   if (response.access_token) {
-    saveToken(response.access_token)
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aman_refresh_token", response.refresh_token)
+    setAuthCookie(response.access_token, false)
+    if (response.refresh_token) {
+      setAuthCookie(response.refresh_token, true)
     }
   }
 
@@ -256,9 +243,9 @@ export async function registerWithGoogle(idToken: string, role?: "traveler" | "p
   const response = await apiPost<AuthResponse>("/auth/social/google/", payload)
 
   if (response.access_token) {
-    saveToken(response.access_token)
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aman_refresh_token", response.refresh_token)
+    setAuthCookie(response.access_token, false)
+    if (response.refresh_token) {
+      setAuthCookie(response.refresh_token, true)
     }
   }
 
@@ -315,9 +302,9 @@ export async function verify2FA(code: string, temp_token: string): Promise<AuthR
   const response = await apiPost<AuthResponse>("/auth/2fa/verify/", { code, temp_token })
 
   if (response.access_token) {
-    saveToken(response.access_token)
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aman_refresh_token", response.refresh_token)
+    setAuthCookie(response.access_token, false)
+    if (response.refresh_token) {
+      setAuthCookie(response.refresh_token, true)
     }
   }
 
@@ -338,9 +325,9 @@ export async function useBackupCode(backup_code: string, temp_token: string): Pr
   const response = await apiPost<AuthResponse>("/auth/2fa/backup-codes/use/", { backup_code, temp_token })
 
   if (response.access_token) {
-    saveToken(response.access_token)
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aman_refresh_token", response.refresh_token)
+    setAuthCookie(response.access_token, false)
+    if (response.refresh_token) {
+      setAuthCookie(response.refresh_token, true)
     }
   }
 

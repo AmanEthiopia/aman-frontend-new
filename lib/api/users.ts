@@ -1,4 +1,5 @@
-import { apiGet, apiPatch, apiPost, apiDelete } from "./client"
+import { apiGet, apiPatch, apiPost, apiDelete, getToken } from "./client"
+import { getAuthCookie } from "@/lib/utils/cookies"
 
 export interface UserProfile {
   user: {
@@ -120,15 +121,21 @@ export async function updateNotificationPreferences(preferences: {
 
 /**
  * Upload profile photo
+ * Uses cookie-based auth that's consistent with the rest of the API client
  */
 export async function uploadProfilePhoto(file: File): Promise<{ profile_photo: string; url: string }> {
   const formData = new FormData()
   formData.append("profile_photo", file)
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("aman_token") : null
-  const headers: HeadersInit = {}
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`
+  // Get token from cookies (primary) or fallback to getToken (which also checks cookies)
+  const token = getAuthCookie() || getToken()
+  
+  if (!token) {
+    throw new Error("Authentication required. Please sign in again.")
+  }
+  
+  const headers: HeadersInit = {
+    "Authorization": `Bearer ${token}`
   }
 
   const response = await fetch("https://api.aman.yichalal.ai/api/v1/users/profile/photo/", {
@@ -138,7 +145,12 @@ export async function uploadProfilePhoto(file: File): Promise<{ profile_photo: s
   })
 
   if (!response.ok) {
-    throw new Error("Failed to upload profile photo")
+    // Handle 401 specifically
+    if (response.status === 401) {
+      throw new Error("Session expired. Please sign in again.")
+    }
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.message || errorData.detail || "Failed to upload profile photo")
   }
 
   const envelope = await response.json()

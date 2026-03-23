@@ -1,10 +1,25 @@
 /**
  * Cookie utilities for auth tokens
  * Works on both server and client in Next.js
+ * 
+ * Token lifecycle:
+ * - Access token: Short-lived (30 days), used for API requests
+ * - Refresh token: Long-lived (90 days), used to get new access tokens
+ * 
+ * When access token expires but refresh token is valid:
+ * - API client automatically refreshes the token
+ * - User stays logged in seamlessly
+ * 
+ * When both tokens expire:
+ * - User is redirected to login
  */
 
 const TOKEN_COOKIE = "aman_token"
 const REFRESH_TOKEN_COOKIE = "aman_refresh_token"
+
+// Token expiry times in seconds
+const ACCESS_TOKEN_EXPIRY = 60 * 60 * 24 * 30 // 30 days for access token
+const REFRESH_TOKEN_EXPIRY = 60 * 60 * 24 * 90 // 90 days for refresh token
 
 /**
  * Set authentication token in cookie
@@ -15,9 +30,10 @@ export function setAuthCookie(token: string, isRefresh = false): void {
   if (typeof document === "undefined") return
 
   const cookieName = isRefresh ? REFRESH_TOKEN_COOKIE : TOKEN_COOKIE
-  const maxAge = isRefresh ? 60 * 60 * 24 * 7 : 60 * 60 * 24 // 7 days for refresh, 1 day for access
+  const maxAge = isRefresh ? REFRESH_TOKEN_EXPIRY : ACCESS_TOKEN_EXPIRY
+  const isSecure = typeof window !== "undefined" && window.location.protocol === "https:"
 
-  document.cookie = `${cookieName}=${token}; path=/; max-age=${maxAge}; samesite=lax; secure=${window.location.protocol === "https:"}`
+  document.cookie = `${cookieName}=${token}; path=/; max-age=${maxAge}; samesite=lax${isSecure ? "; secure" : ""}`
 }
 
 /**

@@ -1,6 +1,7 @@
 "use client"
 
-import { apiFetch, apiPost, apiGet, apiPatch, apiDelete } from "./client"
+import { apiFetch, apiPost, apiGet, apiPatch, apiDelete, getToken } from "./client"
+import { getAuthCookie } from "@/lib/utils/cookies"
 
 // ============================================================================
 // Types
@@ -383,6 +384,7 @@ export async function getGuidePhotos(guideId: string): Promise<GuidePhoto[]> {
 
 /**
  * Upload guide photo
+ * Uses cookie-based auth for consistency with the API client
  */
 export async function uploadGuidePhoto(
   guideId: string, 
@@ -395,16 +397,27 @@ export async function uploadGuidePhoto(
   if (options?.display_order !== undefined) formData.append("display_order", String(options.display_order))
   if (options?.is_primary !== undefined) formData.append("is_primary", String(options.is_primary))
 
+  // Get token from cookies (primary) or fallback to getToken
+  const token = getAuthCookie() || getToken()
+  
+  if (!token) {
+    throw new Error("Authentication required. Please sign in again.")
+  }
+
   const response = await fetch(`${API_BASE_URL}/guides/provider/${guideId}/photos/`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("aman_access_token") : ""}`,
+      Authorization: `Bearer ${token}`,
     },
     body: formData,
   })
 
   if (!response.ok) {
-    throw new Error("Failed to upload photo")
+    if (response.status === 401) {
+      throw new Error("Session expired. Please sign in again.")
+    }
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.message || errorData.detail || "Failed to upload photo")
   }
 
   const data = await response.json()

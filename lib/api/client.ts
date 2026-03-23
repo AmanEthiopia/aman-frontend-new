@@ -121,8 +121,14 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
   // Get valid token (will refresh if needed)
   const token = await getValidToken()
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+  // Check if body is FormData - if so, don't set Content-Type (browser will set it with boundary)
+  const isFormData = options.body instanceof FormData
+
+  const headers: Record<string, string> = {}
+  
+  // Only set Content-Type for non-FormData requests
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json"
   }
 
   // Merge with any additional headers from options
