@@ -53,7 +53,8 @@ interface Property {
   type: ReviewableType
 }
 
-function StarRating({ rating }: { rating: number }) {
+function StarRating({ rating }: { rating: number | string }) {
+  const numRating = toNumber(rating)
   return (
     <div className="flex items-center gap-0.5">
       {Array.from({ length: 5 }).map((_, i) => (
@@ -61,7 +62,7 @@ function StarRating({ rating }: { rating: number }) {
           key={i}
           className={cn(
             "h-4 w-4",
-            i < rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"
+            i < numRating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"
           )}
         />
       ))}

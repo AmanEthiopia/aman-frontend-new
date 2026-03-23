@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Star, Loader2, AlertCircle, User, ThumbsUp, MessageSquare, Flag } from "lucide-react"
+import { Star, Loader2, AlertCircle, User, ThumbsUp, MessageSquare } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -55,6 +55,8 @@ function StarRating({
     large: "h-5 w-5",
   }
 
+  const safeRating = toNumber(rating)
+
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
@@ -73,7 +75,7 @@ function StarRating({
           <Star
             className={cn(
               sizeClasses[size],
-              (hoverRating || rating) >= star
+              (hoverRating || safeRating) >= star
                 ? "fill-yellow-400 text-yellow-400"
                 : "fill-muted text-muted"
             )}
@@ -87,9 +89,9 @@ function StarRating({
 function RatingBreakdown({ reviews }: { reviews: Review[] }) {
   const distribution = [5, 4, 3, 2, 1].map((rating) => ({
     rating,
-    count: reviews.filter((r) => Math.round(parseFloat(r.rating)) === rating).length,
+    count: reviews.filter((r) => Math.round(toNumber(r.rating)) === rating).length,
     percentage: reviews.length
-      ? (reviews.filter((r) => Math.round(parseFloat(r.rating)) === rating).length /
+      ? (reviews.filter((r) => Math.round(toNumber(r.rating)) === rating).length /
           reviews.length) *
         100
       : 0,
@@ -110,7 +112,7 @@ function RatingBreakdown({ reviews }: { reviews: Review[] }) {
 }
 
 function ReviewCard({ review }: { review: Review }) {
-  const displayName = review.user?.full_name || review.traveler?.name || "Anonymous"
+  const displayName = review.author?.name || "Anonymous"
   const initials = displayName
     .split(" ")
     .map((n) => n[0])
@@ -123,8 +125,8 @@ function ReviewCard({ review }: { review: Review }) {
       <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={review.user?.avatar_url} />
-            <AvatarFallback>{initials}</AvatarFallback>
+            <AvatarImage src={review.author?.avatar_url} />
+            <AvatarFallback>{initials || "AN"}</AvatarFallback>
           </Avatar>
           <div>
             <p className="font-medium">{displayName}</p>
@@ -134,10 +136,15 @@ function ReviewCard({ review }: { review: Review }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <StarRating rating={parseFloat(review.rating)} size="small" />
-          {review.is_verified_booking && (
+          <StarRating rating={toNumber(review.rating)} size="small" />
+          {review.is_verified_stay && (
             <Badge variant="secondary" className="text-xs">
-              Verified
+              Verified Stay
+            </Badge>
+          )}
+          {review.is_admin_verification && (
+            <Badge variant="default" className="text-xs bg-primary">
+              AMAN Verified
             </Badge>
           )}
         </div>
@@ -148,16 +155,16 @@ function ReviewCard({ review }: { review: Review }) {
       <p className="text-muted-foreground">{review.comment}</p>
 
       {/* Provider Response */}
-      {review.provider_response && (
+      {review.response && (
         <div className="mt-4 rounded-lg bg-muted/50 p-4">
           <p className="mb-2 flex items-center gap-2 text-sm font-medium">
             <MessageSquare className="h-4 w-4" />
-            Response from Owner
+            Response from {review.response.responder?.name || "Owner"}
           </p>
-          <p className="text-sm text-muted-foreground">{review.provider_response}</p>
-          {review.provider_response_at && (
+          <p className="text-sm text-muted-foreground">{review.response.response_text}</p>
+          {review.response.created_at && (
             <p className="mt-1 text-xs text-muted-foreground">
-              {formatReviewDate(review.provider_response_at)}
+              {formatReviewDate(review.response.created_at)}
             </p>
           )}
         </div>
@@ -168,7 +175,7 @@ function ReviewCard({ review }: { review: Review }) {
         <div className="mt-4 flex items-center gap-4">
           <Button variant="ghost" size="sm" className="h-8 text-muted-foreground">
             <ThumbsUp className="mr-1 h-3 w-3" />
-            Helpful ({review.helpful_count})
+            Helpful ({review.helpful_count || 0})
           </Button>
         </div>
       )}
@@ -181,7 +188,7 @@ function WriteReviewDialog({
   contentId,
   onSuccess,
 }: {
-  contentType: ReviewContentType
+  contentType: ReviewableType
   contentId: string
   onSuccess: () => void
 }) {
@@ -191,7 +198,7 @@ function WriteReviewDialog({
   const [comment, setComment] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { user, isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   const handleSubmit = async () => {
     if (!isAuthenticated) return
@@ -201,8 +208,8 @@ function WriteReviewDialog({
       setSubmitting(true)
       setError(null)
       await submitReview({
-        content_type: contentType,
-        content_id: contentId,
+        reviewable_type: contentType,
+        reviewable_id: contentId,
         rating,
         title: title.trim() || undefined,
         comment: comment.trim(),
@@ -298,6 +305,7 @@ export function ReviewsSection({
   compact = false,
 }: ReviewsSectionProps) {
   const [reviews, setReviews] = useState<Review[]>([])
+  const [pinnedReviews, setPinnedReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
@@ -308,20 +316,45 @@ export function ReviewsSection({
     async function loadReviews() {
       try {
         setLoading(true)
-        const response = await getReviews(contentType, contentId, page)
-        if (page === 1) {
-          setReviews(response.data)
-        } else {
-          setReviews((prev) => [...prev, ...response.data])
+        setError(null)
+        
+        const response = await getReviews({ 
+          type: contentType, 
+          id: contentId, 
+          page 
+        })
+        
+        // Safely access pagination data with defaults
+        const pagination = response?.meta?.pagination || { 
+          current_page: 1, 
+          total_pages: 1, 
+          count: 0 
         }
-        setHasMore(response.pagination.page < response.pagination.total_pages)
+        
+        if (page === 1) {
+          setPinnedReviews(response?.pinned || [])
+          setReviews(response?.data || [])
+        } else {
+          setReviews((prev) => [...prev, ...(response?.data || [])])
+        }
+        
+        setHasMore(pagination.current_page < pagination.total_pages)
       } catch (err: any) {
+        console.error("[v0] Error loading reviews:", err)
         setError(err.message || "Failed to load reviews")
+        // Set empty arrays to prevent crashes
+        if (page === 1) {
+          setPinnedReviews([])
+          setReviews([])
+        }
       } finally {
         setLoading(false)
       }
     }
-    loadReviews()
+    
+    if (contentId) {
+      loadReviews()
+    }
   }, [contentType, contentId, page, refreshKey])
 
   const handleReviewSubmitted = () => {
@@ -329,29 +362,33 @@ export function ReviewsSection({
     setRefreshKey((k) => k + 1)
   }
 
+  const allReviews = [...pinnedReviews, ...reviews]
+  const safeAverageRating = toNumber(averageRating)
+  const safeReviewCount = toNumber(reviewCount)
+
   if (compact) {
     // Compact version for sidebars or cards
     return (
       <div>
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <StarRating rating={averageRating} />
-            <span className="font-medium">{formatRating(averageRating)}</span>
-            <span className="text-muted-foreground">({reviewCount} reviews)</span>
+            <StarRating rating={safeAverageRating} />
+            <span className="font-medium">{formatRating(safeAverageRating)}</span>
+            <span className="text-muted-foreground">({safeReviewCount} reviews)</span>
           </div>
         </div>
         {loading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : reviews.length > 0 ? (
+        ) : allReviews.length > 0 ? (
           <div className="space-y-4">
-            {reviews.slice(0, 3).map((review) => (
+            {allReviews.slice(0, 3).map((review) => (
               <ReviewCard key={review.id} review={review} />
             ))}
-            {reviews.length > 3 && (
+            {allReviews.length > 3 && (
               <Button variant="link" className="w-full">
-                View all {reviewCount} reviews
+                View all {safeReviewCount} reviews
               </Button>
             )}
           </div>
@@ -376,11 +413,11 @@ export function ReviewsSection({
         {/* Rating Summary */}
         <div className="mb-8 grid gap-8 sm:grid-cols-2">
           <div className="flex flex-col items-center justify-center">
-            <div className="mb-2 text-5xl font-bold">{formatRating(averageRating)}</div>
-            <StarRating rating={toNumber(averageRating)} size="large" />
-            <p className="mt-2 text-muted-foreground">{reviewCount} reviews</p>
+            <div className="mb-2 text-5xl font-bold">{formatRating(safeAverageRating)}</div>
+            <StarRating rating={safeAverageRating} size="large" />
+            <p className="mt-2 text-muted-foreground">{safeReviewCount} reviews</p>
           </div>
-          <RatingBreakdown reviews={reviews} />
+          <RatingBreakdown reviews={allReviews} />
         </div>
 
         {/* Reviews List */}
@@ -389,12 +426,18 @@ export function ReviewsSection({
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-        ) : loading && reviews.length === 0 ? (
+        ) : loading && allReviews.length === 0 ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-        ) : reviews.length > 0 ? (
+        ) : allReviews.length > 0 ? (
           <div className="space-y-6">
+            {/* Pinned reviews first */}
+            {pinnedReviews.map((review) => (
+              <ReviewCard key={`pinned-${review.id}`} review={review} />
+            ))}
+            
+            {/* Regular reviews */}
             {reviews.map((review) => (
               <ReviewCard key={review.id} review={review} />
             ))}

@@ -12,6 +12,7 @@ import { searchHotels } from "@/lib/api/hotels"
 import { getRestaurantsPaginated } from "@/lib/api/restaurants"
 import { getExperiencesPaginated } from "@/lib/api/experiences"
 import { ArrowLeft, Hotel, Utensils, Compass, Shield, MapPin, Loader2, Car } from "lucide-react"
+import { ReviewsSection } from "@/components/reviews/reviews-section"
 import { notFound } from "next/navigation"
 
 const API_BASE = "https://api.aman.yichalal.ai"
@@ -411,6 +412,18 @@ export default function CityDetailPage() {
                 </div>
               </div>
             )}
+          </div>
+        </section>
+
+        {/* City Reviews */}
+        <section className="py-12">
+          <div className="container mx-auto px-4">
+            <ReviewsSection
+              contentType="city"
+              contentId={city.id}
+              averageRating={city.average_rating || 0}
+              reviewCount={city.review_count || 0}
+            />
           </div>
         </section>
       </main>

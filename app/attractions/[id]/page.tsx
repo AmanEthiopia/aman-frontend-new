@@ -33,6 +33,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
+import { ReviewsSection } from "@/components/reviews/reviews-section"
 
 export default function AttractionDetailPage() {
   const params = useParams()
@@ -254,6 +255,16 @@ export default function AttractionDetailPage() {
                   </Button>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Reviews Section */}
+            <div className="lg:col-span-2 mt-8">
+              <ReviewsSection
+                contentType="attraction"
+                contentId={attraction.id}
+                averageRating={attraction.rating || 0}
+                reviewCount={attraction.review_count || 0}
+              />
             </div>
           </div>
         </div>

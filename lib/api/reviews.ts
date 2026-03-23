@@ -4,7 +4,7 @@ import { apiGet, apiPost, apiPatch, apiDelete } from "./client"
 // Types
 // ============================================================================
 
-export type ReviewableType = "hotel" | "restaurant" | "experience" | "guide" | "package"
+export type ReviewableType = "hotel" | "restaurant" | "experience" | "guide" | "package" | "attraction" | "transport" | "city"
 
 export interface ReviewAuthor {
   id: string | null
@@ -193,6 +193,12 @@ export function getSubRatingsForType(type: ReviewableType): string[] {
       return ["value_rating", "service_rating"]
     case "guide":
       return ["service_rating", "value_rating"]
+    case "attraction":
+      return ["value_rating", "location_rating"]
+    case "transport":
+      return ["service_rating", "value_rating"]
+    case "city":
+      return ["value_rating"]
     default:
       return []
   }
