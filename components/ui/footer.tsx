@@ -66,7 +66,7 @@ export function Footer() {
               <Link href="/cities" className="text-sm text-muted-foreground hover:text-foreground">
                 Cities Guide
               </Link>
-              <Link href="/ai/planner" className="text-sm text-muted-foreground hover:text-foreground">
+              <Link href="/planner" className="text-sm text-muted-foreground hover:text-foreground">
                 AI Travel Planner
               </Link>
             </nav>
@@ -87,6 +87,9 @@ export function Footer() {
               </Link>
               <Link href="/help" className="text-sm text-muted-foreground hover:text-foreground">
                 Help Center
+              </Link>
+              <Link href="/concierge" className="text-sm text-muted-foreground hover:text-foreground">
+                Concierge Services
               </Link>
               <Link
                 href="/business"

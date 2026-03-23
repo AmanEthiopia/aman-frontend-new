@@ -1,6 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, Calendar, Map, MessageSquare, Settings, Bell } from "lucide-react"
@@ -10,17 +11,40 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useAuth } from "@/contexts/auth-context"
-
-const navItems = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/bookings", label: "Bookings", icon: Calendar },
-  { href: "/itinerary", label: "Itinerary", icon: Map },
-  { href: "/messages", label: "Messages", icon: MessageSquare, badge: 2 },
-]
+import { getConversations } from "@/lib/api/messages"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const { userProfile } = useAuth()
+  const { userProfile, isAuthenticated } = useAuth()
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // Fetch unread message count
+  useEffect(() => {
+    async function fetchUnreadCount() {
+      if (!isAuthenticated) return
+      try {
+        const response = await getConversations()
+        const conversations = response?.results || response || []
+        const total = Array.isArray(conversations)
+          ? conversations.reduce((sum, c) => sum + (c?.unread_count || 0), 0)
+          : 0
+        setUnreadCount(total)
+      } catch {
+        setUnreadCount(0)
+      }
+    }
+    fetchUnreadCount()
+    // Poll for new messages every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000)
+    return () => clearInterval(interval)
+  }, [isAuthenticated])
+
+  const navItems = [
+    { href: "/home", label: "Home", icon: Home },
+    { href: "/bookings", label: "Bookings", icon: Calendar },
+    { href: "/itinerary", label: "Itinerary", icon: Map },
+    { href: "/messages", label: "Messages", icon: MessageSquare, badge: unreadCount },
+  ]
 
   return (
     <ProtectedRoute>

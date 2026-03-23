@@ -170,6 +170,24 @@ export function Header() {
                         My Bookings
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/itinerary" className="flex items-center gap-2">
+                        <Map className="h-4 w-4" />
+                        My Itinerary
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/messages" className="flex items-center gap-2">
+                        <Compass className="h-4 w-4" />
+                        Messages
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/settings" className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Profile & Settings
+                      </Link>
+                    </DropdownMenuItem>
                   </>
                 )}
                 {user?.role === "provider" && FEATURES.PROVIDER_PORTAL && (
@@ -299,9 +317,25 @@ export function Header() {
                     </div>
                   </div>
                   {user?.role === "traveler" && (
-                    <Button variant="outline" asChild className="w-full bg-transparent">
-                      <Link href="/home">My Dashboard</Link>
-                    </Button>
+                    <>
+                      <Button variant="outline" asChild className="w-full bg-transparent">
+                        <Link href="/home">My Dashboard</Link>
+                      </Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button variant="ghost" size="sm" asChild className="justify-start">
+                          <Link href="/bookings">Bookings</Link>
+                        </Button>
+                        <Button variant="ghost" size="sm" asChild className="justify-start">
+                          <Link href="/itinerary">Itinerary</Link>
+                        </Button>
+                        <Button variant="ghost" size="sm" asChild className="justify-start">
+                          <Link href="/messages">Messages</Link>
+                        </Button>
+                        <Button variant="ghost" size="sm" asChild className="justify-start">
+                          <Link href="/settings">Settings</Link>
+                        </Button>
+                      </div>
+                    </>
                   )}
                   {user?.role === "provider" && FEATURES.PROVIDER_PORTAL && (
                     <Button variant="outline" asChild className="w-full bg-transparent">

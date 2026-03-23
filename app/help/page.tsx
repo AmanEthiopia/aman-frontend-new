@@ -17,6 +17,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Header } from "@/components/ui/header"
+import { Footer } from "@/components/ui/footer"
+import Link from "next/link"
 
 const categories = [
   { icon: Calendar, label: "Bookings", count: 12 },
@@ -63,7 +66,9 @@ export default function HelpPage() {
   const [searchQuery, setSearchQuery] = useState("")
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <main className="flex-1 bg-muted/30">
       {/* Hero */}
       <section className="bg-background py-16">
         <div className="container">
@@ -170,6 +175,8 @@ export default function HelpPage() {
           </div>
         </div>
       </section>
+      </main>
+      <Footer />
     </div>
   )
 }

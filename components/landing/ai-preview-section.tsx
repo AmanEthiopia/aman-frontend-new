@@ -49,7 +49,7 @@ export function AIPreviewSection() {
                 Ask AI Assistant
               </Button>
               <Button variant="outline" asChild className="bg-transparent">
-                <Link href="/ai/planner">
+                <Link href="/planner">
                   Plan a Trip
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
