@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { TrustBadge } from "@/components/shared/trust-badge"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
+import { ReviewsSection } from "@/components/reviews/reviews-section"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
 import { APIError } from "@/lib/api/client"
@@ -389,6 +390,16 @@ export default function HotelDetailPage() {
                   </Card>
                 </div>
               )}
+
+              {/* Reviews Section */}
+              <div className="mb-8">
+                <ReviewsSection
+                  contentType="hotel"
+                  contentId={hotel.id}
+                  averageRating={hotel.average_rating || hotel.rating || 0}
+                  reviewCount={hotel.review_count || hotel.reviewCount || 0}
+                />
+              </div>
             </div>
 
             {/* Sidebar - Booking Card */}

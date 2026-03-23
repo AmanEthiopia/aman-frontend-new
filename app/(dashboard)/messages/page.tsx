@@ -1,20 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import {
   Search,
   MoreHorizontal,
   Send,
   Paperclip,
-  ImageIcon,
   Phone,
   Info,
   Check,
   CheckCheck,
-  Building2,
   Shield,
   Loader2,
   AlertCircle,
+  Flag,
+  Hotel,
+  Utensils,
+  Compass,
+  Calendar,
+  MessageSquare,
+  Map,
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,8 +29,43 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { getConversations, getMessages, sendMessage, type Conversation, type Message } from "@/lib/api/messages"
+import {
+  getConversations,
+  getMessages,
+  sendMessage,
+  markConversationRead,
+  flagConversation,
+  formatMessageTime,
+  createMessagePoller,
+  type Conversation,
+  type Message,
+  type RelatedToType,
+} from "@/lib/api/messages"
+import { useAuth } from "@/contexts/auth-context"
+
+const TYPE_ICONS: Record<RelatedToType, typeof Hotel> = {
+  hotel: Hotel,
+  restaurant: Utensils,
+  experience: Compass,
+  booking: Calendar,
+  general: MessageSquare,
+  guide: Map,
+}
 
 function ConversationItem({
   conversation,
@@ -35,73 +76,109 @@ function ConversationItem({
   isActive: boolean
   onClick: () => void
 }) {
-  const lastMessage = conversation.last_message
-  const isUnread = conversation.unread_count > 0
+  const TypeIcon = TYPE_ICONS[conversation.related_to_type] || MessageSquare
 
   return (
     <button
       onClick={onClick}
       className={cn(
         "flex w-full items-start gap-3 rounded-lg p-3 text-left transition-colors",
-        isActive ? "bg-primary/10" : "hover:bg-muted",
+        isActive ? "bg-primary/10" : "hover:bg-muted"
       )}
     >
       <div className="relative">
         <Avatar className="h-12 w-12">
-          <AvatarImage src={conversation.participant_avatar || "/placeholder.svg"} />
-          <AvatarFallback>{conversation.participant_name.slice(0, 2).toUpperCase()}</AvatarFallback>
+          <AvatarImage src={conversation.other_participant.avatar_url} />
+          <AvatarFallback>
+            {conversation.other_participant.name.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
         </Avatar>
-        {conversation.is_verified && (
-          <div className="absolute -bottom-0.5 -right-0.5 rounded-full bg-background p-0.5">
-            <Shield className="h-3.5 w-3.5 text-green-600" />
-          </div>
-        )}
       </div>
       <div className="flex-1 overflow-hidden">
         <div className="flex items-center justify-between">
-          <span className={cn("font-medium", isUnread && "font-semibold")}>{conversation.participant_name}</span>
+          <span className={cn("font-medium", conversation.unread_count > 0 && "font-semibold")}>
+            {conversation.other_participant.name}
+          </span>
           <span className="text-xs text-muted-foreground">
-            {new Date(lastMessage.created_at).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-            })}
+            {formatMessageTime(conversation.last_message_at)}
           </span>
         </div>
         <div className="flex items-center gap-1 text-sm">
-          <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
-            {conversation.participant_type === "host" ? "Hotel" : "Support"}
+          <Badge variant="outline" className="h-5 gap-1 px-1.5 text-[10px]">
+            <TypeIcon className="h-3 w-3" />
+            {conversation.related_to_type}
           </Badge>
-          {conversation.listing_name && <span className="text-muted-foreground">{conversation.listing_name}</span>}
+          {conversation.is_flagged && (
+            <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+              Flagged
+            </Badge>
+          )}
         </div>
-        <p className={cn("mt-1 truncate text-sm", isUnread ? "font-medium text-foreground" : "text-muted-foreground")}>
-          {lastMessage.content}
+        <p
+          className={cn(
+            "mt-1 truncate text-sm",
+            conversation.unread_count > 0 ? "font-medium text-foreground" : "text-muted-foreground"
+          )}
+        >
+          {conversation.last_message.text}
         </p>
       </div>
-      {isUnread && <Badge className="mt-1 h-5 min-w-5 px-1.5">{conversation.unread_count}</Badge>}
+      {conversation.unread_count > 0 && (
+        <Badge className="mt-1 h-5 min-w-5 px-1.5">{conversation.unread_count}</Badge>
+      )}
     </button>
   )
 }
 
-function MessageBubble({ message, currentUserId }: { message: Message; currentUserId: string }) {
-  const isOwn = message.sender_id === currentUserId
-  const StatusIcon = message.read ? CheckCheck : Check
+function MessageBubble({
+  message,
+  currentUserId,
+}: {
+  message: Message
+  currentUserId: string
+}) {
+  const isOwn = message.sender.id === currentUserId
+  const isSystem = message.is_system_message
+
+  if (isSystem) {
+    return (
+      <div className="flex justify-center">
+        <div className="rounded-full bg-muted px-4 py-2 text-xs text-muted-foreground">
+          {message.message_text}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={cn("flex gap-2", isOwn ? "flex-row-reverse" : "flex-row")}>
       {!isOwn && (
         <Avatar className="h-8 w-8">
-          <AvatarImage src={message.sender_avatar || "/placeholder.svg"} />
-          <AvatarFallback>{message.sender_name.slice(0, 2).toUpperCase()}</AvatarFallback>
+          <AvatarImage src={message.sender.avatar_url} />
+          <AvatarFallback>{message.sender.name.slice(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
       )}
       <div
-        className={cn("max-w-[70%] rounded-2xl px-4 py-2", isOwn ? "bg-primary text-primary-foreground" : "bg-muted")}
+        className={cn(
+          "max-w-[70%] rounded-2xl px-4 py-2",
+          isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
+        )}
       >
-        <p className="text-sm">{message.content}</p>
+        <p className="text-sm whitespace-pre-wrap">{message.message_text}</p>
+        {message.attachment_url && (
+          <a
+            href={message.attachment_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 block text-xs underline"
+          >
+            View attachment
+          </a>
+        )}
         <div
           className={cn(
             "mt-1 flex items-center gap-1 text-[10px]",
-            isOwn ? "justify-end text-primary-foreground/70" : "text-muted-foreground",
+            isOwn ? "justify-end text-primary-foreground/70" : "text-muted-foreground"
           )}
         >
           <span>
@@ -110,7 +187,6 @@ function MessageBubble({ message, currentUserId }: { message: Message; currentUs
               minute: "2-digit",
             })}
           </span>
-          {isOwn && <StatusIcon className="h-3 w-3" />}
         </div>
       </div>
     </div>
@@ -121,7 +197,7 @@ function EmptyMessages() {
   return (
     <div className="flex h-full flex-col items-center justify-center text-center p-8">
       <div className="mb-4 rounded-full bg-muted p-4">
-        <Building2 className="h-8 w-8 text-muted-foreground" />
+        <MessageSquare className="h-8 w-8 text-muted-foreground" />
       </div>
       <h3 className="mb-2 text-lg font-semibold">No messages yet</h3>
       <p className="max-w-sm text-sm text-muted-foreground">
@@ -135,29 +211,44 @@ function EmptyConversation() {
   return (
     <div className="flex h-full flex-col items-center justify-center text-center">
       <h3 className="mb-2 text-lg font-semibold">Select a conversation</h3>
-      <p className="max-w-sm text-sm text-muted-foreground">Choose a conversation from the list to view messages</p>
+      <p className="max-w-sm text-sm text-muted-foreground">
+        Choose a conversation from the list to view messages
+      </p>
     </div>
   )
 }
 
 export default function MessagesPage() {
+  const searchParams = useSearchParams()
+  const { user } = useAuth()
+  const currentUserId = user?.id || ""
+
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [messages, setMessages] = useState<Message[]>([])
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(
+    searchParams.get("conversation")
+  )
   const [newMessage, setNewMessage] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [messagesLoading, setMessagesLoading] = useState(false)
   const [sendingMessage, setSendingMessage] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [flagDialogOpen, setFlagDialogOpen] = useState(false)
+  const [flagReason, setFlagReason] = useState("")
+  const [flagging, setFlagging] = useState(false)
 
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const stopPollerRef = useRef<(() => void) | null>(null)
+
+  // Load conversations
   useEffect(() => {
     async function loadConversations() {
       try {
         setLoading(true)
-        const data = await getConversations()
+        const { data } = await getConversations()
         setConversations(data)
       } catch (err: any) {
-        console.error("Failed to load conversations:", err)
         setError(err.message || "Failed to load conversations")
       } finally {
         setLoading(false)
@@ -166,23 +257,59 @@ export default function MessagesPage() {
     loadConversations()
   }, [])
 
+  // Load messages and start polling when conversation changes
   useEffect(() => {
-    async function loadMessages() {
-      if (!selectedConversation) return
+    if (!selectedConversation) return
 
+    async function loadMessages() {
       try {
         setMessagesLoading(true)
-        const data = await getMessages(selectedConversation)
+        const { data } = await getMessages(selectedConversation!)
         setMessages(data)
+
+        // Mark as read
+        await markConversationRead(selectedConversation!).catch(() => {})
+
+        // Update unread count locally
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === selectedConversation ? { ...c, unread_count: 0 } : c
+          )
+        )
       } catch (err: any) {
-        console.error("Failed to load messages:", err)
         setError(err.message || "Failed to load messages")
       } finally {
         setMessagesLoading(false)
       }
     }
+
     loadMessages()
+
+    // Stop previous poller
+    if (stopPollerRef.current) {
+      stopPollerRef.current()
+    }
+
+    // Start new poller
+    stopPollerRef.current = createMessagePoller(
+      selectedConversation,
+      (newMessages) => {
+        setMessages((prev) => [...prev, ...newMessages])
+      },
+      5000
+    )
+
+    return () => {
+      if (stopPollerRef.current) {
+        stopPollerRef.current()
+      }
+    }
   }, [selectedConversation])
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
 
   const activeConversation = conversations.find((c) => c.id === selectedConversation)
 
@@ -191,19 +318,57 @@ export default function MessagesPage() {
 
     try {
       setSendingMessage(true)
-      const message = await sendMessage({
-        conversation_id: selectedConversation,
-        content: newMessage,
-      })
+      const message = await sendMessage(selectedConversation, newMessage.trim())
       setMessages((prev) => [...prev, message])
       setNewMessage("")
+
+      // Update last message in conversation list
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === selectedConversation
+            ? {
+                ...c,
+                last_message: { text: message.message_text, created_at: message.created_at },
+                last_message_at: message.created_at,
+              }
+            : c
+        )
+      )
     } catch (err: any) {
-      console.error("Failed to send message:", err)
       setError(err.message || "Failed to send message")
     } finally {
       setSendingMessage(false)
     }
   }
+
+  const handleFlag = async () => {
+    if (!selectedConversation || !flagReason.trim()) return
+
+    try {
+      setFlagging(true)
+      await flagConversation(selectedConversation, flagReason.trim())
+
+      // Update conversation locally
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === selectedConversation ? { ...c, is_flagged: true } : c
+        )
+      )
+
+      setFlagDialogOpen(false)
+      setFlagReason("")
+    } catch (err: any) {
+      setError(err.message || "Failed to flag conversation")
+    } finally {
+      setFlagging(false)
+    }
+  }
+
+  const filteredConversations = conversations.filter(
+    (c) =>
+      c.other_participant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.subject.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   if (loading) {
     return (
@@ -229,7 +394,9 @@ export default function MessagesPage() {
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Messages</h1>
         {conversations.length > 0 && (
-          <Badge variant="secondary">{conversations.reduce((acc, c) => acc + c.unread_count, 0)} unread</Badge>
+          <Badge variant="secondary">
+            {conversations.reduce((acc, c) => acc + c.unread_count, 0)} unread
+          </Badge>
         )}
       </div>
 
@@ -239,13 +406,18 @@ export default function MessagesPage() {
           <div className="border-b p-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search messages..." className="pl-9" />
+              <Input
+                placeholder="Search messages..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
             </div>
           </div>
           <ScrollArea className="h-[calc(100%-4rem)]">
-            {conversations.length > 0 ? (
+            {filteredConversations.length > 0 ? (
               <div className="p-2">
-                {conversations.map((conversation) => (
+                {filteredConversations.map((conversation) => (
                   <ConversationItem
                     key={conversation.id}
                     conversation={conversation}
@@ -268,29 +440,50 @@ export default function MessagesPage() {
               <div className="flex items-center justify-between border-b px-4 py-3">
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarImage src={activeConversation.participant_avatar || "/placeholder.svg"} />
-                    <AvatarFallback>{activeConversation.participant_name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    <AvatarImage src={activeConversation.other_participant.avatar_url} />
+                    <AvatarFallback>
+                      {activeConversation.other_participant.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold">{activeConversation.participant_name}</span>
-                      {activeConversation.is_verified && <Shield className="h-4 w-4 text-green-600" />}
+                      <span className="font-semibold">
+                        {activeConversation.other_participant.name}
+                      </span>
+                      {activeConversation.is_flagged && (
+                        <Badge variant="destructive" className="text-xs">
+                          Flagged
+                        </Badge>
+                      )}
                     </div>
-                    {activeConversation.listing_name && (
-                      <span className="text-sm text-muted-foreground">{activeConversation.listing_name}</span>
-                    )}
+                    <span className="text-sm text-muted-foreground">
+                      {activeConversation.subject}
+                    </span>
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon">
-                    <Phone className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Info className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <Info className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                      {!activeConversation.is_flagged && (
+                        <DropdownMenuItem
+                          onClick={() => setFlagDialogOpen(true)}
+                          className="text-destructive"
+                        >
+                          <Flag className="mr-2 h-4 w-4" />
+                          Report Issue
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
 
@@ -306,9 +499,10 @@ export default function MessagesPage() {
                       <MessageBubble
                         key={message.id}
                         message={message}
-                        currentUserId={activeConversation.participant_id}
+                        currentUserId={currentUserId}
                       />
                     ))}
+                    <div ref={messagesEndRef} />
                   </div>
                 )}
               </ScrollArea>
@@ -318,9 +512,6 @@ export default function MessagesPage() {
                 <div className="flex items-end gap-2">
                   <Button variant="ghost" size="icon">
                     <Paperclip className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <ImageIcon className="h-4 w-4" />
                   </Button>
                   <Textarea
                     placeholder="Type a message..."
@@ -337,7 +528,11 @@ export default function MessagesPage() {
                     disabled={sendingMessage}
                   />
                   <Button onClick={handleSend} disabled={!newMessage.trim() || sendingMessage}>
-                    {sendingMessage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    {sendingMessage ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -347,6 +542,49 @@ export default function MessagesPage() {
           )}
         </div>
       </Card>
+
+      {/* Flag Dialog */}
+      <Dialog open={flagDialogOpen} onOpenChange={setFlagDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report an Issue</DialogTitle>
+            <DialogDescription>
+              If you're having a problem with this conversation, let us know and our team will
+              review it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              value={flagReason}
+              onChange={(e) => setFlagReason(e.target.value)}
+              placeholder="Describe the issue you're experiencing..."
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFlagDialogOpen(false)} disabled={flagging}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleFlag}
+              disabled={!flagReason.trim() || flagging}
+            >
+              {flagging ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Flag className="mr-2 h-4 w-4" />
+                  Submit Report
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

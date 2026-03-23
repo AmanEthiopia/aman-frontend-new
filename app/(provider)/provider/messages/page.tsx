@@ -1,184 +1,59 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useSearchParams } from "next/navigation"
 import {
   Search,
+  MoreHorizontal,
   Send,
   Paperclip,
-  MoreHorizontal,
-  Phone,
-  Video,
-  Info,
-  Check,
-  CheckCheck,
-  ImageIcon,
-  File,
+  Loader2,
+  AlertCircle,
+  Flag,
+  Hotel,
+  Utensils,
+  Compass,
   Calendar,
-  Star,
+  MessageSquare,
+  Map,
+  Info,
+  Users,
 } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Textarea } from "@/components/ui/textarea"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import {
+  getConversations,
+  getMessages,
+  sendMessage,
+  markConversationRead,
+  formatMessageTime,
+  createMessagePoller,
+  type Conversation,
+  type Message,
+  type RelatedToType,
+} from "@/lib/api/messages"
+import { useAuth } from "@/contexts/auth-context"
 
-interface Message {
-  id: string
-  senderId: string
-  content: string
-  timestamp: string
-  type: "text" | "image" | "file"
-  isRead: boolean
+const TYPE_ICONS: Record<RelatedToType, typeof Hotel> = {
+  hotel: Hotel,
+  restaurant: Utensils,
+  experience: Compass,
+  booking: Calendar,
+  general: MessageSquare,
+  guide: Map,
 }
-
-interface Conversation {
-  id: string
-  guestName: string
-  guestAvatar?: string
-  lastMessage: string
-  lastMessageTime: string
-  unreadCount: number
-  bookingId?: string
-  bookingStatus?: "pending" | "confirmed" | "completed"
-  messages: Message[]
-}
-
-const mockConversations: Conversation[] = [
-  {
-    id: "conv-1",
-    guestName: "Sarah Johnson",
-    guestAvatar: "/diverse-user-avatars.png",
-    lastMessage: "Thank you! Looking forward to our stay.",
-    lastMessageTime: "10:30 AM",
-    unreadCount: 2,
-    bookingId: "BK-101",
-    bookingStatus: "pending",
-    messages: [
-      {
-        id: "m1",
-        senderId: "guest",
-        content: "Hi! I have a question about the check-in time. Is early check-in available?",
-        timestamp: "10:15 AM",
-        type: "text",
-        isRead: true,
-      },
-      {
-        id: "m2",
-        senderId: "provider",
-        content: "Hello Sarah! Yes, early check-in is available from 12 PM onwards, subject to availability. I'll make a note on your reservation.",
-        timestamp: "10:20 AM",
-        type: "text",
-        isRead: true,
-      },
-      {
-        id: "m3",
-        senderId: "guest",
-        content: "That would be perfect! Also, is the airport shuttle service complimentary?",
-        timestamp: "10:25 AM",
-        type: "text",
-        isRead: true,
-      },
-      {
-        id: "m4",
-        senderId: "provider",
-        content: "Yes, we offer complimentary airport pickup for all our guests. Please share your flight details and we'll arrange everything.",
-        timestamp: "10:28 AM",
-        type: "text",
-        isRead: true,
-      },
-      {
-        id: "m5",
-        senderId: "guest",
-        content: "Thank you! Looking forward to our stay.",
-        timestamp: "10:30 AM",
-        type: "text",
-        isRead: false,
-      },
-    ],
-  },
-  {
-    id: "conv-2",
-    guestName: "Michael Chen",
-    lastMessage: "Can you send me photos of the family room?",
-    lastMessageTime: "Yesterday",
-    unreadCount: 1,
-    bookingId: "BK-102",
-    bookingStatus: "pending",
-    messages: [
-      {
-        id: "m1",
-        senderId: "guest",
-        content: "Hello, I just submitted a booking request for the Family Room.",
-        timestamp: "Yesterday 2:00 PM",
-        type: "text",
-        isRead: true,
-      },
-      {
-        id: "m2",
-        senderId: "guest",
-        content: "Can you send me photos of the family room?",
-        timestamp: "Yesterday 2:05 PM",
-        type: "text",
-        isRead: false,
-      },
-    ],
-  },
-  {
-    id: "conv-3",
-    guestName: "David Brown",
-    lastMessage: "Great, see you then!",
-    lastMessageTime: "2 days ago",
-    unreadCount: 0,
-    bookingId: "BK-104",
-    bookingStatus: "confirmed",
-    messages: [
-      {
-        id: "m1",
-        senderId: "provider",
-        content: "Hi David! Your booking is confirmed. We look forward to hosting you.",
-        timestamp: "2 days ago 10:00 AM",
-        type: "text",
-        isRead: true,
-      },
-      {
-        id: "m2",
-        senderId: "guest",
-        content: "Great, see you then!",
-        timestamp: "2 days ago 10:30 AM",
-        type: "text",
-        isRead: true,
-      },
-    ],
-  },
-  {
-    id: "conv-4",
-    guestName: "Olivia Martinez",
-    lastMessage: "Thank you for the wonderful stay!",
-    lastMessageTime: "1 week ago",
-    unreadCount: 0,
-    bookingId: "BK-105",
-    bookingStatus: "completed",
-    messages: [
-      {
-        id: "m1",
-        senderId: "guest",
-        content: "Thank you for the wonderful stay!",
-        timestamp: "1 week ago",
-        type: "text",
-        isRead: true,
-      },
-    ],
-  },
-]
 
 const quickReplies = [
   "Thank you for reaching out!",
@@ -187,173 +62,323 @@ const quickReplies = [
   "Please let me know if you need anything else.",
 ]
 
-function ConversationList({
-  conversations,
-  selectedId,
-  onSelect,
-  searchQuery,
+function ConversationItem({
+  conversation,
+  isActive,
+  onClick,
 }: {
-  conversations: Conversation[]
-  selectedId: string | null
-  onSelect: (id: string) => void
-  searchQuery: string
+  conversation: Conversation
+  isActive: boolean
+  onClick: () => void
 }) {
-  const filtered = conversations.filter((c) =>
-    c.guestName.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const TypeIcon = TYPE_ICONS[conversation.related_to_type] || MessageSquare
 
   return (
-    <ScrollArea className="h-[calc(100vh-16rem)]">
-      <div className="space-y-1 p-2">
-        {filtered.map((conversation) => (
-          <button
-            key={conversation.id}
-            onClick={() => onSelect(conversation.id)}
-            className={cn(
-              "flex w-full items-start gap-3 rounded-lg p-3 text-left transition-colors",
-              selectedId === conversation.id
-                ? "bg-primary/10"
-                : "hover:bg-muted"
-            )}
-          >
-            <div className="relative">
-              <Avatar>
-                <AvatarImage src={conversation.guestAvatar || "/placeholder.svg"} />
-                <AvatarFallback>
-                  {conversation.guestName.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              {conversation.unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs text-destructive-foreground">
-                  {conversation.unreadCount}
-                </span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <span className="font-medium truncate">{conversation.guestName}</span>
-                <span className="text-xs text-muted-foreground flex-shrink-0">
-                  {conversation.lastMessageTime}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground truncate">
-                {conversation.lastMessage}
-              </p>
-              {conversation.bookingId && (
-                <Badge
-                  variant={
-                    conversation.bookingStatus === "confirmed"
-                      ? "default"
-                      : conversation.bookingStatus === "completed"
-                        ? "secondary"
-                        : "outline"
-                  }
-                  className="mt-1 text-xs"
-                >
-                  {conversation.bookingId}
-                </Badge>
-              )}
-            </div>
-          </button>
-        ))}
-        {filtered.length === 0 && (
-          <div className="py-8 text-center text-muted-foreground">
-            No conversations found
-          </div>
+    <button
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-start gap-3 rounded-lg p-3 text-left transition-colors",
+        isActive ? "bg-primary/10" : "hover:bg-muted"
+      )}
+    >
+      <div className="relative">
+        <Avatar className="h-11 w-11">
+          <AvatarImage src={conversation.other_participant.avatar_url} />
+          <AvatarFallback>
+            {conversation.other_participant.name.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        {conversation.unread_count > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs text-destructive-foreground">
+            {conversation.unread_count}
+          </span>
         )}
       </div>
-    </ScrollArea>
+      <div className="flex-1 overflow-hidden">
+        <div className="flex items-center justify-between">
+          <span className={cn("font-medium truncate", conversation.unread_count > 0 && "font-semibold")}>
+            {conversation.other_participant.name}
+          </span>
+          <span className="text-xs text-muted-foreground flex-shrink-0">
+            {formatMessageTime(conversation.last_message_at)}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 mt-0.5">
+          <Badge variant="outline" className="h-5 gap-1 px-1.5 text-[10px]">
+            <TypeIcon className="h-3 w-3" />
+            {conversation.related_to_type}
+          </Badge>
+          {conversation.is_flagged && (
+            <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+              Dispute
+            </Badge>
+          )}
+        </div>
+        <p
+          className={cn(
+            "mt-1 truncate text-sm",
+            conversation.unread_count > 0 ? "font-medium text-foreground" : "text-muted-foreground"
+          )}
+        >
+          {conversation.last_message.text}
+        </p>
+      </div>
+    </button>
   )
 }
 
 function MessageBubble({
   message,
-  isOwn,
+  currentUserId,
 }: {
   message: Message
-  isOwn: boolean
+  currentUserId: string
 }) {
+  const isOwn = message.sender.id === currentUserId
+  const isSystem = message.is_system_message
+
+  if (isSystem) {
+    return (
+      <div className="flex justify-center">
+        <div className="rounded-full bg-muted px-4 py-2 text-xs text-muted-foreground">
+          {message.message_text}
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+    <div className={cn("flex gap-2", isOwn ? "flex-row-reverse" : "flex-row")}>
+      {!isOwn && (
+        <Avatar className="h-8 w-8">
+          <AvatarImage src={message.sender.avatar_url} />
+          <AvatarFallback>{message.sender.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar>
+      )}
       <div
         className={cn(
           "max-w-[70%] rounded-2xl px-4 py-2",
-          isOwn
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted"
+          isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
         )}
       >
-        <p className="text-sm">{message.content}</p>
+        <p className="text-sm whitespace-pre-wrap">{message.message_text}</p>
+        {message.attachment_url && (
+          <a
+            href={message.attachment_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 block text-xs underline"
+          >
+            View attachment
+          </a>
+        )}
         <div
           className={cn(
-            "mt-1 flex items-center justify-end gap-1 text-xs",
-            isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+            "mt-1 flex items-center gap-1 text-[10px]",
+            isOwn ? "justify-end text-primary-foreground/70" : "text-muted-foreground"
           )}
         >
-          <span>{message.timestamp}</span>
-          {isOwn && (
-            message.isRead ? (
-              <CheckCheck className="h-3 w-3" />
-            ) : (
-              <Check className="h-3 w-3" />
-            )
-          )}
+          <span>
+            {new Date(message.created_at).toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+          </span>
         </div>
       </div>
     </div>
   )
 }
 
-export default function ProviderMessagesPage() {
-  const [conversations, setConversations] = useState(mockConversations)
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(
-    mockConversations[0]?.id || null
+function EmptyMessages() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center text-center p-8">
+      <div className="mb-4 rounded-full bg-muted p-4">
+        <Users className="h-8 w-8 text-muted-foreground" />
+      </div>
+      <h3 className="mb-2 text-lg font-semibold">No messages yet</h3>
+      <p className="max-w-sm text-sm text-muted-foreground">
+        When travelers inquire about your listings, their messages will appear here.
+      </p>
+    </div>
   )
+}
+
+function EmptyConversation() {
+  return (
+    <CardContent className="flex h-full items-center justify-center text-center">
+      <div>
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+          <MessageSquare className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="font-semibold">Select a conversation</h3>
+        <p className="text-muted-foreground">
+          Choose a conversation from the list to start messaging
+        </p>
+      </div>
+    </CardContent>
+  )
+}
+
+export default function ProviderMessagesPage() {
+  const searchParams = useSearchParams()
+  const { user } = useAuth()
+  const currentUserId = user?.id || ""
+
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(
+    searchParams.get("conversation")
+  )
+  const [newMessage, setNewMessage] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
-  const [messageInput, setMessageInput] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [messagesLoading, setMessagesLoading] = useState(false)
+  const [sendingMessage, setSendingMessage] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const stopPollerRef = useRef<(() => void) | null>(null)
 
-  const currentConversation = conversations.find((c) => c.id === selectedConversation)
-
+  // Load conversations
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [currentConversation?.messages])
+    async function loadConversations() {
+      try {
+        setLoading(true)
+        const { data } = await getConversations()
+        setConversations(data)
+        
+        // Auto-select first conversation if none selected
+        if (!selectedConversation && data.length > 0) {
+          setSelectedConversation(data[0].id)
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to load conversations")
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadConversations()
+  }, [])
 
-  const handleSendMessage = () => {
-    if (!messageInput.trim() || !selectedConversation) return
+  // Load messages and start polling when conversation changes
+  useEffect(() => {
+    if (!selectedConversation) return
 
-    const newMessage: Message = {
-      id: `m-${Date.now()}`,
-      senderId: "provider",
-      content: messageInput,
-      timestamp: new Date().toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      }),
-      type: "text",
-      isRead: false,
+    async function loadMessages() {
+      try {
+        setMessagesLoading(true)
+        const { data } = await getMessages(selectedConversation!)
+        setMessages(data)
+
+        // Mark as read
+        await markConversationRead(selectedConversation!).catch(() => {})
+
+        // Update unread count locally
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === selectedConversation ? { ...c, unread_count: 0 } : c
+          )
+        )
+      } catch (err: any) {
+        setError(err.message || "Failed to load messages")
+      } finally {
+        setMessagesLoading(false)
+      }
     }
 
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === selectedConversation
-          ? {
-              ...c,
-              messages: [...c.messages, newMessage],
-              lastMessage: messageInput,
-              lastMessageTime: "Just now",
-            }
-          : c
-      )
+    loadMessages()
+
+    // Stop previous poller
+    if (stopPollerRef.current) {
+      stopPollerRef.current()
+    }
+
+    // Start new poller
+    stopPollerRef.current = createMessagePoller(
+      selectedConversation,
+      (newMessages) => {
+        setMessages((prev) => [...prev, ...newMessages])
+      },
+      5000
     )
-    setMessageInput("")
+
+    return () => {
+      if (stopPollerRef.current) {
+        stopPollerRef.current()
+      }
+    }
+  }, [selectedConversation])
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
+
+  const activeConversation = conversations.find((c) => c.id === selectedConversation)
+
+  const handleSend = async () => {
+    if (!newMessage.trim() || !selectedConversation) return
+
+    try {
+      setSendingMessage(true)
+      const message = await sendMessage(selectedConversation, newMessage.trim())
+      setMessages((prev) => [...prev, message])
+      setNewMessage("")
+
+      // Update last message in conversation list
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === selectedConversation
+            ? {
+                ...c,
+                last_message: { text: message.message_text, created_at: message.created_at },
+                last_message_at: message.created_at,
+              }
+            : c
+        )
+      )
+    } catch (err: any) {
+      setError(err.message || "Failed to send message")
+    } finally {
+      setSendingMessage(false)
+    }
   }
 
   const handleQuickReply = (reply: string) => {
-    setMessageInput(reply)
+    setNewMessage(reply)
   }
 
-  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
+  const filteredConversations = conversations.filter(
+    (c) =>
+      c.other_participant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.subject.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Group conversations by flagged status
+  const flaggedConversations = filteredConversations.filter((c) => c.is_flagged)
+  const normalConversations = filteredConversations.filter((c) => !c.is_flagged)
+
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0)
+
+  if (loading) {
+    return (
+      <div className="flex h-[calc(100vh-12rem)] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error && conversations.length === 0) {
+    return (
+      <div className="flex h-[calc(100vh-12rem)] flex-col items-center justify-center">
+        <AlertCircle className="mb-4 h-12 w-12 text-destructive" />
+        <h3 className="mb-2 text-lg font-semibold">Failed to Load Messages</h3>
+        <p className="mb-6 text-sm text-muted-foreground">{error}</p>
+        <Button onClick={() => window.location.reload()}>Try Again</Button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -365,12 +390,15 @@ export default function ProviderMessagesPage() {
             {totalUnread > 0 && ` (${totalUnread} unread)`}
           </p>
         </div>
+        {flaggedConversations.length > 0 && (
+          <Badge variant="destructive">{flaggedConversations.length} disputes</Badge>
+        )}
       </div>
 
       <div className="grid h-[calc(100vh-12rem)] gap-4 lg:grid-cols-3">
         {/* Conversations List */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="p-3">
+        <Card className="lg:col-span-1 flex flex-col">
+          <CardHeader className="p-3 flex-shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -381,93 +409,115 @@ export default function ProviderMessagesPage() {
               />
             </div>
           </CardHeader>
-          <ConversationList
-            conversations={conversations}
-            selectedId={selectedConversation}
-            onSelect={setSelectedConversation}
-            searchQuery={searchQuery}
-          />
+          <ScrollArea className="flex-1">
+            {filteredConversations.length > 0 ? (
+              <div className="p-2">
+                {/* Flagged conversations first */}
+                {flaggedConversations.length > 0 && (
+                  <div className="mb-2">
+                    <p className="px-3 py-1 text-xs font-medium text-destructive">
+                      Requires Attention
+                    </p>
+                    {flaggedConversations.map((conversation) => (
+                      <ConversationItem
+                        key={conversation.id}
+                        conversation={conversation}
+                        isActive={selectedConversation === conversation.id}
+                        onClick={() => setSelectedConversation(conversation.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Normal conversations */}
+                {normalConversations.map((conversation) => (
+                  <ConversationItem
+                    key={conversation.id}
+                    conversation={conversation}
+                    isActive={selectedConversation === conversation.id}
+                    onClick={() => setSelectedConversation(conversation.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyMessages />
+            )}
+          </ScrollArea>
         </Card>
 
         {/* Chat Area */}
         <Card className="flex flex-col lg:col-span-2">
-          {currentConversation ? (
+          {activeConversation ? (
             <>
               {/* Chat Header */}
-              <CardHeader className="flex flex-row items-center justify-between border-b p-4">
+              <CardHeader className="flex flex-row items-center justify-between border-b p-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarImage src={currentConversation.guestAvatar || "/placeholder.svg"} />
+                    <AvatarImage src={activeConversation.other_participant.avatar_url} />
                     <AvatarFallback>
-                      {currentConversation.guestName.slice(0, 2).toUpperCase()}
+                      {activeConversation.other_participant.name.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="font-semibold">{currentConversation.guestName}</h3>
-                    {currentConversation.bookingId && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        Booking {currentConversation.bookingId}
-                        <Badge
-                          variant={
-                            currentConversation.bookingStatus === "confirmed"
-                              ? "default"
-                              : currentConversation.bookingStatus === "completed"
-                                ? "secondary"
-                                : "outline"
-                          }
-                          className="text-xs"
-                        >
-                          {currentConversation.bookingStatus}
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">{activeConversation.other_participant.name}</h3>
+                      {activeConversation.is_flagged && (
+                        <Badge variant="destructive" className="text-xs">
+                          <Flag className="mr-1 h-3 w-3" />
+                          Dispute
                         </Badge>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{activeConversation.subject}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon">
-                    <Phone className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Info className="h-4 w-4" />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Star className="mr-2 h-4 w-4" />
-                        Mark as important
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>View booking details</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">
-                        Archive conversation
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <Info className="mr-2 h-4 w-4" />
+                      View Details
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </CardHeader>
+
+              {/* Dispute Banner */}
+              {activeConversation.is_flagged && (
+                <div className="flex items-center gap-2 border-b bg-destructive/10 px-4 py-2 flex-shrink-0">
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  <span className="text-sm text-destructive">
+                    This conversation has been flagged as a dispute. An admin may review it.
+                  </span>
+                </div>
+              )}
 
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
-                  {currentConversation.messages.map((message) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      isOwn={message.senderId === "provider"}
-                    />
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
+                {messagesLoading ? (
+                  <div className="flex h-full items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {messages.map((message) => (
+                      <MessageBubble
+                        key={message.id}
+                        message={message}
+                        currentUserId={currentUserId}
+                      />
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
               </ScrollArea>
 
               {/* Quick Replies */}
-              <div className="border-t px-4 py-2">
+              <div className="border-t px-4 py-2 flex-shrink-0">
                 <div className="flex gap-2 overflow-x-auto pb-2">
                   {quickReplies.map((reply, index) => (
                     <Button
@@ -484,45 +534,41 @@ export default function ProviderMessagesPage() {
               </div>
 
               {/* Input */}
-              <div className="border-t p-4">
+              <div className="border-t p-4 flex-shrink-0">
                 <div className="flex gap-2">
                   <Button variant="ghost" size="icon" className="flex-shrink-0">
                     <Paperclip className="h-4 w-4" />
                   </Button>
-                  <Input
+                  <Textarea
                     placeholder="Type a message..."
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault()
-                        handleSendMessage()
+                        handleSend()
                       }
                     }}
-                    className="flex-1"
+                    className="min-h-[2.5rem] max-h-24 resize-none flex-1"
+                    rows={1}
+                    disabled={sendingMessage}
                   />
                   <Button
-                    onClick={handleSendMessage}
-                    disabled={!messageInput.trim()}
+                    onClick={handleSend}
+                    disabled={!newMessage.trim() || sendingMessage}
                     className="flex-shrink-0"
                   >
-                    <Send className="h-4 w-4" />
+                    {sendingMessage ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
             </>
           ) : (
-            <CardContent className="flex h-full items-center justify-center text-center">
-              <div>
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                  <Search className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="font-semibold">Select a conversation</h3>
-                <p className="text-muted-foreground">
-                  Choose a conversation from the list to start messaging
-                </p>
-              </div>
-            </CardContent>
+            <EmptyConversation />
           )}
         </Card>
       </div>
