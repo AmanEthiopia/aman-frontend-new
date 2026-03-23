@@ -36,6 +36,7 @@ import {
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
+import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 
 const CATEGORY_LABELS: Record<string, string> = {
   city_tour: "City Tour",
@@ -535,12 +536,17 @@ export default function ExperienceDetailPage() {
                     >
                       <Heart className={`h-4 w-4 ${isSaved ? "fill-current text-red-500" : ""}`} />
                     </Button>
-                    <Button variant="outline" size="icon">
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+<Button variant="outline" size="icon">
+<Share2 className="h-4 w-4" />
+</Button>
+<AddToItineraryButton
+  itemType="experience"
+  itemId={pkg.id}
+  itemName={pkg.title}
+/>
+</div>
 
-                  <Link href={`/book/experience/${pkg.slug}`}>
+<Link href={`/book/experience/${pkg.slug}`}>
                     <Button className="w-full" size="lg">
                       Book Now
                     </Button>

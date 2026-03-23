@@ -24,6 +24,9 @@ export const FEATURES = {
   RESTAURANTS: true,
   GUIDES: true, // Tour guides, interpreters, drivers
   ATTRACTIONS: true, // Tourist attractions
+  
+  // Traveler features
+  ITINERARY: true, // Personal trip planner
 } as const
 
 export type FeatureFlag = keyof typeof FEATURES
@@ -52,6 +55,9 @@ export const API_ENDPOINTS = {
   // Bookings
   BOOKINGS: "/api/bookings",
   BOOKING_REQUEST: "/api/bookings/request",
+  
+  // Itinerary
+  ITINERARY: "/api/itinerary",
 
   // AI (async-ready)
   AI_QUERY: "/api/ai/query",

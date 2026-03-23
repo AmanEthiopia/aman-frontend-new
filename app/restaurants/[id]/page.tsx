@@ -31,6 +31,7 @@ import {
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
+import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 
 export default function RestaurantDetailPage() {
   const params = useParams()
@@ -148,13 +149,18 @@ export default function RestaurantDetailPage() {
               >
                 <Heart className={`h-4 w-4 ${isSaved ? "fill-current text-red-500" : ""}`} />
               </Button>
-              <Button variant="outline" size="icon">
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+<Button variant="outline" size="icon">
+<Share2 className="h-4 w-4" />
+</Button>
+<AddToItineraryButton
+  itemType="restaurant"
+  itemId={restaurant.id}
+  itemName={restaurant.name}
+/>
+</div>
+</div>
 
-          {/* Main Content Grid */}
+{/* Main Content Grid */}
           <div className="grid gap-8 lg:grid-cols-3">
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2">

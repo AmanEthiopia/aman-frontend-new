@@ -24,6 +24,7 @@ import {
   PRICING_TYPE_LABELS 
 } from "@/lib/api/guides"
 import { SafeImage } from "@/components/ui/safe-image"
+import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -339,11 +340,21 @@ export default function GuideDetailPage() {
                     </Link>
                   </Button>
 
-                  {/* Contact Button */}
-                  <Button variant="outline" size="lg" className="w-full">
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Contact Guide
-                  </Button>
+{/* Contact Button */}
+<Button variant="outline" size="lg" className="w-full">
+<MessageSquare className="mr-2 h-4 w-4" />
+Contact Guide
+</Button>
+
+{/* Add to Itinerary */}
+<AddToItineraryButton
+  itemType="guide"
+  itemId={guide.id}
+  itemName={guide.title || guide.nickname || "Guide"}
+  variant="outline"
+  size="lg"
+  className="w-full"
+/>
 
                   {/* Guide Info */}
                   {guide.organizer && (

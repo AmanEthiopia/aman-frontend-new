@@ -356,3 +356,15 @@ export type {
   PackageCategory,
   PackageItemType,
 } from "@/lib/api/experiences"
+
+// Re-export itinerary types for personal trip planning
+export type {
+  Trip,
+  TripSummary,
+  ItineraryDay,
+  ItineraryItem,
+  TripStatus,
+  TripTab,
+  ItemType,
+  ItemStatus,
+} from "@/lib/api/itinerary"

@@ -36,6 +36,7 @@ import {
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
+import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 
 const amenityIcons: Record<string, React.ReactNode> = {
   WiFi: <Wifi className="h-4 w-4" />,
@@ -160,6 +161,11 @@ export default function HotelDetailPage() {
               Back to Hotels
             </Link>
             <div className="flex items-center gap-2">
+              <AddToItineraryButton
+                itemType="hotel"
+                itemId={hotel.id}
+                itemName={hotel.name}
+              />
               <Button variant="outline" size="sm" onClick={() => toggleSavedItem(hotel.id)}>
                 <Heart className={`mr-1 h-4 w-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
                 {saved ? "Saved" : "Save"}
