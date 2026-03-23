@@ -71,7 +71,14 @@ function ConversationItem({
   isActive: boolean
   onClick: () => void
 }) {
+  if (!conversation) return null
+  
   const TypeIcon = TYPE_ICONS[conversation.related_to_type] || MessageSquare
+  const participantName = conversation.other_participant?.name || "Unknown"
+  const participantAvatar = conversation.other_participant?.avatar_url
+  const unreadCount = conversation.unread_count || 0
+  const lastMessageText = conversation.last_message?.text || ""
+  const lastMessageAt = conversation.last_message_at || ""
 
   return (
     <button
@@ -83,30 +90,30 @@ function ConversationItem({
     >
       <div className="relative">
         <Avatar className="h-11 w-11">
-          <AvatarImage src={conversation.other_participant.avatar_url} />
+          <AvatarImage src={participantAvatar} />
           <AvatarFallback>
-            {conversation.other_participant.name.slice(0, 2).toUpperCase()}
+            {participantName.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        {conversation.unread_count > 0 && (
+        {unreadCount > 0 && (
           <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs text-destructive-foreground">
-            {conversation.unread_count}
+            {unreadCount}
           </span>
         )}
       </div>
       <div className="flex-1 overflow-hidden">
         <div className="flex items-center justify-between">
-          <span className={cn("font-medium truncate", conversation.unread_count > 0 && "font-semibold")}>
-            {conversation.other_participant.name}
+          <span className={cn("font-medium truncate", unreadCount > 0 && "font-semibold")}>
+            {participantName}
           </span>
           <span className="text-xs text-muted-foreground flex-shrink-0">
-            {formatMessageTime(conversation.last_message_at)}
+            {lastMessageAt ? formatMessageTime(lastMessageAt) : ""}
           </span>
         </div>
         <div className="flex items-center gap-1 mt-0.5">
           <Badge variant="outline" className="h-5 gap-1 px-1.5 text-[10px]">
             <TypeIcon className="h-3 w-3" />
-            {conversation.related_to_type}
+            {conversation.related_to_type || "general"}
           </Badge>
           {conversation.is_flagged && (
             <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
@@ -117,10 +124,10 @@ function ConversationItem({
         <p
           className={cn(
             "mt-1 truncate text-sm",
-            conversation.unread_count > 0 ? "font-medium text-foreground" : "text-muted-foreground"
+            unreadCount > 0 ? "font-medium text-foreground" : "text-muted-foreground"
           )}
         >
-          {conversation.last_message.text}
+          {lastMessageText}
         </p>
       </div>
     </button>
@@ -134,14 +141,19 @@ function MessageBubble({
   message: Message
   currentUserId: string
 }) {
-  const isOwn = message.sender.id === currentUserId
+  if (!message) return null
+  
+  const senderId = message.sender?.id || ""
+  const senderName = message.sender?.name || "Unknown"
+  const senderAvatar = message.sender?.avatar_url
+  const isOwn = senderId === currentUserId
   const isSystem = message.is_system_message
 
   if (isSystem) {
     return (
       <div className="flex justify-center">
         <div className="rounded-full bg-muted px-4 py-2 text-xs text-muted-foreground">
-          {message.message_text}
+          {message.message_text || ""}
         </div>
       </div>
     )
@@ -151,8 +163,8 @@ function MessageBubble({
     <div className={cn("flex gap-2", isOwn ? "flex-row-reverse" : "flex-row")}>
       {!isOwn && (
         <Avatar className="h-8 w-8">
-          <AvatarImage src={message.sender.avatar_url} />
-          <AvatarFallback>{message.sender.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+          <AvatarImage src={senderAvatar} />
+          <AvatarFallback>{senderName.slice(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
       )}
       <div
@@ -161,7 +173,7 @@ function MessageBubble({
           isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
         )}
       >
-        <p className="text-sm whitespace-pre-wrap">{message.message_text}</p>
+        <p className="text-sm whitespace-pre-wrap">{message.message_text || ""}</p>
         {message.attachment_url && (
           <a
             href={message.attachment_url}
@@ -179,10 +191,10 @@ function MessageBubble({
           )}
         >
           <span>
-            {new Date(message.created_at).toLocaleTimeString("en-US", {
+            {message.created_at ? new Date(message.created_at).toLocaleTimeString("en-US", {
               hour: "numeric",
               minute: "2-digit",
-            })}
+            }) : ""}
           </span>
         </div>
       </div>
@@ -315,7 +327,7 @@ export default function ProviderMessagesPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  const activeConversation = conversations.find((c) => c.id === selectedConversation)
+  const activeConversation = conversations?.find((c) => c.id === selectedConversation) || null
 
   const handleSend = async () => {
     if (!newMessage.trim() || !selectedConversation) return
@@ -349,17 +361,17 @@ export default function ProviderMessagesPage() {
     setNewMessage(reply)
   }
 
-  const filteredConversations = conversations.filter(
+  const filteredConversations = (conversations || []).filter(
     (c) =>
-      c.other_participant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.subject.toLowerCase().includes(searchQuery.toLowerCase())
+      c?.other_participant?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c?.subject?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   // Group conversations by flagged status
   const flaggedConversations = filteredConversations.filter((c) => c.is_flagged)
   const normalConversations = filteredConversations.filter((c) => !c.is_flagged)
 
-  const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0)
+  const totalUnread = (conversations || []).reduce((sum, c) => sum + (c?.unread_count || 0), 0)
 
   if (loading) {
     return (

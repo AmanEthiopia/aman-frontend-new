@@ -45,22 +45,33 @@ export function SafeImage({
   aspectRatio = "auto",
   objectFit = "cover",
   showLoadingState = true,
-  maxRetries = 1,
+  maxRetries = 0, // Default to 0 retries to prevent loops
   onLoadSuccess,
   onLoadError,
   className,
   ...props
 }: SafeImageProps) {
-  const [currentSrc, setCurrentSrc] = useState<string>(src || fallbackSrc)
+  // Track error state per src to prevent infinite loops
+  const erroredSrcs = useRef<Set<string>>(new Set())
+  
+  // Determine initial src - skip if already errored
+  const getInitialSrc = () => {
+    if (!src || erroredSrcs.current.has(src)) {
+      return fallbackSrc
+    }
+    return src
+  }
+
+  const [currentSrc, setCurrentSrc] = useState<string>(getInitialSrc)
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [showFallbackElement, setShowFallbackElement] = useState(false)
   const retryCount = useRef(0)
   const hasAttemptedFallback = useRef(false)
 
-  // Reset state when src changes
+  // Reset state when src changes (but only if it's a new, non-errored src)
   useEffect(() => {
-    if (src && src !== currentSrc) {
+    if (src && src !== currentSrc && !erroredSrcs.current.has(src)) {
       setCurrentSrc(src)
       setIsLoading(true)
       setHasError(false)
@@ -68,7 +79,7 @@ export function SafeImage({
       retryCount.current = 0
       hasAttemptedFallback.current = false
     }
-  }, [src])
+  }, [src, currentSrc])
 
   const handleLoad = useCallback(() => {
     setIsLoading(false)
@@ -79,30 +90,26 @@ export function SafeImage({
   const handleError = useCallback(() => {
     setIsLoading(false)
     
-    // Prevent infinite loop: track retry attempts
-    if (retryCount.current < maxRetries && !hasAttemptedFallback.current) {
-      retryCount.current += 1
-      // Try the same source again (maybe network hiccup)
-      setCurrentSrc(prev => {
-        // Force re-render by appending timestamp
-        const separator = prev.includes('?') ? '&' : '?'
-        return `${src}${separator}_retry=${Date.now()}`
-      })
-      return
+    // Mark this src as errored to prevent future attempts
+    if (src) {
+      erroredSrcs.current.add(src)
     }
-
-    // If original failed, try fallback (only once)
+    if (currentSrc && currentSrc !== fallbackSrc) {
+      erroredSrcs.current.add(currentSrc)
+    }
+    
+    // If we haven't tried fallback yet and it's different from current
     if (!hasAttemptedFallback.current && fallbackSrc && currentSrc !== fallbackSrc) {
       hasAttemptedFallback.current = true
       setCurrentSrc(fallbackSrc)
       return
     }
 
-    // All attempts failed - show error state
+    // All attempts failed - show error state (no more retries)
     setHasError(true)
     setShowFallbackElement(true)
     onLoadError?.(new Error(`Failed to load image: ${src}`))
-  }, [src, fallbackSrc, currentSrc, maxRetries, onLoadError])
+  }, [src, fallbackSrc, currentSrc, onLoadError])
 
   const aspectClass = aspectRatios[aspectRatio] || aspectRatio
 
