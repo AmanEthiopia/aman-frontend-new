@@ -43,7 +43,7 @@ import {
   type Review,
   type ReviewableType,
 } from "@/lib/api/reviews"
-import { getProviderProperties } from "@/lib/api/provider"
+import { getMyProperties } from "@/lib/api/provider"
 import { cn, formatRating, toNumber } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
@@ -191,7 +191,8 @@ export default function ProviderReviewsPage() {
   useEffect(() => {
     async function loadProperties() {
       try {
-        const data = await getProviderProperties()
+        const response = await getMyProperties({ limit: 100 })
+        const data = response?.results || response || []
         const propertyList: Property[] = data.map((p: any) => ({
           id: p.id,
           name: p.name,
