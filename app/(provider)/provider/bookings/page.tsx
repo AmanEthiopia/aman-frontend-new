@@ -18,6 +18,7 @@ import {
   UtensilsCrossed,
   Car,
   Map,
+  Package,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -60,11 +61,13 @@ const statusConfig = {
   completed: { label: "Completed", color: "bg-gray-500", badge: "outline" as const },
 }
 
-const propertyTypeIcons: Record<PropertyCategory, typeof Building2> = {
+const propertyTypeIcons: Record<string, typeof Building2> = {
   hotel: Building2,
   restaurant: UtensilsCrossed,
   driver: Car,
   trip: Map,
+  package: Package,
+  experience: Package,
 }
 
 function formatTimeAgo(dateString: string): string {

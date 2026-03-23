@@ -24,6 +24,7 @@ import {
   Menu,
   X,
   Home,
+  Package,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -75,6 +76,15 @@ const sidebarItems: NavItem[] = [
       { href: "/provider/guides", label: "My Guides", icon: Map },
       { href: "/provider/guides/new", label: "Add Guide Service", icon: Map },
       { href: "/provider/guides/bookings", label: "Guide Bookings", icon: Calendar },
+    ],
+  },
+  {
+    href: "/provider/packages",
+    label: "Travel Packages",
+    icon: Package,
+    children: [
+      { href: "/provider/packages", label: "All Packages", icon: Package },
+      { href: "/provider/packages/new", label: "Create Package", icon: Plus },
     ],
   },
   { href: "/provider/bookings", label: "Bookings", icon: Calendar, badge: 3 },

@@ -346,3 +346,13 @@ export type {
   City as APICity,
   Attraction as APIAttraction,
 } from "@/lib/api/provider"
+
+// Re-export package types for experiences/packages
+export type {
+  Package,
+  PackageDay,
+  PackageDayItem,
+  PackageCity,
+  PackageCategory,
+  PackageItemType,
+} from "@/lib/api/experiences"

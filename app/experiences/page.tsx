@@ -7,18 +7,31 @@ import { Footer } from "@/components/ui/footer"
 import { ListingCard } from "@/components/shared/listing-card"
 import { DiscoveryFilters } from "@/components/shared/discovery-filters"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
-import { getExperiences } from "@/lib/api/experiences"
-import type { Experience } from "@/lib/types"
+import { getExperiences, type Package } from "@/lib/api/experiences"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
 
 const categoryOptions = [
-  { value: "cultural", label: "Cultural" },
+  { value: "city_tour", label: "City Tour" },
+  { value: "multi_city", label: "Multi-City" },
   { value: "adventure", label: "Adventure" },
-  { value: "food", label: "Food & Drink" },
+  { value: "culture", label: "Cultural" },
+  { value: "food", label: "Food & Culinary" },
   { value: "nature", label: "Nature" },
+  { value: "spiritual", label: "Spiritual" },
   { value: "historical", label: "Historical" },
 ]
+
+const CATEGORY_LABELS: Record<string, string> = {
+  city_tour: "City Tour",
+  multi_city: "Multi-City",
+  adventure: "Adventure",
+  culture: "Cultural",
+  food: "Food & Culinary",
+  nature: "Nature",
+  spiritual: "Spiritual",
+  historical: "Historical",
+}
 
 function ExperiencesLoading() {
   return (
@@ -40,7 +53,7 @@ function ExperiencesLoading() {
 
 export default function ExperiencesPage() {
   const searchParams = useSearchParams()
-  const [experiences, setExperiences] = useState<Experience[]>([])
+  const [experiences, setExperiences] = useState<Package[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -102,29 +115,26 @@ export default function ExperiencesPage() {
                     Showing {experiences.length} experience{experiences.length !== 1 ? "s" : ""}
                   </p>
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {experiences.map((experience: any) => (
+                    {experiences.map((pkg) => (
                       <ListingCard
-                        key={experience.id}
-                        id={experience.id}
-                        slug={experience.slug}
+                        key={pkg.id}
+                        id={pkg.id}
+                        slug={pkg.slug}
                         type="experience"
-                        name={experience.name}
-                        imageUrl={experience.cover_photo || experience.images?.[0]?.url || "/tour-experience.jpg"}
-                        location={experience.city_name || experience.city?.name || ""}
-                        city={experience.city_name || experience.city?.name || ""}
-                        description={experience.description || experience.short_description || ""}
-                        priceRange={experience.priceRange || experience.price_range}
-                        priceDisplay={
-                          experience.price_per_person ? `$${experience.price_per_person} / person` :
-                          experience.price ? `$${experience.price} / person` :
-                          "Contact for price"
-                        }
-                        rating={experience.average_rating ? parseFloat(experience.average_rating) : experience.rating || 0}
-                        reviewCount={experience.review_count || experience.reviewCount || 0}
-                        isVerified={experience.is_verified ?? experience.isVerified ?? true}
-                        isFeatured={experience.is_featured ?? experience.isFeatured ?? false}
-                        tags={[experience.trip_type || experience.category, experience.duration_days ? `${experience.duration_days} days` : experience.duration].filter(Boolean)}
-                        safetyScore={experience.safetyScore}
+                        name={pkg.title}
+                        imageUrl={pkg.primary_photo?.photo_url || pkg.photos?.[0]?.photo_url || "/tour-experience.jpg"}
+                        location={pkg.cities?.map(c => c.city.name).join(" → ") || ""}
+                        city={pkg.cities?.[0]?.city.name || ""}
+                        description={pkg.short_description || pkg.description || ""}
+                        priceDisplay={`$${pkg.price_per_person} / person`}
+                        rating={pkg.average_rating ? parseFloat(pkg.average_rating) : 0}
+                        reviewCount={pkg.review_count || 0}
+                        isVerified={pkg.is_published}
+                        isFeatured={false}
+                        tags={[
+                          CATEGORY_LABELS[pkg.category] || pkg.category,
+                          `${pkg.duration_days} days`
+                        ].filter(Boolean)}
                       />
                     ))}
                   </div>
