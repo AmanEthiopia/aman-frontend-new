@@ -23,13 +23,13 @@ import {
   submitReview,
   formatReviewDate,
   type Review,
-  type ReviewContentType,
+  type ReviewableType,
 } from "@/lib/api/reviews"
 import { useAuth } from "@/contexts/auth-context"
 import { cn } from "@/lib/utils"
 
 interface ReviewsSectionProps {
-  contentType: ReviewContentType
+  contentType: ReviewableType
   contentId: string
   averageRating?: number
   reviewCount?: number

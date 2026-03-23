@@ -372,8 +372,8 @@ export type {
 // Re-export review types
 export type {
   Review,
-  ReviewReply,
-  ReviewContentType,
+  ReviewResponse,
+  ReviewableType,
   ReviewsResponse,
 } from "@/lib/api/reviews"
 
