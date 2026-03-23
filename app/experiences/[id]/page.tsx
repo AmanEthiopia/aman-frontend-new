@@ -37,6 +37,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
+import { ReviewsSection } from "@/components/reviews/reviews-section"
+import { ContactDialog } from "@/components/messaging/contact-dialog"
 
 const CATEGORY_LABELS: Record<string, string> = {
   city_tour: "City Tour",
@@ -557,8 +559,29 @@ export default function ExperienceDetailPage() {
                       No upfront payment required
                     </p>
                   )}
+                  
+                  <ContactDialog
+                    contextType="experience"
+                    contextId={pkg.id}
+                    contextName={pkg.title}
+                    trigger={
+                      <Button variant="outline" size="lg" className="w-full mt-3">
+                        Ask a Question
+                      </Button>
+                    }
+                  />
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Reviews Section */}
+            <div className="lg:col-span-2 mt-8">
+              <ReviewsSection
+                contentType="experience"
+                contentId={pkg.id}
+                averageRating={pkg.average_rating ? parseFloat(pkg.average_rating) : 0}
+                reviewCount={pkg.review_count || 0}
+              />
             </div>
           </div>
         </div>

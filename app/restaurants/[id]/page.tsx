@@ -32,6 +32,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
+import { ReviewsSection } from "@/components/reviews/reviews-section"
+import { ContactDialog } from "@/components/messaging/contact-dialog"
 
 export default function RestaurantDetailPage() {
   const params = useParams()
@@ -251,8 +253,29 @@ export default function RestaurantDetailPage() {
                   <Button className="w-full" size="lg">
                     Make Reservation
                   </Button>
+                  
+                  <ContactDialog
+                    contextType="restaurant"
+                    contextId={restaurant.id}
+                    contextName={restaurant.name}
+                    trigger={
+                      <Button variant="outline" size="lg" className="w-full mt-3">
+                        Send Message
+                      </Button>
+                    }
+                  />
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Reviews Section */}
+            <div className="lg:col-span-2 mt-8">
+              <ReviewsSection
+                contentType="restaurant"
+                contentId={restaurant.id}
+                averageRating={restaurant.rating || 0}
+                reviewCount={restaurant.review_count || 0}
+              />
             </div>
           </div>
         </div>

@@ -368,3 +368,25 @@ export type {
   ItemType,
   ItemStatus,
 } from "@/lib/api/itinerary"
+
+// Re-export review types
+export type {
+  Review,
+  ReviewReply,
+  ReviewContentType,
+  ReviewsResponse,
+} from "@/lib/api/reviews"
+
+// Re-export messaging types
+export type {
+  Conversation,
+  Message,
+  ContextType,
+} from "@/lib/api/messages"
+
+// Re-export verification types
+export type {
+  VerificationRequest,
+  VerificationStatus,
+  VerificationEntityType,
+} from "@/lib/api/verification"

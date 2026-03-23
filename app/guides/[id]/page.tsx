@@ -25,6 +25,8 @@ import {
 } from "@/lib/api/guides"
 import { SafeImage } from "@/components/ui/safe-image"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
+import { ReviewsSection } from "@/components/reviews/reviews-section"
+import { ContactDialog } from "@/components/messaging/contact-dialog"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -341,10 +343,17 @@ export default function GuideDetailPage() {
                   </Button>
 
 {/* Contact Button */}
-<Button variant="outline" size="lg" className="w-full">
-<MessageSquare className="mr-2 h-4 w-4" />
-Contact Guide
-</Button>
+<ContactDialog
+  contextType="guide"
+  contextId={guide.id}
+  contextName={guide.title || guide.nickname || "Guide"}
+  trigger={
+    <Button variant="outline" size="lg" className="w-full">
+      <MessageSquare className="mr-2 h-4 w-4" />
+      Contact Guide
+    </Button>
+  }
+/>
 
 {/* Add to Itinerary */}
 <AddToItineraryButton
@@ -370,6 +379,16 @@ Contact Guide
                   )}
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Reviews Section */}
+            <div className="lg:col-span-2 mt-8">
+              <ReviewsSection
+                contentType="guide"
+                contentId={guide.id}
+                averageRating={guide.average_rating ? parseFloat(guide.average_rating) : 0}
+                reviewCount={guide.review_count || 0}
+              />
             </div>
           </div>
         </div>

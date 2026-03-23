@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { TrustBadge } from "@/components/shared/trust-badge"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
+import { ContactDialog } from "@/components/messaging/contact-dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
 import { APIError } from "@/lib/api/client"
@@ -479,6 +480,16 @@ export default function HotelDetailPage() {
                           Visit Website
                         </a>
                       )}
+                      <ContactDialog
+                        contextType="hotel"
+                        contextId={hotel.id}
+                        contextName={hotel.name}
+                        trigger={
+                          <Button variant="outline" size="sm" className="w-full mt-2">
+                            Send Message
+                          </Button>
+                        }
+                      />
                     </div>
                   </CardContent>
                 </Card>
