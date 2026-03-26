@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
@@ -51,7 +51,7 @@ function ExperiencesLoading() {
   )
 }
 
-export default function ExperiencesPage() {
+function ExperiencesContent() {
   const searchParams = useSearchParams()
   const [experiences, setExperiences] = useState<Package[]>([])
   const [loading, setLoading] = useState(true)
@@ -147,5 +147,13 @@ export default function ExperiencesPage() {
       <Footer />
       <FloatingAIAssistant />
     </div>
+  )
+}
+
+export default function ExperiencesPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen flex-col"><main className="flex-1 py-8"><div className="container mx-auto px-4"><ExperiencesLoading /></div></main></div>}>
+      <ExperiencesContent />
+    </Suspense>
   )
 }

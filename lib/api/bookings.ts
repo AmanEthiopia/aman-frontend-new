@@ -198,24 +198,20 @@ export interface HotelBookingResponse {
 }
 
 export async function createHotelBooking(payload: CreateHotelBookingPayload): Promise<HotelBookingResponse> {
-  const response = await apiPost<{ data: HotelBookingResponse }>("/bookings/hotel/", payload)
-  return response.data
+  return apiPost<HotelBookingResponse>("/bookings/hotel/", payload)
 }
 
 export async function getMyHotelBookings(status?: BookingStatus): Promise<HotelBooking[]> {
   const params = status ? `?status=${status}` : ""
-  const response = await apiGet<{ data: HotelBooking[] }>(`/bookings/hotel/mine/${params}`)
-  return response.data || []
+  return apiGet<HotelBooking[]>(`/bookings/hotel/mine/${params}`)
 }
 
 export async function getHotelBookingById(id: string): Promise<HotelBooking> {
-  const response = await apiGet<{ data: HotelBooking }>(`/bookings/hotel/${id}/`)
-  return response.data
+  return apiGet<HotelBooking>(`/bookings/hotel/${id}/`)
 }
 
 export async function cancelHotelBooking(id: string, reason?: string): Promise<HotelBooking> {
-  const response = await apiPost<{ data: HotelBooking }>(`/bookings/hotel/${id}/cancel/`, { reason })
-  return response.data
+  return apiPost<HotelBooking>(`/bookings/hotel/${id}/cancel/`, { reason })
 }
 
 // ============================================================================
@@ -239,24 +235,20 @@ export interface RestaurantReservationResponse {
 }
 
 export async function createRestaurantReservation(payload: CreateRestaurantReservationPayload): Promise<RestaurantReservationResponse> {
-  const response = await apiPost<{ data: RestaurantReservationResponse }>("/bookings/restaurant/", payload)
-  return response.data
+  return apiPost<RestaurantReservationResponse>("/bookings/restaurant/", payload)
 }
 
 export async function getMyRestaurantReservations(status?: BookingStatus): Promise<RestaurantReservation[]> {
   const params = status ? `?status=${status}` : ""
-  const response = await apiGet<{ data: RestaurantReservation[] }>(`/bookings/restaurant/mine/${params}`)
-  return response.data || []
+  return apiGet<RestaurantReservation[]>(`/bookings/restaurant/mine/${params}`)
 }
 
 export async function getRestaurantReservationById(id: string): Promise<RestaurantReservation> {
-  const response = await apiGet<{ data: RestaurantReservation }>(`/bookings/restaurant/${id}/`)
-  return response.data
+  return apiGet<RestaurantReservation>(`/bookings/restaurant/${id}/`)
 }
 
 export async function cancelRestaurantReservation(id: string, reason?: string): Promise<RestaurantReservation> {
-  const response = await apiPost<{ data: RestaurantReservation }>(`/bookings/restaurant/${id}/cancel/`, { reason })
-  return response.data
+  return apiPost<RestaurantReservation>(`/bookings/restaurant/${id}/cancel/`, { reason })
 }
 
 // ============================================================================
@@ -280,24 +272,20 @@ export interface PackageBookingResponse {
 }
 
 export async function createPackageBooking(payload: CreatePackageBookingPayload): Promise<PackageBookingResponse> {
-  const response = await apiPost<{ data: PackageBookingResponse }>("/experiences/bookings/", payload)
-  return response.data
+  return apiPost<PackageBookingResponse>("/experiences/bookings/", payload)
 }
 
 export async function getMyPackageBookings(status?: BookingStatus): Promise<PackageBooking[]> {
   const params = status ? `?status=${status}` : ""
-  const response = await apiGet<{ data: PackageBooking[] }>(`/experiences/bookings/mine/${params}`)
-  return response.data || []
+  return apiGet<PackageBooking[]>(`/experiences/bookings/mine/${params}`)
 }
 
 export async function getPackageBookingById(id: string): Promise<PackageBooking> {
-  const response = await apiGet<{ data: PackageBooking }>(`/experiences/bookings/${id}/`)
-  return response.data
+  return apiGet<PackageBooking>(`/experiences/bookings/${id}/`)
 }
 
 export async function cancelPackageBooking(id: string, reason?: string): Promise<PackageBooking> {
-  const response = await apiPost<{ data: PackageBooking }>(`/experiences/bookings/${id}/cancel/`, { reason })
-  return response.data
+  return apiPost<PackageBooking>(`/experiences/bookings/${id}/cancel/`, { reason })
 }
 
 // ============================================================================

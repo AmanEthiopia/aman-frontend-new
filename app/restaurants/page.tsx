@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
@@ -38,7 +38,7 @@ function RestaurantsLoading() {
   )
 }
 
-export default function RestaurantsPage() {
+function RestaurantsContent() {
   const searchParams = useSearchParams()
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
@@ -136,5 +136,13 @@ export default function RestaurantsPage() {
       <Footer />
       <FloatingAIAssistant />
     </div>
+  )
+}
+
+export default function RestaurantsPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen flex-col"><main className="flex-1 py-8"><div className="container mx-auto px-4"><RestaurantsLoading /></div></main></div>}>
+      <RestaurantsContent />
+    </Suspense>
   )
 }

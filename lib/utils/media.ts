@@ -3,7 +3,7 @@
  * Handles image URLs from Django backend
  */
 
-const MEDIA_BASE_URL = "https://api.aman.yichalal.ai"
+const MEDIA_BASE_URL = process.env.NEXT_PUBLIC_MEDIA_URL || "https://api.aman.yichalal.ai"
 
 /**
  * Convert relative media path to absolute URL

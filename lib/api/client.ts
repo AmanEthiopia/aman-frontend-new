@@ -5,7 +5,7 @@
 
 import { getAuthCookie, setAuthCookie, clearAuthCookies, getRefreshCookie } from "@/lib/utils/cookies"
 
-const API_BASE_URL = "https://api.aman.yichalal.ai/api/v1"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.aman.yichalal.ai/api/v1"
 
 export class APIError extends Error {
   constructor(

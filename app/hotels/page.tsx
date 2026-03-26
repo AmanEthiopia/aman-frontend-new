@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
@@ -33,7 +33,7 @@ function HotelsLoading() {
   )
 }
 
-export default function HotelsPage() {
+function HotelsContent() {
   const searchParams = useSearchParams()
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [loading, setLoading] = useState(true)
@@ -145,5 +145,13 @@ export default function HotelsPage() {
       <Footer />
       <FloatingAIAssistant />
     </div>
+  )
+}
+
+export default function HotelsPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen flex-col"><main className="flex-1 py-8"><div className="container mx-auto px-4"><HotelsLoading /></div></main></div>}>
+      <HotelsContent />
+    </Suspense>
   )
 }

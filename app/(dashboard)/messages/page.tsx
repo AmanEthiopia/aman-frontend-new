@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import {
   Search,
@@ -230,7 +230,7 @@ function EmptyConversation() {
   )
 }
 
-export default function MessagesPage() {
+function MessagesContent() {
   const searchParams = useSearchParams()
   const { user } = useAuth()
   const currentUserId = user?.id || ""
@@ -598,5 +598,13 @@ export default function MessagesPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={<div className="flex h-[calc(100vh-10rem)] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
+      <MessagesContent />
+    </Suspense>
   )
 }

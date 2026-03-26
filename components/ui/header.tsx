@@ -36,8 +36,10 @@ import { FEATURES } from "@/lib/config/features"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { user, isAuthenticated, logout } = useAuth()
-  const { switchRole, language, setLanguage, currency, setCurrency } = useApp()
+  const { userProfile, isAuthenticated, logout } = useAuth()
+  const { language, setLanguage, currency, setCurrency } = useApp()
+  const userName = [userProfile?.user?.first_name, userProfile?.user?.last_name].filter(Boolean).join(" ") || "User"
+  const isProvider = userProfile?.role?.is_provider ?? false
 
   const discoverLinks = [
     { href: "/hotels", label: "Hotels & Stays", icon: Hotel },
@@ -139,24 +141,24 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 cursor-pointer hover:bg-accent">
-                  <Link href={user?.role === "provider" ? "/provider" : "/home"} className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground hover:ring-2 hover:ring-primary/30 transition-all">
-                    <span className="text-xs font-medium">{user?.name?.charAt(0) || "U"}</span>
+                  <Link href={isProvider ? "/provider" : "/home"} className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground hover:ring-2 hover:ring-primary/30 transition-all">
+                    <span className="text-xs font-medium">{userName.charAt(0)}</span>
                   </Link>
-                  <span className="hidden xl:inline">{user?.name || "User"}</span>
+                  <span className="hidden xl:inline">{userName}</span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
-                    <span>{user?.name || "User"}</span>
+                    <span>{userName}</span>
                     <span className="text-xs font-normal text-muted-foreground capitalize">
-                      {user?.role || "guest"}
+                      {isProvider ? "Provider" : "Traveler"}
                     </span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {user?.role === "traveler" && (
+                {!isProvider && (
                   <>
                     <DropdownMenuItem asChild>
                       <Link href="/home" className="flex items-center gap-2">
@@ -201,7 +203,7 @@ export function Header() {
                     )}
                   </>
                 )}
-                {user?.role === "provider" && FEATURES.PROVIDER_PORTAL && (
+                {isProvider && FEATURES.PROVIDER_PORTAL && (
                   <>
                     <DropdownMenuItem asChild>
                       <Link href="/provider" className="flex items-center gap-2">
@@ -235,20 +237,6 @@ export function Header() {
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {/* Demo Role Switcher */}
-                <DropdownMenuLabel className="text-xs text-muted-foreground">Demo: Switch Role</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => switchRole("guest")}>
-                  Guest {user?.role === "guest" && "✓"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => switchRole("traveler")}>
-                  Traveler {user?.role === "traveler" && "✓"}
-                </DropdownMenuItem>
-                {FEATURES.PROVIDER_PORTAL && (
-                  <DropdownMenuItem onClick={() => switchRole("provider")}>
-                    Provider {user?.role === "provider" && "✓"}
-                  </DropdownMenuItem>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
@@ -262,22 +250,6 @@ export function Header() {
               <Button size="sm" asChild>
                 <Link href="/register">Register</Link>
               </Button>
-              {/* Demo Role Switcher for guests */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <User className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel className="text-xs text-muted-foreground">Demo: Switch Role</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => switchRole("guest")}>Guest</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => switchRole("traveler")}>Traveler</DropdownMenuItem>
-                  {FEATURES.PROVIDER_PORTAL && (
-                    <DropdownMenuItem onClick={() => switchRole("provider")}>Provider</DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           )}
         </div>
@@ -339,14 +311,14 @@ export function Header() {
                 <>
                   <div className="flex items-center gap-2 px-3 py-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <span className="text-sm font-medium">{user?.name?.charAt(0) || "U"}</span>
+                      <span className="text-sm font-medium">{userName.charAt(0)}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium">{user?.name || "User"}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{user?.role || "guest"}</p>
+                      <p className="text-sm font-medium">{userName}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{isProvider ? "Provider" : "Traveler"}</p>
                     </div>
                   </div>
-                  {user?.role === "traveler" && (
+                  {!isProvider && (
                     <>
                       <Button variant="outline" asChild className="w-full bg-transparent">
                         <Link href="/home">My Dashboard</Link>
@@ -367,7 +339,7 @@ export function Header() {
                       </div>
                     </>
                   )}
-                  {user?.role === "provider" && FEATURES.PROVIDER_PORTAL && (
+                  {isProvider && FEATURES.PROVIDER_PORTAL && (
                     <Button variant="outline" asChild className="w-full bg-transparent">
                       <Link href="/provider">Provider Dashboard</Link>
                     </Button>
@@ -387,38 +359,6 @@ export function Header() {
                   </Button>
                 </>
               )}
-            </div>
-            {/* Mobile Demo Role Switcher */}
-            <div className="mt-4 border-t border-border pt-4">
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Demo: Switch Role</p>
-              <div className="flex gap-2">
-                <Button
-                  variant={user?.role === "guest" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => switchRole("guest")}
-                  className="flex-1"
-                >
-                  Guest
-                </Button>
-                <Button
-                  variant={user?.role === "traveler" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => switchRole("traveler")}
-                  className="flex-1"
-                >
-                  Traveler
-                </Button>
-                {FEATURES.PROVIDER_PORTAL && (
-                  <Button
-                    variant={user?.role === "provider" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => switchRole("provider")}
-                    className="flex-1"
-                  >
-                    Provider
-                  </Button>
-                )}
-              </div>
             </div>
           </nav>
         </div>

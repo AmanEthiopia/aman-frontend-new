@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
@@ -37,7 +37,7 @@ function TransportLoading() {
   )
 }
 
-export default function TransportPage() {
+function TransportContent() {
   const searchParams = useSearchParams()
   const [transport, setTransport] = useState<Transport[]>([])
   const [loading, setLoading] = useState(true)
@@ -140,5 +140,13 @@ export default function TransportPage() {
       <Footer />
       <FloatingAIAssistant />
     </div>
+  )
+}
+
+export default function TransportPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen flex-col"><main className="flex-1 py-8"><div className="container mx-auto px-4"><TransportLoading /></div></main></div>}>
+      <TransportContent />
+    </Suspense>
   )
 }

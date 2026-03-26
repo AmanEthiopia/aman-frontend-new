@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import {
   Search,
@@ -232,7 +232,7 @@ function EmptyConversation() {
   )
 }
 
-export default function ProviderMessagesPage() {
+function ProviderMessagesContent() {
   const searchParams = useSearchParams()
   const { user } = useAuth()
   const currentUserId = user?.id || ""
@@ -585,5 +585,13 @@ export default function ProviderMessagesPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function ProviderMessagesPage() {
+  return (
+    <Suspense fallback={<div className="flex h-[calc(100vh-12rem)] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
+      <ProviderMessagesContent />
+    </Suspense>
   )
 }

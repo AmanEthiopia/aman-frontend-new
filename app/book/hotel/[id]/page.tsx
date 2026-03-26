@@ -13,10 +13,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrustBadge } from "@/components/shared/trust-badge"
-import { getHotelById } from "@/lib/api/hotels"
+import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
 import { createHotelBooking } from "@/lib/api/bookings"
 import { useAuth } from "@/contexts/auth-context"
-import type { Hotel } from "@/lib/types"
+import type { Hotel, Room } from "@/lib/types"
 import {
   Calendar,
   Loader2,
@@ -39,9 +39,11 @@ export default function BookHotelPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
-  const { user, isAuthenticated } = useAuth()
+  const { userProfile, isAuthenticated } = useAuth()
 
   const [hotel, setHotel] = useState<Hotel | null>(null)
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [selectedRoomId, setSelectedRoomId] = useState<string>("")
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -61,8 +63,15 @@ export default function BookHotelPage() {
     async function loadHotel() {
       try {
         setLoading(true)
-        const hotelData = await getHotelById(id)
+        const [hotelData, roomsData] = await Promise.all([
+          getHotelById(id),
+          getHotelRooms(id),
+        ])
         setHotel(hotelData)
+        setRooms(roomsData || [])
+        if (roomsData?.length > 0) {
+          setSelectedRoomId(roomsData[0].id)
+        }
       } catch (err) {
         console.error("Failed to load hotel:", err)
         setError("Failed to load hotel details")
@@ -74,17 +83,18 @@ export default function BookHotelPage() {
   }, [id])
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && userProfile) {
+      const name = [userProfile.user?.first_name, userProfile.user?.last_name].filter(Boolean).join(" ")
       setFormData((prev) => ({
         ...prev,
-        guestName: user.name || "",
-        guestEmail: user.email || "",
-        guestPhone: user.phone || "",
+        guestName: name || prev.guestName,
+        guestEmail: userProfile.user?.email || prev.guestEmail,
+        guestPhone: userProfile.user?.phone || prev.guestPhone,
       }))
     }
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, userProfile])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -93,15 +103,24 @@ export default function BookHotelPage() {
     e.preventDefault()
     if (!hotel) return
 
+    if (!selectedRoomId) {
+      setError("Please select a room to continue.")
+      return
+    }
+
     setIsSubmitting(true)
     setError(null)
 
     try {
       await createHotelBooking({
         hotel_id: hotel.id,
-        check_in: formData.checkInDate,
-        check_out: formData.checkOutDate,
-        guests: formData.numGuests,
+        check_in_date: formData.checkInDate,
+        check_out_date: formData.checkOutDate,
+        num_adults: Number(formData.numGuests),
+        rooms: [{ room_id: selectedRoomId, quantity: 1 }],
+        guest_name: formData.guestName,
+        guest_email: formData.guestEmail,
+        guest_phone: formData.guestPhone || undefined,
         special_requests: formData.message || undefined,
       })
 
@@ -331,6 +350,34 @@ export default function BookHotelPage() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Room Selection */}
+                      {rooms.length > 0 && (
+                        <div className="space-y-4">
+                          <h3 className="font-medium">Select Room</h3>
+                          <div className="space-y-2">
+                            <Label htmlFor="roomSelect">Room Type *</Label>
+                            <select
+                              id="roomSelect"
+                              value={selectedRoomId}
+                              onChange={(e) => setSelectedRoomId(e.target.value)}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                              required
+                            >
+                              {rooms.map((room) => (
+                                <option key={room.id} value={room.id}>
+                                  {room.name} — ${room.price_per_night}/night (max {room.max_guests} guests)
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                      {rooms.length === 0 && !loading && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                          No rooms available for this hotel yet. Contact the hotel directly.
+                        </div>
+                      )}
 
                       {/* Stay Details */}
                       <div className="space-y-4">

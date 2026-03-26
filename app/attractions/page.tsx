@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
@@ -37,7 +37,7 @@ function AttractionsLoading() {
   )
 }
 
-export default function AttractionsPage() {
+function AttractionsContent() {
   const searchParams = useSearchParams()
   const [attractions, setAttractions] = useState<Attraction[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,6 +62,57 @@ export default function AttractionsPage() {
   }, [searchParams])
 
   return (
+    <>
+      <DiscoveryFilters basePath="/attractions" />
+
+      <CityStatsBar
+        citySlug={searchParams.get("city")}
+        activeStat="attractions"
+        className="mt-4"
+      />
+
+      <div className="mt-8">
+        {loading ? (
+          <AttractionsLoading />
+        ) : attractions.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-12 text-center">
+            <h3 className="mb-2 text-lg font-semibold">No attractions found</h3>
+            <p className="text-muted-foreground">Try adjusting your filters or search criteria.</p>
+          </div>
+        ) : (
+          <>
+            <p className="mb-6 text-muted-foreground">
+              Showing {attractions.length} attraction{attractions.length !== 1 ? "s" : ""}
+            </p>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {attractions.map((attraction) => (
+                <ListingCard
+                  key={attraction.id}
+                  id={attraction.id}
+                  slug={attraction.slug}
+                  type="attraction"
+                  name={attraction.name}
+                  imageUrl={attraction.image || "/placeholder.svg?height=300&width=400&query=attraction"}
+                  location={attraction.city || ""}
+                  city={attraction.city || ""}
+                  description={attraction.description || ""}
+                  priceDisplay={attraction.entry_fee ? `Entry: ${attraction.entry_fee}` : "Free"}
+                  rating={attraction.rating || 0}
+                  reviewCount={0}
+                  isVerified={true}
+                  tags={[attraction.category].filter(Boolean)}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  )
+}
+
+export default function AttractionsPage() {
+  return (
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
@@ -76,50 +127,9 @@ export default function AttractionsPage() {
 
         <section className="py-8">
           <div className="container mx-auto px-4">
-            <DiscoveryFilters basePath="/attractions" />
-
-            <CityStatsBar
-              citySlug={searchParams.get("city")}
-              activeStat="attractions"
-              className="mt-4"
-            />
-
-            <div className="mt-8">
-              {loading ? (
-                <AttractionsLoading />
-              ) : attractions.length === 0 ? (
-                <div className="rounded-xl border border-border bg-card p-12 text-center">
-                  <h3 className="mb-2 text-lg font-semibold">No attractions found</h3>
-                  <p className="text-muted-foreground">Try adjusting your filters or search criteria.</p>
-                </div>
-              ) : (
-                <>
-                  <p className="mb-6 text-muted-foreground">
-                    Showing {attractions.length} attraction{attractions.length !== 1 ? "s" : ""}
-                  </p>
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {attractions.map((attraction) => (
-                      <ListingCard
-                        key={attraction.id}
-                        id={attraction.id}
-                        slug={attraction.slug}
-                        type="attraction"
-                        name={attraction.name}
-                        imageUrl={attraction.image || "/placeholder.svg?height=300&width=400&query=attraction"}
-                        location={attraction.city || ""}
-                        city={attraction.city || ""}
-                        description={attraction.description || ""}
-                        priceDisplay={attraction.entry_fee ? `Entry: ${attraction.entry_fee}` : "Free"}
-                        rating={attraction.rating || 0}
-                        reviewCount={0}
-                        isVerified={true}
-                        tags={[attraction.category].filter(Boolean)}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            <Suspense fallback={<AttractionsLoading />}>
+              <AttractionsContent />
+            </Suspense>
           </div>
         </section>
       </main>
