@@ -133,7 +133,6 @@ function LoginForm() {
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
-                useOneTap
                 theme="outline"
                 size="large"
                 width="100%"

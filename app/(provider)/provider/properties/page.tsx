@@ -230,7 +230,8 @@ export default function ProviderPropertiesPage() {
       }
       
       const response = await providerAPI.getMyProperties(params)
-      setProperties(response.results)
+      // API returns data as a direct array (not PaginatedResponse.results)
+      setProperties(Array.isArray(response) ? response : (response?.results ?? []))
     } catch (error) {
       console.error("[v0] Failed to load properties:", error)
       // For demo, use empty array - in production this would show an error

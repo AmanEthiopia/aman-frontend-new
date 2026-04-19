@@ -396,7 +396,7 @@ export async function getProviderStats(): Promise<ProviderStats> {
  * Create a new hotel
  */
 export async function createHotel(payload: CreateHotelPayload): Promise<ProviderHotel> {
-  return apiPost<ProviderHotel>("/hotels/", payload)
+  return apiPost<ProviderHotel>("/hotels/provider/", payload)
 }
 
 /**
@@ -425,21 +425,21 @@ export async function getMyHotels(params: {
  * Get a specific hotel by ID
  */
 export async function getMyHotel(hotelId: string): Promise<ProviderHotel> {
-  return apiGet<ProviderHotel>(`/provider/hotels/${hotelId}/`)
+  return apiGet<ProviderHotel>(`/hotels/provider/${hotelId}/`)
 }
 
 /**
  * Update a hotel
  */
 export async function updateHotel(hotelId: string, payload: Partial<CreateHotelPayload>): Promise<ProviderHotel> {
-  return apiPatch<ProviderHotel>(`/hotels/${hotelId}/`, payload)
+  return apiPatch<ProviderHotel>(`/hotels/provider/${hotelId}/`, payload)
 }
 
 /**
  * Delete a hotel
  */
 export async function deleteHotel(hotelId: string): Promise<void> {
-  return apiDelete(`/hotels/${hotelId}/`)
+  return apiDelete(`/hotels/provider/${hotelId}/`)
 }
 
 /**
@@ -471,7 +471,7 @@ export async function deleteRoom(hotelId: string, roomId: string): Promise<void>
  * Create a new restaurant
  */
 export async function createRestaurant(payload: CreateRestaurantPayload): Promise<ProviderRestaurant> {
-  return apiPost<ProviderRestaurant>("/restaurants/", payload)
+  return apiPost<ProviderRestaurant>("/restaurants/provider/", payload)
 }
 
 /**
@@ -500,14 +500,14 @@ export async function getMyRestaurants(params: {
  * Update a restaurant
  */
 export async function updateRestaurant(restaurantId: string, payload: Partial<CreateRestaurantPayload>): Promise<ProviderRestaurant> {
-  return apiPatch<ProviderRestaurant>(`/restaurants/${restaurantId}/`, payload)
+  return apiPatch<ProviderRestaurant>(`/restaurants/provider/${restaurantId}/`, payload)
 }
 
 /**
  * Delete a restaurant
  */
 export async function deleteRestaurant(restaurantId: string): Promise<void> {
-  return apiDelete(`/restaurants/${restaurantId}/`)
+  return apiDelete(`/restaurants/provider/${restaurantId}/`)
 }
 
 // ============================================================================
@@ -544,6 +544,13 @@ export async function getMyDrivers(params: {
 }
 
 /**
+ * Get a specific driver by ID
+ */
+export async function getMyDriver(driverId: string): Promise<ProviderDriver> {
+  return apiGet<ProviderDriver>(`/drivers/${driverId}/`)
+}
+
+/**
  * Update a driver listing
  */
 export async function updateDriver(driverId: string, payload: Partial<CreateDriverPayload>): Promise<ProviderDriver> {
@@ -555,6 +562,13 @@ export async function updateDriver(driverId: string, payload: Partial<CreateDriv
  */
 export async function deleteDriver(driverId: string): Promise<void> {
   return apiDelete(`/drivers/${driverId}/`)
+}
+
+/**
+ * Toggle publish state of a driver listing
+ */
+export async function toggleDriverPublish(driverId: string): Promise<{ is_published: boolean }> {
+  return apiPost<{ is_published: boolean }>(`/drivers/${driverId}/publish/`)
 }
 
 // ============================================================================
@@ -762,8 +776,8 @@ export interface EarningsData {
  * Get provider dashboard stats
  */
 export async function getProviderDashboardData(): Promise<ProviderDashboardData> {
-  const response = await apiGet<{ data: ProviderDashboardData }>("/bookings/provider/dashboard/")
-  return response.data
+  // apiFetch already unwraps envelope.data — no extra .data needed
+  return apiGet<ProviderDashboardData>("/bookings/provider/dashboard/")
 }
 
 /**
@@ -778,12 +792,11 @@ export async function getProviderCalendar(params: {
   if (params.year) queryParams.append("year", params.year.toString())
   if (params.month) queryParams.append("month", params.month.toString())
   if (params.hotel_id) queryParams.append("hotel_id", params.hotel_id)
-  
+
   const queryString = queryParams.toString()
   const endpoint = queryString ? `/bookings/provider/calendar/?${queryString}` : "/bookings/provider/calendar/"
-  
-  const response = await apiGet<{ data: CalendarData }>(endpoint)
-  return response.data
+
+  return apiGet<CalendarData>(endpoint)
 }
 
 /**
@@ -796,12 +809,11 @@ export async function getProviderEarnings(params: {
   const queryParams = new URLSearchParams()
   if (params.period) queryParams.append("period", params.period)
   if (params.hotel_id) queryParams.append("hotel_id", params.hotel_id)
-  
+
   const queryString = queryParams.toString()
   const endpoint = queryString ? `/bookings/provider/earnings/?${queryString}` : "/bookings/provider/earnings/"
-  
-  const response = await apiGet<{ data: EarningsData }>(endpoint)
-  return response.data
+
+  return apiGet<EarningsData>(endpoint)
 }
 
 /**

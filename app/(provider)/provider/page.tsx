@@ -264,16 +264,43 @@ export default function ProviderDashboard() {
   async function loadDashboardData() {
     setLoading(true)
     try {
-      // Try to load real data from API
-      const [statsData, bookingsData] = await Promise.all([
+      // Use allSettled so a partial API failure doesn't wipe everything
+      const [statsResult, dashboardResult, bookingsResult] = await Promise.allSettled([
         providerAPI.getProviderStats(),
+        providerAPI.getProviderDashboardData(),
         providerAPI.getMyBookings({ status: "pending" }),
       ])
-      setStats(statsData)
-      setPendingBookings(bookingsData.results)
+
+      const statsData = statsResult.status === "fulfilled" ? statsResult.value : null
+      const dashboardData = dashboardResult.status === "fulfilled" ? dashboardResult.value : null
+      const bookingsData = bookingsResult.status === "fulfilled" ? bookingsResult.value : null
+
+      // /provider/stats/ only returns basic counts; /bookings/provider/dashboard/
+      // returns revenue, ratings, occupancy. Merge both with mock defaults as fallback.
+      setStats({
+        ...mockStats,
+        ...(statsData && {
+          total_properties: statsData.total_properties ?? 0,
+          pending_bookings: statsData.pending_bookings ?? 0,
+        }),
+        ...(dashboardData && {
+          pending_bookings: dashboardData.pending_bookings ?? statsData?.pending_bookings ?? 0,
+          confirmed_bookings: dashboardData.confirmed_bookings_this_month ?? 0,
+          monthly_revenue: parseFloat(dashboardData.revenue_this_month ?? "0") || 0,
+          average_rating: dashboardData.average_rating ?? 0,
+          occupancy_rate: dashboardData.occupancy_rate ?? 0,
+        }),
+      })
+
+      // /provider/bookings/ returns data as a direct array, not PaginatedResponse
+      if (bookingsData !== null) {
+        const bookingsArray = Array.isArray(bookingsData)
+          ? bookingsData
+          : (bookingsData?.results ?? [])
+        setPendingBookings(bookingsArray)
+      }
     } catch (error) {
       console.log("[v0] Using mock data for dashboard:", error)
-      // Use mock data as fallback
       setStats(mockStats)
       setPendingBookings(mockPendingBookings)
     } finally {
@@ -394,12 +421,12 @@ export default function ProviderDashboard() {
         />
         <StatCard
           title="This Month"
-          value={`$${stats.monthly_revenue.toLocaleString()}`}
+          value={`$${(stats.monthly_revenue ?? 0).toLocaleString()}`}
           change={12.5}
           trend="up"
           icon={DollarSign}
         />
-        <StatCard title="Average Rating" value={formatRating(stats.average_rating)} icon={Star} />
+        <StatCard title="Average Rating" value={formatRating(stats.average_rating ?? 0)} icon={Star} />
       </div>
 
       {/* Two Column Layout */}
@@ -451,9 +478,9 @@ export default function ProviderDashboard() {
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm">
                   <span>Response Rate</span>
-                  <span className="font-medium">{stats.response_rate}%</span>
+                  <span className="font-medium">{stats.response_rate ?? 0}%</span>
                 </div>
-                <Progress value={stats.response_rate} className="h-2" />
+                <Progress value={stats.response_rate ?? 0} className="h-2" />
               </div>
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm">
@@ -465,9 +492,9 @@ export default function ProviderDashboard() {
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm">
                   <span>Review Score</span>
-                  <span className="font-medium">{stats.average_rating}/5</span>
+                  <span className="font-medium">{stats.average_rating ?? 0}/5</span>
                 </div>
-                <Progress value={(stats.average_rating / 5) * 100} className="h-2" />
+                <Progress value={((stats.average_rating ?? 0) / 5) * 100} className="h-2" />
               </div>
             </CardContent>
           </Card>

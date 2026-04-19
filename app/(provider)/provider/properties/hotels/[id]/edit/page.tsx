@@ -51,36 +51,6 @@ const HOTEL_AMENITIES = [
   "24-Hour Front Desk",
 ]
 
-// Mock hotel data for demo
-const mockHotel: ProviderHotel = {
-  id: "1",
-  name: "Sheraton Addis Hotel",
-  nickname: "ሸራተን አዲስ",
-  description: "A luxury 5-star hotel in the heart of Addis Ababa, offering world-class amenities, stunning city views, and exceptional service.",
-  category: "hotel",
-  city_id: "1",
-  city_name: "Addis Ababa",
-  address: "Taitu Street, Addis Ababa",
-  is_verified: true,
-  is_active: true,
-  created_at: "2024-01-01T00:00:00Z",
-  updated_at: "2024-12-01T00:00:00Z",
-  rating: 4.8,
-  review_count: 256,
-  star_rating: 5,
-  check_in_time: "14:00",
-  check_out_time: "12:00",
-  amenities: [
-    "Free WiFi",
-    "Swimming Pool",
-    "Spa",
-    "Gym/Fitness Center",
-    "Restaurant",
-    "Bar",
-    "Room Service",
-    "Parking",
-  ],
-}
 
 export default function EditHotelPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -100,7 +70,7 @@ export default function EditHotelPage({ params }: { params: Promise<{ id: string
     try {
       // Load hotel and cities in parallel
       const [hotelData, citiesData] = await Promise.all([
-        providerAPI.getMyHotel(resolvedParams.id).catch(() => mockHotel),
+        providerAPI.getMyHotel(resolvedParams.id),
         contentAPI.getCities().catch(() => []),
       ])
 

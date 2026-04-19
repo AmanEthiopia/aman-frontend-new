@@ -85,100 +85,6 @@ const ROOM_AMENITIES = [
   "Coffee Maker",
 ]
 
-// Mock hotel data for demo
-const mockHotel: ProviderHotel = {
-  id: "1",
-  name: "Sheraton Addis Hotel",
-  nickname: "ሸራተን አዲስ",
-  description: "A luxury 5-star hotel in the heart of Addis Ababa, offering world-class amenities, stunning city views, and exceptional service. Perfect for business travelers and tourists alike.",
-  category: "hotel",
-  city_id: "1",
-  city_name: "Addis Ababa",
-  address: "Taitu Street, Addis Ababa",
-  is_verified: true,
-  is_active: true,
-  created_at: "2024-01-01T00:00:00Z",
-  updated_at: "2024-12-01T00:00:00Z",
-  cover_photo_url: "/placeholder.svg?height=400&width=800",
-  rating: 4.8,
-  review_count: 256,
-  star_rating: 5,
-  check_in_time: "14:00",
-  check_out_time: "12:00",
-  amenities: [
-    "Free WiFi",
-    "Swimming Pool",
-    "Spa",
-    "Gym/Fitness Center",
-    "Restaurant",
-    "Bar",
-    "Room Service",
-    "Parking",
-    "Airport Shuttle",
-    "Business Center",
-    "Conference Room",
-  ],
-  total_rooms: 24,
-  available_rooms: 18,
-  rooms: [
-    {
-      id: "r1",
-      hotel_id: "1",
-      name: "Standard Room",
-      description: "Comfortable room with modern amenities",
-      room_type: "standard",
-      price_per_night: 120,
-      max_guests: 2,
-      bed_type: "Queen",
-      amenities: ["Air Conditioning", "WiFi", "TV", "Mini Bar"],
-      photos: [],
-      is_available: true,
-      quantity: 10,
-    },
-    {
-      id: "r2",
-      hotel_id: "1",
-      name: "Deluxe Room",
-      description: "Spacious room with city views",
-      room_type: "deluxe",
-      price_per_night: 180,
-      max_guests: 2,
-      bed_type: "King",
-      amenities: ["Air Conditioning", "WiFi", "TV", "Mini Bar", "City View", "Work Desk"],
-      photos: [],
-      is_available: true,
-      quantity: 8,
-    },
-    {
-      id: "r3",
-      hotel_id: "1",
-      name: "Executive Suite",
-      description: "Luxurious suite with separate living area",
-      room_type: "suite",
-      price_per_night: 320,
-      max_guests: 3,
-      bed_type: "King",
-      amenities: ["Air Conditioning", "WiFi", "TV", "Mini Bar", "City View", "Work Desk", "Balcony", "Room Service"],
-      photos: [],
-      is_available: true,
-      quantity: 4,
-    },
-    {
-      id: "r4",
-      hotel_id: "1",
-      name: "Family Room",
-      description: "Perfect for families with children",
-      room_type: "family",
-      price_per_night: 250,
-      max_guests: 4,
-      bed_type: "2 Double Beds",
-      amenities: ["Air Conditioning", "WiFi", "TV", "Mini Bar", "Safe"],
-      photos: [],
-      is_available: true,
-      quantity: 2,
-    },
-  ],
-}
 
 function AddRoomModal({
   open,
@@ -496,8 +402,7 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
       setHotel(data)
     } catch (error) {
       console.error("[v0] Failed to load hotel:", error)
-      // Use mock data for demo
-      setHotel(mockHotel)
+      toast.error("Failed to load hotel data")
     } finally {
       setIsLoading(false)
     }

@@ -46,7 +46,8 @@ import {
 } from "@/components/ui/collapsible"
 import { useAuth } from "@/contexts/auth-context"
 import { getConversations } from "@/lib/api/messages"
-import { getMyBookings } from "@/lib/api/provider"
+import { getMyBookings, getMyProperties } from "@/lib/api/provider"
+import type { PropertyBase, PropertyCategory } from "@/lib/api/provider"
 
 interface NavItem {
   href: string
@@ -217,11 +218,12 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
   const { userProfile, logout, isAuthenticated, isAuthReady } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [selectedProperty, setSelectedProperty] = useState("Sheraton Addis Hotel")
+  const [selectedProperty, setSelectedProperty] = useState("All Properties")
+  const [myProperties, setMyProperties] = useState<PropertyBase[]>([])
   const [pendingBookings, setPendingBookings] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
 
-  // Fetch real counts for badges
+  // Fetch real counts for badges and property list
   useEffect(() => {
     async function fetchCounts() {
       if (!isAuthenticated) return
@@ -243,6 +245,14 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
       } catch {
         setUnreadMessages(0)
       }
+      try {
+        // Fetch real properties for the dropdown
+        const propertiesResponse = await getMyProperties()
+        const list = Array.isArray(propertiesResponse) ? propertiesResponse : (propertiesResponse?.results ?? [])
+        setMyProperties(list)
+      } catch {
+        setMyProperties([])
+      }
     }
     fetchCounts()
     // Poll every 30 seconds
@@ -252,14 +262,7 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
 
   const sidebarItems = getSidebarItems(pendingBookings, unreadMessages)
 
-  // Mock properties for dropdown - in production, this would come from API
-  const mockProperties = [
-    { id: "1", name: "Sheraton Addis Hotel", type: "hotel" as const },
-    { id: "2", name: "Lalibela Lodge", type: "hotel" as const },
-    { id: "3", name: "Yod Abyssinia", type: "restaurant" as const },
-  ]
-
-  const propertyTypeIcons = {
+  const propertyTypeIcons: Record<string, typeof Building2> = {
     hotel: Building2,
     restaurant: UtensilsCrossed,
     driver: Car,
@@ -315,23 +318,27 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
                 <DropdownMenuContent align="start" className="w-64">
                   <DropdownMenuLabel>Your Properties</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {mockProperties.map((property) => {
-                    const Icon = propertyTypeIcons[property.type]
-                    return (
-                      <DropdownMenuItem
-                        key={property.id}
-                        onClick={() => setSelectedProperty(property.name)}
-                      >
-                        <Icon className="mr-2 h-4 w-4" />
-                        {property.name}
-                        {property.name === selectedProperty && (
-                          <Badge className="ml-auto" variant="secondary">
-                            Active
-                          </Badge>
-                        )}
-                      </DropdownMenuItem>
-                    )
-                  })}
+                  {myProperties.length === 0 ? (
+                    <DropdownMenuItem disabled>No properties yet</DropdownMenuItem>
+                  ) : (
+                    myProperties.map((property) => {
+                      const Icon = propertyTypeIcons[property.category] || Building2
+                      return (
+                        <DropdownMenuItem
+                          key={property.id}
+                          onClick={() => setSelectedProperty(property.name)}
+                        >
+                          <Icon className="mr-2 h-4 w-4" />
+                          {property.name}
+                          {property.name === selectedProperty && (
+                            <Badge className="ml-auto" variant="secondary">
+                              Active
+                            </Badge>
+                          )}
+                        </DropdownMenuItem>
+                      )
+                    })
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/provider/properties/new" className="text-primary">
