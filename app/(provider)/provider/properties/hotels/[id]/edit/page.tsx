@@ -29,6 +29,7 @@ import { toast } from "sonner"
 import * as providerAPI from "@/lib/api/provider"
 import * as contentAPI from "@/lib/api/content"
 import type { ProviderHotel, CreateHotelPayload } from "@/lib/api/provider"
+import { amenityLabel } from "@/lib/api/provider"
 import type { City } from "@/lib/api/content"
 
 // Hotel amenities options
@@ -88,7 +89,8 @@ export default function EditHotelPage({ params }: { params: Promise<{ id: string
         city_id: hotelData.city_id,
         check_in_time: hotelData.check_in_time,
         check_out_time: hotelData.check_out_time,
-        amenities: hotelData.amenities || [],
+        // amenities come back as objects from API — extract the string label for the form
+        amenities: (hotelData.amenities || []).map(amenityLabel),
       })
     } catch (error) {
       console.error("[v0] Failed to load hotel:", error)

@@ -69,6 +69,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import * as providerAPI from "@/lib/api/provider"
 import type { ProviderHotel, ProviderRoom, CreateRoomPayload } from "@/lib/api/provider"
+import { amenityLabel } from "@/lib/api/provider"
 import { formatRating } from "@/lib/utils"
 
 // Room amenities
@@ -318,7 +319,7 @@ function RoomCard({
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="font-semibold">{room.name}</h4>
-                <Badge variant="outline">{roomTypeLabels[room.room_type]}</Badge>
+                {room.room_type && <Badge variant="outline">{roomTypeLabels[room.room_type]}</Badge>}
                 {!room.is_available && (
                   <Badge variant="secondary">Unavailable</Badge>
                 )}
@@ -327,23 +328,26 @@ function RoomCard({
               <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
                 <span className="flex items-center gap-1">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  Up to {room.max_guests} guests
+                  Up to {room.max_adults ?? room.max_guests} guests
                 </span>
                 <span className="flex items-center gap-1">
                   <Bed className="h-4 w-4 text-muted-foreground" />
                   {room.bed_type}
                 </span>
                 <span className="font-medium text-primary">
-                  ${room.price_per_night}/night
+                  ${room.base_price ?? room.price_per_night}/night
                 </span>
               </div>
               {room.amenities.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {room.amenities.slice(0, 4).map((amenity) => (
-                    <Badge key={amenity} variant="secondary" className="text-xs">
-                      {amenity}
-                    </Badge>
-                  ))}
+                  {room.amenities.slice(0, 4).map((amenity, i) => {
+                    const label = amenityLabel(amenity)
+                    return (
+                      <Badge key={`${label}-${i}`} variant="secondary" className="text-xs">
+                        {label}
+                      </Badge>
+                    )
+                  })}
                   {room.amenities.length > 4 && (
                     <Badge variant="secondary" className="text-xs">
                       +{room.amenities.length - 4} more
@@ -355,7 +359,7 @@ function RoomCard({
           </div>
           <div className="flex items-center gap-2">
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">{room.quantity} rooms</p>
+              <p className="text-sm text-muted-foreground">{room.total_units ?? room.quantity} rooms</p>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -596,11 +600,14 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {hotel.amenities?.map((amenity) => (
-                  <Badge key={amenity} variant="secondary">
-                    {amenity}
-                  </Badge>
-                ))}
+                {hotel.amenities?.map((amenity, i) => {
+                  const label = amenityLabel(amenity)
+                  return (
+                    <Badge key={`${label}-${i}`} variant="secondary">
+                      {label}
+                    </Badge>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>

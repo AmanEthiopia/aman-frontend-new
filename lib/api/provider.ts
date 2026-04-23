@@ -39,17 +39,30 @@ export interface PropertyPhoto {
   order: number
 }
 
+// Amenity as returned by GET /hotels/provider/<id>/ — objects, not strings
+export interface HotelAmenity {
+  id: string
+  amenity_type: string
+  is_free?: boolean
+  description?: string
+}
+
 // Hotel Types
 export interface ProviderHotel extends PropertyBase {
   category: "hotel"
   star_rating: 1 | 2 | 3 | 4 | 5
   check_in_time: string
   check_out_time: string
-  amenities?: string[]
+  amenities?: HotelAmenity[] | string[]
   policies?: HotelPolicies
   rooms?: ProviderRoom[]
   total_rooms?: number
   available_rooms?: number
+}
+
+// Helper: extract display string from either amenity shape
+export function amenityLabel(a: HotelAmenity | string): string {
+  return typeof a === "string" ? a : a.amenity_type
 }
 
 export interface HotelPolicies {
@@ -61,17 +74,27 @@ export interface HotelPolicies {
 
 export interface ProviderRoom {
   id: string
-  hotel_id: string
+  hotel_id?: string
+  hotel?: string // API returns hotel UUID as "hotel"
   name: string
   description: string
-  room_type: "standard" | "deluxe" | "suite" | "executive" | "family"
-  price_per_night: number
-  max_guests: number
+  room_type?: "standard" | "deluxe" | "suite" | "executive" | "family"
+  // API response uses base_price / max_adults / total_units; frontend form uses the aliases below
+  base_price?: number | string
+  price_per_night?: number  // alias for base_price in CreateRoomPayload
+  max_adults?: number
+  max_children?: number
+  max_guests?: number       // alias for max_adults in CreateRoomPayload
   bed_type: string
-  amenities: string[]
+  bed_count?: number
+  room_size_sqm?: number | null
+  currency?: string
+  weekend_price?: number | null
+  amenities: HotelAmenity[] | string[]
   photos: PropertyPhoto[]
   is_available: boolean
-  quantity: number
+  total_units?: number
+  quantity?: number         // alias for total_units in CreateRoomPayload
 }
 
 export interface CreateHotelPayload {
@@ -416,8 +439,8 @@ export async function getMyHotels(params: {
   })
 
   const queryString = queryParams.toString()
-  const endpoint = queryString ? `/provider/hotels/?${queryString}` : "/provider/hotels/"
-  
+  const endpoint = queryString ? `/hotels/provider/?${queryString}` : "/hotels/provider/"
+
   return apiGet<PaginatedResponse<ProviderHotel>>(endpoint)
 }
 
@@ -443,24 +466,45 @@ export async function deleteHotel(hotelId: string): Promise<void> {
 }
 
 /**
+ * Publish a hotel
+ */
+export async function publishHotel(hotelId: string): Promise<{ is_published: boolean }> {
+  return apiPost<{ is_published: boolean }>(`/hotels/provider/${hotelId}/publish/`)
+}
+
+/**
+ * Unpublish a hotel
+ */
+export async function unpublishHotel(hotelId: string): Promise<{ is_published: boolean }> {
+  return apiPost<{ is_published: boolean }>(`/hotels/provider/${hotelId}/unpublish/`)
+}
+
+/**
+ * Get a single room by ID
+ */
+export async function getMyRoom(hotelId: string, roomId: string): Promise<ProviderRoom> {
+  return apiGet<ProviderRoom>(`/hotels/provider/${hotelId}/rooms/${roomId}/`)
+}
+
+/**
  * Create a room for a hotel
  */
 export async function createRoom(hotelId: string, payload: CreateRoomPayload): Promise<ProviderRoom> {
-  return apiPost<ProviderRoom>(`/hotels/${hotelId}/rooms/`, payload)
+  return apiPost<ProviderRoom>(`/hotels/provider/${hotelId}/rooms/`, payload)
 }
 
 /**
  * Update a room
  */
 export async function updateRoom(hotelId: string, roomId: string, payload: Partial<CreateRoomPayload>): Promise<ProviderRoom> {
-  return apiPatch<ProviderRoom>(`/hotels/${hotelId}/rooms/${roomId}/`, payload)
+  return apiPatch<ProviderRoom>(`/hotels/provider/${hotelId}/rooms/${roomId}/`, payload)
 }
 
 /**
  * Delete a room
  */
 export async function deleteRoom(hotelId: string, roomId: string): Promise<void> {
-  return apiDelete(`/hotels/${hotelId}/rooms/${roomId}/`)
+  return apiDelete(`/hotels/provider/${hotelId}/rooms/${roomId}/`)
 }
 
 // ============================================================================
@@ -491,9 +535,16 @@ export async function getMyRestaurants(params: {
   })
 
   const queryString = queryParams.toString()
-  const endpoint = queryString ? `/provider/restaurants/?${queryString}` : "/provider/restaurants/"
-  
+  const endpoint = queryString ? `/restaurants/provider/?${queryString}` : "/restaurants/provider/"
+
   return apiGet<PaginatedResponse<ProviderRestaurant>>(endpoint)
+}
+
+/**
+ * Get a specific restaurant by ID
+ */
+export async function getMyRestaurant(restaurantId: string): Promise<ProviderRestaurant> {
+  return apiGet<ProviderRestaurant>(`/restaurants/provider/${restaurantId}/`)
 }
 
 /**
@@ -508,6 +559,13 @@ export async function updateRestaurant(restaurantId: string, payload: Partial<Cr
  */
 export async function deleteRestaurant(restaurantId: string): Promise<void> {
   return apiDelete(`/restaurants/provider/${restaurantId}/`)
+}
+
+/**
+ * Publish a restaurant
+ */
+export async function publishRestaurant(restaurantId: string): Promise<{ is_published: boolean }> {
+  return apiPost<{ is_published: boolean }>(`/restaurants/provider/${restaurantId}/publish/`)
 }
 
 // ============================================================================
@@ -603,6 +661,20 @@ export async function getMyTrips(params: {
   const endpoint = queryString ? `/provider/trips/?${queryString}` : "/provider/trips/"
   
   return apiGet<PaginatedResponse<ProviderTrip>>(endpoint)
+}
+
+/**
+ * Get a single trip by ID
+ */
+export async function getMyTrip(tripId: string): Promise<ProviderTrip> {
+  return apiGet<ProviderTrip>(`/trips/${tripId}/`)
+}
+
+/**
+ * Toggle publish / unpublish a trip
+ */
+export async function toggleTripPublish(tripId: string): Promise<{ is_published: boolean }> {
+  return apiPost<{ is_published: boolean }>(`/trips/${tripId}/publish/`, {})
 }
 
 /**
@@ -856,8 +928,9 @@ export async function getProviderHotelBookings(params: {
   const queryString = queryParams.toString()
   const endpoint = queryString ? `/bookings/provider/hotel/?${queryString}` : "/bookings/provider/hotel/"
   
-  const response = await apiGet<{ data: ProviderBooking[] }>(endpoint)
-  return response.data || []
+  // apiFetch unwraps envelope.data — returns the array directly
+  const result = await apiGet<ProviderBooking[]>(endpoint)
+  return Array.isArray(result) ? result : []
 }
 
 /**
@@ -872,44 +945,40 @@ export async function getProviderRestaurantReservations(params: {
   if (params.status) queryParams.append("status", params.status)
   if (params.restaurant_id) queryParams.append("restaurant_id", params.restaurant_id)
   if (params.date) queryParams.append("date", params.date)
-  
+
   const queryString = queryParams.toString()
   const endpoint = queryString ? `/bookings/provider/restaurant/?${queryString}` : "/bookings/provider/restaurant/"
-  
-  const response = await apiGet<{ data: ProviderBooking[] }>(endpoint)
-  return response.data || []
+
+  const result = await apiGet<ProviderBooking[]>(endpoint)
+  return Array.isArray(result) ? result : []
 }
 
 /**
  * Confirm a hotel booking (new API)
  */
 export async function confirmHotelBooking(bookingId: string): Promise<ProviderBooking> {
-  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/hotel/${bookingId}/confirm/`)
-  return response.data
+  return apiPost<ProviderBooking>(`/bookings/provider/hotel/${bookingId}/confirm/`)
 }
 
 /**
  * Reject a hotel booking (new API)
  */
 export async function rejectHotelBooking(bookingId: string, reason?: string): Promise<ProviderBooking> {
-  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/hotel/${bookingId}/reject/`, { reason })
-  return response.data
+  return apiPost<ProviderBooking>(`/bookings/provider/hotel/${bookingId}/reject/`, { reason })
 }
 
 /**
  * Confirm a restaurant reservation (new API)
  */
 export async function confirmRestaurantReservation(reservationId: string): Promise<ProviderBooking> {
-  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/restaurant/${reservationId}/confirm/`)
-  return response.data
+  return apiPost<ProviderBooking>(`/bookings/provider/restaurant/${reservationId}/confirm/`)
 }
 
 /**
  * Reject a restaurant reservation (new API)
  */
 export async function rejectRestaurantReservation(reservationId: string, reason?: string): Promise<ProviderBooking> {
-  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/restaurant/${reservationId}/reject/`, { reason })
-  return response.data
+  return apiPost<ProviderBooking>(`/bookings/provider/restaurant/${reservationId}/reject/`, { reason })
 }
 
 /**
@@ -962,7 +1031,13 @@ export async function uploadPropertyPhoto(
   if (caption) formData.append("caption", caption)
   if (category) formData.append("category", category)
 
-  return apiFetch<PropertyPhoto>(`/${propertyType}s/${propertyId}/photos/`, {
+  // Hotels and restaurants use /provider/ prefix; drivers and trips use root
+  const providerTypes = new Set(["hotel", "restaurant"])
+  const basePath = providerTypes.has(propertyType)
+    ? `/${propertyType}s/provider/${propertyId}/photos/`
+    : `/${propertyType}s/${propertyId}/photos/`
+
+  return apiFetch<PropertyPhoto>(basePath, {
     method: "POST",
     body: formData,
     headers: {}, // Let browser set Content-Type for FormData
@@ -977,7 +1052,11 @@ export async function deletePropertyPhoto(
   propertyId: string,
   photoId: string
 ): Promise<void> {
-  return apiDelete(`/${propertyType}s/${propertyId}/photos/${photoId}/`)
+  const providerTypes = new Set(["hotel", "restaurant"])
+  const basePath = providerTypes.has(propertyType)
+    ? `/${propertyType}s/provider/${propertyId}/photos/${photoId}/`
+    : `/${propertyType}s/${propertyId}/photos/${photoId}/`
+  return apiDelete(basePath)
 }
 
 /**
