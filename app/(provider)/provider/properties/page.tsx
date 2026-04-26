@@ -118,10 +118,15 @@ function PropertyCard({
             <Icon className="mr-1 h-3 w-3" />
             {config.label}
           </Badge>
-          {property.is_verified && (
+          {property.is_verified ? (
             <Badge className="bg-green-100 text-green-700 border-0 dark:bg-green-950 dark:text-green-400">
               <CheckCircle2 className="mr-1 h-3 w-3" />
               Verified
+            </Badge>
+          ) : (
+            <Badge className="bg-yellow-100 text-yellow-800 border-0 dark:bg-yellow-900/30 dark:text-yellow-300">
+              <XCircle className="mr-1 h-3 w-3" />
+              Unverified
             </Badge>
           )}
         </div>

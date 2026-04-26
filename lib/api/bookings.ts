@@ -8,28 +8,20 @@ import { apiPost, apiGet } from "./client"
 
 export type BookingStatus = "pending" | "confirmed" | "rejected" | "cancelled" | "completed" | "no_show"
 export type PaymentStatus = "unpaid" | "paid" | "refunded"
-export type BookingType = "hotel" | "restaurant" | "package" | "transport" | "experience" | "guide"
 
-// Base booking interface
-export interface BookingBase {
-  id: string
-  booking_number: string
-  status: BookingStatus
-  payment_required: boolean
-  payment_status: PaymentStatus
-  total_price: string
-  currency: string
-  guest_name: string
-  guest_email: string
-  guest_phone?: string
-  special_requests?: string
-  confirmed_at?: string | null
-  cancelled_at?: string | null
-  cancellation_reason?: string | null
-  created_at: string
+// Payment response
+export interface PaymentInfo {
+  required: boolean
+  client_secret?: string | null
+  payment_intent_id?: string
+  amount?: string
+  currency?: string
 }
 
-// Hotel booking types
+// ============================================================================
+// Hotel Booking
+// ============================================================================
+
 export interface HotelBookingRoom {
   id: string
   room_id: string
@@ -52,8 +44,12 @@ export interface HotelBookingHotel {
   cover_photo_url?: string
 }
 
-export interface HotelBooking extends BookingBase {
-  type: "hotel"
+export interface HotelBooking {
+  id: string
+  booking_number: string
+  status: BookingStatus
+  payment_required: boolean
+  payment_status: PaymentStatus
   hotel: HotelBookingHotel
   check_in_date: string
   check_out_date: string
@@ -61,123 +57,22 @@ export interface HotelBooking extends BookingBase {
   rooms: HotelBookingRoom[]
   num_adults: number
   num_children: number
+  total_price: string
+  currency: string
+  guest_name: string
+  guest_email: string
+  guest_phone?: string
+  special_requests?: string
+  confirmed_at?: string | null
+  cancelled_at?: string | null
+  cancellation_reason?: string | null
+  created_at: string
 }
 
-// Restaurant reservation types
-export interface RestaurantBookingRestaurant {
-  id: string
-  name: string
-  nickname?: string
-  address: string
-  cuisine_type?: string
-  cover_photo_url?: string
+export interface HotelBookingResponse {
+  booking: HotelBooking
+  payment: PaymentInfo
 }
-
-export interface RestaurantReservation extends BookingBase {
-  type: "restaurant"
-  restaurant: RestaurantBookingRestaurant
-  reservation_date: string
-  reservation_time: string
-  party_size: number
-}
-
-// Package booking types
-export interface PackageBookingPackage {
-  id: string
-  title: string
-  nickname?: string
-  slug: string
-  duration_days: number
-  price_per_person: string
-  cover_photo_url?: string
-}
-
-export interface PackageBooking extends BookingBase {
-  type: "package"
-  package: PackageBookingPackage
-  start_date: string
-  num_adults: number
-  num_children: number
-}
-
-// Transport booking types
-export interface TransportBookingDriver {
-  id: string
-  name: string
-  phone: string
-  vehicle_type: string
-  vehicle_model?: string
-  license_plate?: string
-  photo_url?: string
-}
-
-export interface TransportBooking extends BookingBase {
-  type: "transport"
-  driver: TransportBookingDriver
-  pickup_date: string
-  pickup_time: string
-  pickup_location: string
-  dropoff_location: string
-  service_type: "airport_transfer" | "city_tour" | "intercity" | "hourly"
-  estimated_duration?: string
-}
-
-// Experience booking (for single-day activities)
-export interface ExperienceBookingExperience {
-  id: string
-  title: string
-  nickname?: string
-  slug: string
-  duration_hours: number
-  price_per_person: string
-  cover_photo_url?: string
-}
-
-export interface ExperienceBooking extends BookingBase {
-  type: "experience"
-  experience: ExperienceBookingExperience
-  date: string
-  time: string
-  num_participants: number
-}
-
-// Guide booking types
-export interface GuideBookingGuide {
-  id: string
-  title: string
-  nickname?: string
-  service_type: string
-  pricing_type: string
-  price: string
-  price_currency: string
-  primary_photo_url?: string
-}
-
-export interface GuideBooking extends BookingBase {
-  type: "guide"
-  guide: GuideBookingGuide
-  booking_date: string
-  start_time?: string
-  hours_requested?: string
-  num_adults: number
-  num_children: number
-}
-
-// Union type for all bookings
-export type Booking = HotelBooking | RestaurantReservation | PackageBooking | TransportBooking | ExperienceBooking | GuideBooking
-
-// Payment response
-export interface PaymentInfo {
-  required: boolean
-  client_secret?: string | null
-  payment_intent_id?: string
-  amount?: string
-  currency?: string
-}
-
-// ============================================================================
-// Hotel Booking API
-// ============================================================================
 
 export interface CreateHotelBookingPayload {
   hotel_id: string
@@ -192,18 +87,14 @@ export interface CreateHotelBookingPayload {
   special_requests?: string
 }
 
-export interface HotelBookingResponse {
-  booking: HotelBooking
-  payment: PaymentInfo
-}
-
 export async function createHotelBooking(payload: CreateHotelBookingPayload): Promise<HotelBookingResponse> {
   return apiPost<HotelBookingResponse>("/bookings/hotel/", payload)
 }
 
 export async function getMyHotelBookings(status?: BookingStatus): Promise<HotelBooking[]> {
   const params = status ? `?status=${status}` : ""
-  return apiGet<HotelBooking[]>(`/bookings/hotel/mine/${params}`)
+  const result = await apiGet<HotelBooking[] | { results: HotelBooking[] }>(`/bookings/hotel/mine/${params}`)
+  return Array.isArray(result) ? result : result?.results ?? []
 }
 
 export async function getHotelBookingById(id: string): Promise<HotelBooking> {
@@ -215,8 +106,37 @@ export async function cancelHotelBooking(id: string, reason?: string): Promise<H
 }
 
 // ============================================================================
-// Restaurant Reservation API
+// Restaurant Reservation
 // ============================================================================
+
+export interface RestaurantBookingRestaurant {
+  id: string
+  name: string
+  nickname?: string
+  address: string
+  cuisine_type?: string
+  cover_photo_url?: string
+}
+
+export interface RestaurantReservation {
+  id: string
+  reservation_number: string
+  status: BookingStatus
+  payment_status?: PaymentStatus
+  restaurant: RestaurantBookingRestaurant
+  reservation_date: string
+  reservation_time: string
+  party_size: number
+  total_price?: string
+  currency?: string
+  guest_name: string
+  guest_email: string
+  guest_phone?: string
+  special_requests?: string
+  confirmed_at?: string | null
+  cancelled_at?: string | null
+  created_at: string
+}
 
 export interface CreateRestaurantReservationPayload {
   restaurant_id: string
@@ -229,18 +149,15 @@ export interface CreateRestaurantReservationPayload {
   special_requests?: string
 }
 
-export interface RestaurantReservationResponse {
-  reservation: RestaurantReservation
-  payment: PaymentInfo
-}
-
-export async function createRestaurantReservation(payload: CreateRestaurantReservationPayload): Promise<RestaurantReservationResponse> {
-  return apiPost<RestaurantReservationResponse>("/bookings/restaurant/", payload)
+// API returns the reservation directly (flat), not wrapped in {reservation, payment}
+export async function createRestaurantReservation(payload: CreateRestaurantReservationPayload): Promise<RestaurantReservation> {
+  return apiPost<RestaurantReservation>("/bookings/restaurant/", payload)
 }
 
 export async function getMyRestaurantReservations(status?: BookingStatus): Promise<RestaurantReservation[]> {
   const params = status ? `?status=${status}` : ""
-  return apiGet<RestaurantReservation[]>(`/bookings/restaurant/mine/${params}`)
+  const result = await apiGet<RestaurantReservation[] | { results: RestaurantReservation[] }>(`/bookings/restaurant/mine/${params}`)
+  return Array.isArray(result) ? result : result?.results ?? []
 }
 
 export async function getRestaurantReservationById(id: string): Promise<RestaurantReservation> {
@@ -252,8 +169,41 @@ export async function cancelRestaurantReservation(id: string, reason?: string): 
 }
 
 // ============================================================================
-// Package Booking API
+// Trip / Package Booking
 // ============================================================================
+
+export interface PackageBookingPackage {
+  id: string
+  title: string
+  nickname?: string
+  slug: string
+  duration_days: number
+  price_per_person: string
+  cover_photo_url?: string
+}
+
+export interface PackageBooking {
+  id: string
+  booking_number: string
+  status: BookingStatus
+  payment_status?: PaymentStatus
+  package: PackageBookingPackage
+  start_date: string
+  num_adults: number
+  num_children: number
+  total_price: string
+  currency?: string
+  guest_name: string
+  guest_email: string
+  guest_phone?: string
+  special_requests?: string
+  created_at: string
+}
+
+export interface PackageBookingResponse {
+  booking: PackageBooking
+  payment: PaymentInfo
+}
 
 export interface CreatePackageBookingPayload {
   package_id: string
@@ -266,18 +216,14 @@ export interface CreatePackageBookingPayload {
   special_requests?: string
 }
 
-export interface PackageBookingResponse {
-  booking: PackageBooking
-  payment: PaymentInfo
-}
-
 export async function createPackageBooking(payload: CreatePackageBookingPayload): Promise<PackageBookingResponse> {
   return apiPost<PackageBookingResponse>("/experiences/bookings/", payload)
 }
 
 export async function getMyPackageBookings(status?: BookingStatus): Promise<PackageBooking[]> {
   const params = status ? `?status=${status}` : ""
-  return apiGet<PackageBooking[]>(`/experiences/bookings/mine/${params}`)
+  const result = await apiGet<PackageBooking[] | { results: PackageBooking[] }>(`/experiences/bookings/mine/${params}`)
+  return Array.isArray(result) ? result : result?.results ?? []
 }
 
 export async function getPackageBookingById(id: string): Promise<PackageBooking> {
@@ -289,72 +235,139 @@ export async function cancelPackageBooking(id: string, reason?: string): Promise
 }
 
 // ============================================================================
-// Transport Booking API
+// Driver Booking (NEW — /bookings/driver/)
 // ============================================================================
 
-export interface CreateTransportBookingPayload {
+export interface DriverBooking {
+  id: string
+  booking_number: string
   driver_id: string
-  pickup_date: string
+  driver_name: string
+  driver_vehicle_type: string
+  trip_date: string
   pickup_time: string
   pickup_location: string
   dropoff_location: string
-  service_type: "airport_transfer" | "city_tour" | "intercity" | "hourly"
-  estimated_duration?: string
+  num_passengers: number
+  status: BookingStatus
+  estimated_price: number | string
+  guest_name: string
+  guest_email: string
+  guest_phone?: string
+  special_requests?: string
+  created_at: string
+}
+
+export interface CreateDriverBookingPayload {
+  driver_id: string
+  trip_date: string
+  pickup_time: string
+  pickup_location: string
+  dropoff_location: string
+  num_passengers: number
   guest_name: string
   guest_email: string
   guest_phone?: string
   special_requests?: string
 }
 
-export interface TransportBookingResponse {
-  booking: TransportBooking
-  payment: PaymentInfo
+export async function createDriverBooking(payload: CreateDriverBookingPayload): Promise<DriverBooking> {
+  return apiPost<DriverBooking>("/bookings/driver/", payload)
 }
 
-export async function createTransportBooking(payload: CreateTransportBookingPayload): Promise<TransportBookingResponse> {
-  const response = await apiPost<{ data: TransportBookingResponse }>("/bookings/transport/", payload)
-  return response.data
-}
-
-export async function getMyTransportBookings(status?: BookingStatus): Promise<TransportBooking[]> {
+export async function getMyDriverBookings(status?: BookingStatus): Promise<DriverBooking[]> {
   const params = status ? `?status=${status}` : ""
-  const response = await apiGet<{ data: TransportBooking[] }>(`/bookings/transport/mine/${params}`)
-  return response.data || []
+  const result = await apiGet<DriverBooking[] | { results: DriverBooking[] }>(`/bookings/driver/mine/${params}`)
+  return Array.isArray(result) ? result : result?.results ?? []
 }
 
-export async function cancelTransportBooking(id: string, reason?: string): Promise<TransportBooking> {
-  const response = await apiPost<{ data: TransportBooking }>(`/bookings/transport/${id}/cancel/`, { reason })
-  return response.data
+export async function getDriverBookingById(id: string): Promise<DriverBooking> {
+  return apiGet<DriverBooking>(`/bookings/driver/${id}/`)
 }
 
-// ============================================================================
-// Payment API
-// ============================================================================
-
-export interface CreatePaymentIntentResponse {
-  client_secret: string
-  payment_intent_id: string
-  amount: string
-  currency: string
-}
-
-export async function createHotelPaymentIntent(bookingId: string): Promise<CreatePaymentIntentResponse> {
-  const response = await apiPost<{ data: CreatePaymentIntentResponse }>(`/bookings/payment/hotel/${bookingId}/create-intent/`, {})
-  return response.data
-}
-
-export async function createRestaurantPaymentIntent(reservationId: string): Promise<CreatePaymentIntentResponse> {
-  const response = await apiPost<{ data: CreatePaymentIntentResponse }>(`/bookings/payment/restaurant/${reservationId}/create-intent/`, {})
-  return response.data
-}
-
-export async function createPackagePaymentIntent(bookingId: string): Promise<CreatePaymentIntentResponse> {
-  const response = await apiPost<{ data: CreatePaymentIntentResponse }>(`/experiences/bookings/${bookingId}/create-intent/`, {})
-  return response.data
+export async function cancelDriverBooking(id: string, reason?: string): Promise<DriverBooking> {
+  return apiPost<DriverBooking>(`/bookings/driver/${id}/cancel/`, { reason })
 }
 
 // ============================================================================
-// Provider Booking Management API
+// Provider Booking Management
+// ============================================================================
+
+// Hotel
+export async function getProviderHotelBookings(params?: { status?: BookingStatus; hotel_id?: string }): Promise<HotelBooking[]> {
+  const searchParams = new URLSearchParams()
+  if (params?.status) searchParams.append("status", params.status)
+  if (params?.hotel_id) searchParams.append("hotel_id", params.hotel_id)
+  const query = searchParams.toString() ? `?${searchParams.toString()}` : ""
+  const result = await apiGet<HotelBooking[] | { results: HotelBooking[] }>(`/bookings/provider/hotel/${query}`)
+  return Array.isArray(result) ? result : result?.results ?? []
+}
+
+export async function confirmHotelBooking(bookingId: string): Promise<HotelBooking> {
+  return apiPost<HotelBooking>(`/bookings/provider/hotel/${bookingId}/confirm/`, {})
+}
+
+export async function rejectHotelBooking(bookingId: string, reason?: string): Promise<HotelBooking> {
+  return apiPost<HotelBooking>(`/bookings/provider/hotel/${bookingId}/reject/`, { reason })
+}
+
+// Restaurant
+export async function getProviderRestaurantReservations(params?: { status?: BookingStatus; restaurant_id?: string; date?: string }): Promise<RestaurantReservation[]> {
+  const searchParams = new URLSearchParams()
+  if (params?.status) searchParams.append("status", params.status)
+  if (params?.restaurant_id) searchParams.append("restaurant_id", params.restaurant_id)
+  if (params?.date) searchParams.append("date", params.date)
+  const query = searchParams.toString() ? `?${searchParams.toString()}` : ""
+  const result = await apiGet<RestaurantReservation[] | { results: RestaurantReservation[] }>(`/bookings/provider/restaurant/${query}`)
+  return Array.isArray(result) ? result : result?.results ?? []
+}
+
+export async function confirmRestaurantReservation(reservationId: string): Promise<RestaurantReservation> {
+  return apiPost<RestaurantReservation>(`/bookings/provider/restaurant/${reservationId}/confirm/`, {})
+}
+
+export async function rejectRestaurantReservation(reservationId: string, reason?: string): Promise<RestaurantReservation> {
+  return apiPost<RestaurantReservation>(`/bookings/provider/restaurant/${reservationId}/reject/`, { reason })
+}
+
+// Trip / Package
+export async function getProviderPackageBookings(params?: { status?: BookingStatus; package_id?: string }): Promise<PackageBooking[]> {
+  const searchParams = new URLSearchParams()
+  if (params?.status) searchParams.append("status", params.status)
+  if (params?.package_id) searchParams.append("package_id", params.package_id)
+  const query = searchParams.toString() ? `?${searchParams.toString()}` : ""
+  const result = await apiGet<PackageBooking[] | { results: PackageBooking[] }>(`/experiences/provider/bookings/${query}`)
+  return Array.isArray(result) ? result : result?.results ?? []
+}
+
+export async function confirmPackageBooking(bookingId: string): Promise<PackageBooking> {
+  return apiPost<PackageBooking>(`/experiences/provider/bookings/${bookingId}/confirm/`, {})
+}
+
+export async function rejectPackageBooking(bookingId: string, reason?: string): Promise<PackageBooking> {
+  return apiPost<PackageBooking>(`/experiences/provider/bookings/${bookingId}/reject/`, { reason })
+}
+
+// Driver
+export async function getProviderDriverBookings(params?: { status?: BookingStatus; driver_id?: string }): Promise<DriverBooking[]> {
+  const searchParams = new URLSearchParams()
+  if (params?.status) searchParams.append("status", params.status)
+  if (params?.driver_id) searchParams.append("driver_id", params.driver_id)
+  const query = searchParams.toString() ? `?${searchParams.toString()}` : ""
+  const result = await apiGet<DriverBooking[] | { results: DriverBooking[] }>(`/bookings/provider/driver/${query}`)
+  return Array.isArray(result) ? result : result?.results ?? []
+}
+
+export async function confirmDriverBooking(bookingId: string): Promise<DriverBooking> {
+  return apiPost<DriverBooking>(`/bookings/provider/driver/${bookingId}/confirm/`, {})
+}
+
+export async function rejectDriverBooking(bookingId: string, reason?: string): Promise<DriverBooking> {
+  return apiPost<DriverBooking>(`/bookings/provider/driver/${bookingId}/reject/`, { reason })
+}
+
+// ============================================================================
+// Provider Dashboard / Calendar / Earnings
 // ============================================================================
 
 export interface ProviderDashboardStats {
@@ -409,71 +422,8 @@ export interface EarningsResponse {
   transactions: EarningsTransaction[]
 }
 
-// Provider Hotel Bookings
-export async function getProviderHotelBookings(params?: { status?: BookingStatus; hotel_id?: string }): Promise<HotelBooking[]> {
-  const searchParams = new URLSearchParams()
-  if (params?.status) searchParams.append("status", params.status)
-  if (params?.hotel_id) searchParams.append("hotel_id", params.hotel_id)
-  const query = searchParams.toString() ? `?${searchParams.toString()}` : ""
-  const response = await apiGet<{ data: HotelBooking[] }>(`/bookings/provider/hotel/${query}`)
-  return response.data || []
-}
-
-export async function confirmHotelBooking(bookingId: string): Promise<HotelBooking> {
-  const response = await apiPost<{ data: HotelBooking }>(`/bookings/provider/hotel/${bookingId}/confirm/`, {})
-  return response.data
-}
-
-export async function rejectHotelBooking(bookingId: string, reason?: string): Promise<HotelBooking> {
-  const response = await apiPost<{ data: HotelBooking }>(`/bookings/provider/hotel/${bookingId}/reject/`, { reason })
-  return response.data
-}
-
-// Provider Restaurant Reservations
-export async function getProviderRestaurantReservations(params?: { status?: BookingStatus; restaurant_id?: string; date?: string }): Promise<RestaurantReservation[]> {
-  const searchParams = new URLSearchParams()
-  if (params?.status) searchParams.append("status", params.status)
-  if (params?.restaurant_id) searchParams.append("restaurant_id", params.restaurant_id)
-  if (params?.date) searchParams.append("date", params.date)
-  const query = searchParams.toString() ? `?${searchParams.toString()}` : ""
-  const response = await apiGet<{ data: RestaurantReservation[] }>(`/bookings/provider/restaurant/${query}`)
-  return response.data || []
-}
-
-export async function confirmRestaurantReservation(reservationId: string): Promise<RestaurantReservation> {
-  const response = await apiPost<{ data: RestaurantReservation }>(`/bookings/provider/restaurant/${reservationId}/confirm/`, {})
-  return response.data
-}
-
-export async function rejectRestaurantReservation(reservationId: string, reason?: string): Promise<RestaurantReservation> {
-  const response = await apiPost<{ data: RestaurantReservation }>(`/bookings/provider/restaurant/${reservationId}/reject/`, { reason })
-  return response.data
-}
-
-// Provider Package Bookings
-export async function getProviderPackageBookings(params?: { status?: BookingStatus; package_id?: string }): Promise<PackageBooking[]> {
-  const searchParams = new URLSearchParams()
-  if (params?.status) searchParams.append("status", params.status)
-  if (params?.package_id) searchParams.append("package_id", params.package_id)
-  const query = searchParams.toString() ? `?${searchParams.toString()}` : ""
-  const response = await apiGet<{ data: PackageBooking[] }>(`/experiences/provider/bookings/${query}`)
-  return response.data || []
-}
-
-export async function confirmPackageBooking(bookingId: string): Promise<PackageBooking> {
-  const response = await apiPost<{ data: PackageBooking }>(`/experiences/provider/bookings/${bookingId}/confirm/`, {})
-  return response.data
-}
-
-export async function rejectPackageBooking(bookingId: string, reason?: string): Promise<PackageBooking> {
-  const response = await apiPost<{ data: PackageBooking }>(`/experiences/provider/bookings/${bookingId}/reject/`, { reason })
-  return response.data
-}
-
-// Provider Dashboard
 export async function getProviderDashboard(): Promise<ProviderDashboardStats> {
-  const response = await apiGet<{ data: ProviderDashboardStats }>("/bookings/provider/dashboard/")
-  return response.data
+  return apiGet<ProviderDashboardStats>("/bookings/provider/dashboard/")
 }
 
 export async function getProviderCalendar(params?: { year?: number; month?: number; hotel_id?: string }): Promise<CalendarResponse> {
@@ -482,8 +432,7 @@ export async function getProviderCalendar(params?: { year?: number; month?: numb
   if (params?.month) searchParams.append("month", params.month.toString())
   if (params?.hotel_id) searchParams.append("hotel_id", params.hotel_id)
   const query = searchParams.toString() ? `?${searchParams.toString()}` : ""
-  const response = await apiGet<{ data: CalendarResponse }>(`/bookings/provider/calendar/${query}`)
-  return response.data
+  return apiGet<CalendarResponse>(`/bookings/provider/calendar/${query}`)
 }
 
 export async function getProviderEarnings(params?: { period?: "this_month" | "last_month" | "this_year"; hotel_id?: string }): Promise<EarningsResponse> {
@@ -491,51 +440,154 @@ export async function getProviderEarnings(params?: { period?: "this_month" | "la
   if (params?.period) searchParams.append("period", params.period)
   if (params?.hotel_id) searchParams.append("hotel_id", params.hotel_id)
   const query = searchParams.toString() ? `?${searchParams.toString()}` : ""
-  const response = await apiGet<{ data: EarningsResponse }>(`/bookings/provider/earnings/${query}`)
-  return response.data
+  return apiGet<EarningsResponse>(`/bookings/provider/earnings/${query}`)
 }
 
 // ============================================================================
-// All Bookings (Combined)
+// Payment Intents (Stripe — for future use)
 // ============================================================================
 
-export interface AllBookingsResponse {
-  hotel: HotelBooking[]
-  restaurant: RestaurantReservation[]
-  package: PackageBooking[]
-  transport: TransportBooking[]
-  guide: GuideBooking[]
+export interface CreatePaymentIntentResponse {
+  client_secret: string
+  payment_intent_id: string
+  amount: string
+  currency: string
 }
 
-export async function getAllMyBookings(): Promise<AllBookingsResponse> {
-  // Import guide bookings function dynamically to avoid circular dependency
-  const { getMyGuideBookings } = await import("./guides")
-  
-  const [hotel, restaurant, packageBookings, transport, guideBookings] = await Promise.allSettled([
-    getMyHotelBookings(),
-    getMyRestaurantReservations(),
-    getMyPackageBookings(),
-    getMyTransportBookings(),
-    getMyGuideBookings(),
-  ])
+export async function createHotelPaymentIntent(bookingId: string): Promise<CreatePaymentIntentResponse> {
+  return apiPost<CreatePaymentIntentResponse>(`/bookings/payment/hotel/${bookingId}/create-intent/`, {})
+}
 
+export async function createRestaurantPaymentIntent(reservationId: string): Promise<CreatePaymentIntentResponse> {
+  return apiPost<CreatePaymentIntentResponse>(`/bookings/payment/restaurant/${reservationId}/create-intent/`, {})
+}
+
+export async function createPackagePaymentIntent(bookingId: string): Promise<CreatePaymentIntentResponse> {
+  return apiPost<CreatePaymentIntentResponse>(`/experiences/bookings/${bookingId}/create-intent/`, {})
+}
+
+// ============================================================================
+// Normalized unified type for provider bookings page display
+// ============================================================================
+
+export type BookingServiceType = "hotel" | "restaurant" | "trip" | "driver"
+
+export interface NormalizedBooking {
+  id: string
+  booking_number: string
+  service_type: BookingServiceType
+  property_name: string
+  guest_name: string
+  guest_email: string
+  guest_phone?: string
+  date_from: string           // check_in_date / reservation_date / start_date / trip_date
+  date_to?: string            // check_out_date (hotel only)
+  guests: number              // num_adults+children / party_size / num_passengers
+  total_price: string
+  status: BookingStatus
+  special_requests?: string
+  created_at: string
+  // Keep raw for detail modal
+  raw: HotelBooking | RestaurantReservation | PackageBooking | DriverBooking
+}
+
+export function normalizeHotelBooking(b: HotelBooking): NormalizedBooking {
   return {
-    hotel: hotel.status === "fulfilled" ? hotel.value : [],
-    restaurant: restaurant.status === "fulfilled" ? restaurant.value : [],
-    package: packageBookings.status === "fulfilled" ? packageBookings.value : [],
-    transport: transport.status === "fulfilled" ? transport.value : [],
-    guide: guideBookings.status === "fulfilled" ? guideBookings.value : [],
+    id: b.id, booking_number: b.booking_number, service_type: "hotel",
+    property_name: b.hotel?.name ?? "Hotel",
+    guest_name: b.guest_name, guest_email: b.guest_email, guest_phone: b.guest_phone,
+    date_from: b.check_in_date, date_to: b.check_out_date,
+    guests: (b.num_adults ?? 0) + (b.num_children ?? 0),
+    total_price: b.total_price ?? "0", status: b.status,
+    special_requests: b.special_requests, created_at: b.created_at, raw: b,
   }
 }
 
-// Helper to get unified booking list
-export function flattenBookings(bookings: AllBookingsResponse): Booking[] {
-  const hotelBookings: Booking[] = bookings.hotel.map(b => ({ ...b, type: "hotel" as const }))
-  const restaurantBookings: Booking[] = bookings.restaurant.map(b => ({ ...b, type: "restaurant" as const }))
-  const packageBookingsList: Booking[] = bookings.package.map(b => ({ ...b, type: "package" as const }))
-  const transportBookings: Booking[] = bookings.transport.map(b => ({ ...b, type: "transport" as const }))
-  const guideBookings: Booking[] = bookings.guide.map(b => ({ ...b, type: "guide" as const }))
-  
-  return [...hotelBookings, ...restaurantBookings, ...packageBookingsList, ...transportBookings, ...guideBookings]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+export function normalizeRestaurantReservation(r: RestaurantReservation): NormalizedBooking {
+  return {
+    id: r.id, booking_number: r.reservation_number, service_type: "restaurant",
+    property_name: r.restaurant?.name ?? "Restaurant",
+    guest_name: r.guest_name, guest_email: r.guest_email, guest_phone: r.guest_phone,
+    date_from: r.reservation_date,
+    guests: r.party_size,
+    total_price: r.total_price ?? "0", status: r.status,
+    special_requests: r.special_requests, created_at: r.created_at, raw: r,
+  }
+}
+
+export function normalizePackageBooking(b: PackageBooking): NormalizedBooking {
+  return {
+    id: b.id, booking_number: b.booking_number, service_type: "trip",
+    property_name: b.package?.title ?? "Trip",
+    guest_name: b.guest_name, guest_email: b.guest_email, guest_phone: b.guest_phone,
+    date_from: b.start_date,
+    guests: (b.num_adults ?? 0) + (b.num_children ?? 0),
+    total_price: b.total_price ?? "0", status: b.status,
+    special_requests: b.special_requests, created_at: b.created_at, raw: b,
+  }
+}
+
+export function normalizeDriverBooking(b: DriverBooking): NormalizedBooking {
+  return {
+    id: b.id, booking_number: b.booking_number, service_type: "driver",
+    property_name: b.driver_name ?? "Driver",
+    guest_name: b.guest_name, guest_email: b.guest_email, guest_phone: b.guest_phone,
+    date_from: b.trip_date,
+    guests: b.num_passengers ?? 1,
+    total_price: String(b.estimated_price ?? 0), status: b.status,
+    special_requests: b.special_requests, created_at: b.created_at, raw: b,
+  }
+}
+
+export async function getAllProviderBookings(): Promise<NormalizedBooking[]> {
+  const [hotels, restaurants, trips, drivers] = await Promise.allSettled([
+    getProviderHotelBookings(),
+    getProviderRestaurantReservations(),
+    getProviderPackageBookings(),
+    getProviderDriverBookings(),
+  ])
+
+  const normalized: NormalizedBooking[] = [
+    ...(hotels.status === "fulfilled" ? hotels.value.map(normalizeHotelBooking) : []),
+    ...(restaurants.status === "fulfilled" ? restaurants.value.map(normalizeRestaurantReservation) : []),
+    ...(trips.status === "fulfilled" ? trips.value.map(normalizePackageBooking) : []),
+    ...(drivers.status === "fulfilled" ? drivers.value.map(normalizeDriverBooking) : []),
+  ]
+
+  return normalized.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+}
+
+// Traveler-side: fetch all booking types for the logged-in user
+export async function getAllMyBookings(): Promise<{
+  hotel: HotelBooking[]
+  restaurant: RestaurantReservation[]
+  package: PackageBooking[]
+  driver: DriverBooking[]
+}> {
+  const [hotel, restaurant, pkg, driver] = await Promise.allSettled([
+    getMyHotelBookings(),
+    getMyRestaurantReservations(),
+    getMyPackageBookings(),
+    getMyDriverBookings(),
+  ])
+  return {
+    hotel: hotel.status === "fulfilled" ? hotel.value : [],
+    restaurant: restaurant.status === "fulfilled" ? restaurant.value : [],
+    package: pkg.status === "fulfilled" ? pkg.value : [],
+    driver: driver.status === "fulfilled" ? driver.value : [],
+  }
+}
+
+export function flattenBookings(bookings: {
+  hotel: HotelBooking[]
+  restaurant: RestaurantReservation[]
+  package: PackageBooking[]
+  driver: DriverBooking[]
+}): Array<HotelBooking | RestaurantReservation | PackageBooking | DriverBooking> {
+  return [
+    ...bookings.hotel,
+    ...bookings.restaurant,
+    ...bookings.package,
+    ...bookings.driver,
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }

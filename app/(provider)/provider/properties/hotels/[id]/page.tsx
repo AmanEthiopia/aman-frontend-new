@@ -19,11 +19,13 @@ import {
   Loader2,
   MoreHorizontal,
   Eye,
+  EyeOff,
   CheckCircle2,
   XCircle,
   Camera,
   Bed,
   DollarSign,
+  AlertCircle,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -394,6 +396,7 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
   const [showAddRoom, setShowAddRoom] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
 
   useEffect(() => {
     loadHotel()
@@ -424,6 +427,20 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
     } finally {
       setIsDeleting(false)
       setShowDeleteDialog(false)
+    }
+  }
+
+  const handleTogglePublish = async () => {
+    if (!hotel) return
+    setIsPublishing(true)
+    try {
+      const result = await providerAPI.publishHotel(resolvedParams.id)
+      setHotel((prev) => prev ? { ...prev, is_active: result.is_published, is_verified: result.is_verified } : prev)
+      toast.success(result.is_published ? "Hotel published" : "Hotel unpublished")
+    } catch (error) {
+      toast.error("Failed to update publish status")
+    } finally {
+      setIsPublishing(false)
     }
   }
 
@@ -468,14 +485,22 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
             </Button>
           </Link>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold">{hotel.name}</h1>
-              {hotel.is_verified && (
+              {hotel.is_verified ? (
                 <Badge className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400">
                   <CheckCircle2 className="mr-1 h-3 w-3" />
                   Verified
                 </Badge>
+              ) : (
+                <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                  <AlertCircle className="mr-1 h-3 w-3" />
+                  Unverified
+                </Badge>
               )}
+              <Badge variant={hotel.is_active ? "default" : "secondary"}>
+                {hotel.is_active ? "Published" : "Unpublished"}
+              </Badge>
             </div>
             {hotel.nickname && (
               <p className="text-muted-foreground">{hotel.nickname}</p>
@@ -483,6 +508,16 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleTogglePublish} disabled={isPublishing}>
+            {isPublishing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : hotel.is_active ? (
+              <EyeOff className="mr-2 h-4 w-4" />
+            ) : (
+              <Eye className="mr-2 h-4 w-4" />
+            )}
+            {hotel.is_active ? "Unpublish" : "Publish"}
+          </Button>
           <Link href={`/provider/properties/hotels/${hotel.id}/edit`}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />

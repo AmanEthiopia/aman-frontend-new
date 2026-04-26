@@ -468,14 +468,14 @@ export async function deleteHotel(hotelId: string): Promise<void> {
 /**
  * Publish a hotel
  */
-export async function publishHotel(hotelId: string): Promise<{ is_published: boolean }> {
+export async function publishHotel(hotelId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
   return apiPost<{ is_published: boolean }>(`/hotels/provider/${hotelId}/publish/`)
 }
 
 /**
  * Unpublish a hotel
  */
-export async function unpublishHotel(hotelId: string): Promise<{ is_published: boolean }> {
+export async function unpublishHotel(hotelId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
   return apiPost<{ is_published: boolean }>(`/hotels/provider/${hotelId}/unpublish/`)
 }
 
@@ -564,7 +564,7 @@ export async function deleteRestaurant(restaurantId: string): Promise<void> {
 /**
  * Publish a restaurant
  */
-export async function publishRestaurant(restaurantId: string): Promise<{ is_published: boolean }> {
+export async function publishRestaurant(restaurantId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
   return apiPost<{ is_published: boolean }>(`/restaurants/provider/${restaurantId}/publish/`)
 }
 
@@ -625,7 +625,7 @@ export async function deleteDriver(driverId: string): Promise<void> {
 /**
  * Toggle publish state of a driver listing
  */
-export async function toggleDriverPublish(driverId: string): Promise<{ is_published: boolean }> {
+export async function toggleDriverPublish(driverId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
   return apiPost<{ is_published: boolean }>(`/drivers/${driverId}/publish/`)
 }
 
@@ -673,7 +673,7 @@ export async function getMyTrip(tripId: string): Promise<ProviderTrip> {
 /**
  * Toggle publish / unpublish a trip
  */
-export async function toggleTripPublish(tripId: string): Promise<{ is_published: boolean }> {
+export async function toggleTripPublish(tripId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
   return apiPost<{ is_published: boolean }>(`/trips/${tripId}/publish/`, {})
 }
 
