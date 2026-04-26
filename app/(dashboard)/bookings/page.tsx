@@ -104,9 +104,7 @@ function getBookingDate(booking: Booking): Date {
     case "package":
       return new Date(booking.start_date)
     case "transport":
-      return new Date(booking.pickup_date)
-    case "experience":
-      return new Date(booking.date)
+      return new Date((booking as any).trip_date || (booking as any).pickup_date || Date.now())
     default:
       return new Date()
   }
@@ -124,9 +122,7 @@ function getBookingEndDate(booking: Booking): Date {
       return start
     }
     case "transport":
-      return new Date(booking.pickup_date)
-    case "experience":
-      return new Date(booking.date)
+      return new Date((booking as any).trip_date || (booking as any).pickup_date || Date.now())
     default:
       return new Date()
   }
@@ -464,22 +460,18 @@ function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; on
 }
 
 function TransportBookingCard({ booking }: { booking: TransportBooking }) {
+  const b = booking as any
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
-  const pickupDate = new Date(booking.pickup_date)
-  const isPast = pickupDate < new Date()
+  const tripDate = new Date(b.trip_date || b.pickup_date || Date.now())
+  const isPast = tripDate < new Date()
 
   return (
     <Card className={isPast ? "opacity-75" : ""}>
       <CardContent className="p-0">
         <div className="flex flex-col sm:flex-row">
-          <div className="relative h-32 w-full sm:h-auto sm:w-40">
-            <Image
-              src={booking.driver.photo_url || "/placeholder.svg?height=160&width=160"}
-              alt={booking.driver.name}
-              fill
-              className="object-cover sm:rounded-l-lg"
-            />
+          <div className="relative h-32 w-full sm:h-auto sm:w-40 flex items-center justify-center bg-purple-50 sm:rounded-l-lg">
+            <Car className="h-12 w-12 text-purple-400" />
             <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-purple-500 px-2 py-0.5 text-xs font-medium text-white">
               <Car className="h-3 w-3" />
               Transport
@@ -490,8 +482,10 @@ function TransportBookingCard({ booking }: { booking: TransportBooking }) {
             <div>
               <div className="mb-2 flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold">{booking.driver.name}</h3>
-                  <span className="text-sm text-muted-foreground">{booking.driver.vehicle_type} - {booking.driver.vehicle_model}</span>
+                  <h3 className="font-semibold">{b.driver_name || "Driver"}</h3>
+                  {b.driver_vehicle_type && (
+                    <span className="text-sm text-muted-foreground">{b.driver_vehicle_type}</span>
+                  )}
                 </div>
                 <Badge variant={status.variant} className="gap-1">
                   <StatusIcon className="h-3 w-3" />
@@ -502,33 +496,44 @@ function TransportBookingCard({ booking }: { booking: TransportBooking }) {
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
                 <div className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>{pickupDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
+                  <span>{tripDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span>{booking.pickup_time}</span>
-                </div>
+                {b.pickup_time && (
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span>{b.pickup_time}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="mt-2 rounded-md bg-muted/50 p-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-green-600" />
-                  <span>{booking.pickup_location}</span>
+              {(b.pickup_location || b.dropoff_location) && (
+                <div className="mt-2 rounded-md bg-muted/50 p-2 text-sm">
+                  {b.pickup_location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-green-600" />
+                      <span>{b.pickup_location}</span>
+                    </div>
+                  )}
+                  {b.dropoff_location && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <MapPin className="h-4 w-4 text-red-600" />
+                      <span>{b.dropoff_location}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="my-1 ml-2 border-l-2 border-dashed border-muted-foreground/30 pl-2 py-1">
-                  <span className="text-xs text-muted-foreground">{booking.service_type.replace("_", " ")}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-red-600" />
-                  <span>{booking.dropoff_location}</span>
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="mt-4 flex items-center justify-between border-t pt-4">
               <div>
-                <span className="text-sm text-muted-foreground">Total</span>
-                <p className="text-lg font-bold">{booking.currency} {parseFloat(booking.total_price).toLocaleString()}</p>
+                {b.estimated_price ? (
+                  <>
+                    <span className="text-sm text-muted-foreground">Estimated</span>
+                    <p className="text-lg font-bold">${Number(b.estimated_price).toLocaleString()}</p>
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Price TBD</span>
+                )}
               </div>
               <div className="flex gap-2">
                 {booking.status === "confirmed" && !isPast && (

@@ -166,7 +166,7 @@ function BookingDetailModal({
           {/* Guest */}
           <div className="flex items-center gap-4">
             <Avatar className="h-12 w-12">
-              <AvatarFallback>{booking.guest_name.slice(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarFallback>{(booking.guest_name ?? "??").slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
               <p className="font-semibold">{booking.guest_name}</p>
@@ -283,7 +283,7 @@ function BookingRow({
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <Avatar>
-              <AvatarFallback>{booking.guest_name.slice(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarFallback>{(booking.guest_name ?? "??").slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">

@@ -3,7 +3,8 @@
  * Handles CRUD operations for Hotels, Restaurants, Drivers, and Trips/Events
  */
 
-import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiFetch } from "./client"
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiFetch, mediaUrl as _mediaUrl } from "./client"
+export { mediaUrl } from "./client"
 
 // ============================================================================
 // TYPES
@@ -43,13 +44,7 @@ export interface PropertyPhoto {
   order?: number
 }
 
-// Converts a relative /media/... path from the API into an absolute URL
-const MEDIA_HOST = (process.env.NEXT_PUBLIC_API_URL || "https://api.aman.yichalal.ai/api/v1").replace(/\/api\/v1\/?$/, "")
-export function mediaUrl(path?: string | null): string | undefined {
-  if (!path) return undefined
-  if (path.startsWith("http")) return path
-  return `${MEDIA_HOST}${path}`
-}
+const mediaUrl = _mediaUrl
 
 // Normalizes a raw API property object: maps is_published → is_active,
 // and resolves photo_url → url so existing display code keeps working.

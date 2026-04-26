@@ -66,8 +66,19 @@ export async function searchHotels(params: HotelSearchParams = {}): Promise<Hote
     // Format 2: { results: [...], count: N }
     // Format 3: { success: true, data: [...] } (array directly)
     
+    // New standard: { success: true, data: [...], meta: { pagination: {...} } }
+    if (data.meta?.pagination) {
+      const p = data.meta.pagination
+      return {
+        results: data.data || data.results || [],
+        count: p.count ?? 0,
+        next: p.next || null,
+        previous: p.previous || null,
+      }
+    }
+
     if (data.success !== undefined && data.data) {
-      // Envelope format
+      // Envelope without meta (fallback)
       if (Array.isArray(data.data)) {
         return {
           results: data.data,
@@ -78,12 +89,12 @@ export async function searchHotels(params: HotelSearchParams = {}): Promise<Hote
       }
       return data.data as HotelSearchResponse
     }
-    
+
     if (data.results) {
       // Direct pagination format
       return data as HotelSearchResponse
     }
-    
+
     if (Array.isArray(data)) {
       // Direct array format
       return {
@@ -93,7 +104,7 @@ export async function searchHotels(params: HotelSearchParams = {}): Promise<Hote
         previous: null,
       }
     }
-    
+
     // Fallback - return empty
     return {
       results: [],
