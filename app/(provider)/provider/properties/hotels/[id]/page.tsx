@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
+import { useState, useEffect, use, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -26,6 +26,9 @@ import {
   Bed,
   DollarSign,
   AlertCircle,
+  Upload,
+  X,
+  ImagePlus,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -70,9 +73,11 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import * as providerAPI from "@/lib/api/provider"
-import type { ProviderHotel, ProviderRoom, CreateRoomPayload } from "@/lib/api/provider"
+import type { ProviderHotel, ProviderRoom, CreateRoomPayload, PropertyPhoto } from "@/lib/api/provider"
 import { amenityLabel } from "@/lib/api/provider"
 import { formatRating } from "@/lib/utils"
+
+const HOTEL_PHOTO_TYPES = ["exterior", "lobby", "room", "bathroom", "facilities", "dining", "other"]
 
 // Room amenities
 const ROOM_AMENITIES = [
@@ -88,6 +93,273 @@ const ROOM_AMENITIES = [
   "Coffee Maker",
 ]
 
+
+function RoomPhotosSection({ hotelId, roomId }: { hotelId: string; roomId: string }) {
+  const [photos, setPhotos] = useState<PropertyPhoto[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function loadPhotos() {
+    setIsLoading(true)
+    try {
+      const data = await providerAPI.getRoomPhotos(hotelId, roomId)
+      setPhotos(data)
+    } catch {
+      toast.error("Failed to load room photos")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function handleToggle() {
+    if (!isOpen) loadPhotos()
+    setIsOpen((v) => !v)
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { toast.error("Max file size is 5 MB"); return }
+    if (photos.length >= 5) { toast.error("Maximum 5 photos per room"); return }
+    setIsUploading(true)
+    try {
+      const photo = await providerAPI.uploadRoomPhoto(hotelId, roomId, file)
+      setPhotos((p) => [...p, photo])
+      toast.success("Photo uploaded")
+    } catch {
+      toast.error("Failed to upload photo")
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
+  async function handleDelete(photoId: string) {
+    try {
+      await providerAPI.deleteRoomPhoto(hotelId, roomId, photoId)
+      setPhotos((p) => p.filter((x) => x.id !== photoId))
+      toast.success("Photo deleted")
+    } catch {
+      toast.error("Failed to delete photo")
+    }
+  }
+
+  return (
+    <div className="mt-4 border-t pt-4">
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        <Camera className="h-4 w-4" />
+        Room Photos {photos.length > 0 ? `(${photos.length})` : ""}
+        <span className="ml-1 text-xs">{isOpen ? "▲" : "▼"}</span>
+      </button>
+
+      {isOpen && (
+        <div className="mt-3 space-y-3">
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          ) : photos.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+              {photos.map((photo) => (
+                <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
+                  <img src={photo.url} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(photo.id)}
+                    className="absolute right-1 top-1 hidden rounded-full bg-black/60 p-1 text-white group-hover:flex"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No photos yet · Best: JPEG, square 1:1, 800×800</p>
+          )}
+
+          {photos.length < 5 && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleUpload}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {isUploading ? (
+                  <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Uploading...</>
+                ) : (
+                  <><ImagePlus className="mr-2 h-3 w-3" />Add Photo</>
+                )}
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HotelPhotosSection({ hotelId }: { hotelId: string }) {
+  const [photos, setPhotos] = useState<PropertyPhoto[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
+  const [photoType, setPhotoType] = useState("exterior")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    loadPhotos()
+  }, [hotelId])
+
+  async function loadPhotos() {
+    setIsLoading(true)
+    try {
+      const data = await providerAPI.getHotelPhotos(hotelId)
+      setPhotos(data)
+    } catch {
+      setPhotos([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { toast.error("Max file size is 5 MB"); return }
+    if (photos.length >= 5) { toast.error("Maximum 5 photos allowed"); return }
+    setIsUploading(true)
+    try {
+      const photo = await providerAPI.uploadHotelPhoto(hotelId, file, photoType)
+      setPhotos((p) => [...p, photo])
+      toast.success("Photo uploaded")
+    } catch {
+      toast.error("Failed to upload photo")
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
+  async function handleDelete(photoId: string) {
+    try {
+      await providerAPI.deleteHotelPhoto(hotelId, photoId)
+      setPhotos((p) => p.filter((x) => x.id !== photoId))
+      toast.success("Photo deleted")
+    } catch {
+      toast.error("Failed to delete photo")
+    }
+  }
+
+  async function handleSetPrimary(photoId: string) {
+    try {
+      const updated = await providerAPI.setHotelPhotoPrimary(hotelId, photoId)
+      setPhotos((p) => p.map((x) => ({ ...x, is_primary: x.id === photoId })))
+      toast.success("Cover photo updated")
+    } catch {
+      toast.error("Failed to set primary photo")
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Camera className="h-5 w-5" />
+            Hotel Photos
+          </CardTitle>
+          <CardDescription>{photos.length}/5 photos · JPEG, 16:9 landscape · Max 5 MB</CardDescription>
+        </div>
+        {photos.length < 5 && (
+          <div className="flex items-center gap-2">
+            <Select value={photoType} onValueChange={setPhotoType}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {HOTEL_PHOTO_TYPES.map((t) => (
+                  <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploading ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading...</>
+              ) : (
+                <><Upload className="mr-2 h-4 w-4" />Upload</>
+              )}
+            </Button>
+          </div>
+        )}
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : photos.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {photos.map((photo) => (
+              <div key={photo.id} className="group relative aspect-video overflow-hidden rounded-lg bg-muted">
+                <img src={photo.url} alt="" className="h-full w-full object-cover" />
+                {photo.is_primary && (
+                  <div className="absolute left-1 top-1 rounded bg-yellow-400 px-1.5 py-0.5 text-[10px] font-bold text-yellow-900">
+                    Cover
+                  </div>
+                )}
+                <div className="absolute inset-x-0 bottom-0 hidden flex-col gap-1 bg-black/50 p-2 group-hover:flex">
+                  {!photo.is_primary && (
+                    <button
+                      type="button"
+                      onClick={() => handleSetPrimary(photo.id)}
+                      className="flex items-center gap-1 text-xs text-yellow-300 hover:text-yellow-100"
+                    >
+                      <Star className="h-3 w-3" />Set as Cover
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(photo.id)}
+                    className="flex items-center gap-1 text-xs text-red-300 hover:text-red-100"
+                  >
+                    <Trash2 className="h-3 w-3" />Delete
+                  </button>
+                </div>
+                <div className="absolute right-1 top-1 hidden rounded bg-black/60 px-1.5 py-0.5 text-[10px] capitalize text-white group-hover:block">
+                  {photo.photo_type ?? photo.category}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-12">
+            <Camera className="mb-3 h-10 w-10 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No photos yet. Upload up to 5 photos.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Best: JPEG, 1920×1080, landscape 16:9</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 function AddRoomModal({
   open,
@@ -295,10 +567,12 @@ function AddRoomModal({
 
 function RoomCard({
   room,
+  hotelId,
   onEdit,
   onDelete,
 }: {
   room: ProviderRoom
+  hotelId: string
   onEdit: () => void
   onDelete: () => void
 }) {
@@ -383,6 +657,7 @@ function RoomCard({
             </DropdownMenu>
           </div>
         </div>
+        <RoomPhotosSection hotelId={hotelId} roomId={room.id} />
       </CardContent>
     </Card>
   )
@@ -667,6 +942,7 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
               <RoomCard
                 key={room.id}
                 room={room}
+                hotelId={hotel.id}
                 onEdit={() => router.push(`/provider/properties/hotels/${hotel.id}/rooms/${room.id}/edit`)}
                 onDelete={() => handleDeleteRoom(room.id)}
               />
@@ -684,6 +960,9 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </CardContent>
       </Card>
+
+      {/* Hotel Photos */}
+      <HotelPhotosSection hotelId={hotel.id} />
 
       {/* Add Room Modal */}
       <AddRoomModal

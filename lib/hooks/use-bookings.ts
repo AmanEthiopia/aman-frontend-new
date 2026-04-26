@@ -39,7 +39,7 @@ export function useAllBookings() {
         return await bookingsAPI.getAllMyBookings()
       } catch (err) {
         console.error("[v0] Failed to fetch all bookings:", err)
-        return { hotel: [], restaurant: [], package: [], transport: [] }
+        return { hotel: [], restaurant: [], package: [], driver: [], transport: [] }
       }
     },
     {

@@ -557,37 +557,57 @@ export async function getAllProviderBookings(): Promise<NormalizedBooking[]> {
   return normalized.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }
 
-// Traveler-side: fetch all booking types for the logged-in user
-export async function getAllMyBookings(): Promise<{
+// ============================================================================
+// Traveler-side aggregation + backward-compat aliases for use-bookings.ts
+// ============================================================================
+
+// "Transport" was the old name for Driver bookings — keep aliases so the
+// traveler bookings page and hooks don't need to be rewritten.
+export type TransportBooking = DriverBooking
+export type CreateTransportBookingPayload = CreateDriverBookingPayload
+export type TransportBookingResponse = { booking: DriverBooking; payment?: PaymentInfo }
+export type RestaurantReservationResponse = RestaurantReservation
+
+export interface AllBookingsResponse {
   hotel: HotelBooking[]
   restaurant: RestaurantReservation[]
   package: PackageBooking[]
   driver: DriverBooking[]
-}> {
+  transport: DriverBooking[] // alias for driver
+}
+
+// Discriminated union used by the traveler bookings page filter
+export type Booking =
+  | (HotelBooking & { type: "hotel" })
+  | (RestaurantReservation & { type: "restaurant" })
+  | (PackageBooking & { type: "package" })
+  | (DriverBooking & { type: "transport" })
+
+export const getMyTransportBookings = getMyDriverBookings
+export const createTransportBooking = createDriverBooking
+
+export async function getAllMyBookings(): Promise<AllBookingsResponse> {
   const [hotel, restaurant, pkg, driver] = await Promise.allSettled([
     getMyHotelBookings(),
     getMyRestaurantReservations(),
     getMyPackageBookings(),
     getMyDriverBookings(),
   ])
+  const drivers = driver.status === "fulfilled" ? driver.value : []
   return {
     hotel: hotel.status === "fulfilled" ? hotel.value : [],
     restaurant: restaurant.status === "fulfilled" ? restaurant.value : [],
     package: pkg.status === "fulfilled" ? pkg.value : [],
-    driver: driver.status === "fulfilled" ? driver.value : [],
+    driver: drivers,
+    transport: drivers,
   }
 }
 
-export function flattenBookings(bookings: {
-  hotel: HotelBooking[]
-  restaurant: RestaurantReservation[]
-  package: PackageBooking[]
-  driver: DriverBooking[]
-}): Array<HotelBooking | RestaurantReservation | PackageBooking | DriverBooking> {
+export function flattenBookings(bookings: AllBookingsResponse): Booking[] {
   return [
-    ...bookings.hotel,
-    ...bookings.restaurant,
-    ...bookings.package,
-    ...bookings.driver,
+    ...bookings.hotel.map((b) => ({ ...b, type: "hotel" as const })),
+    ...bookings.restaurant.map((b) => ({ ...b, type: "restaurant" as const })),
+    ...bookings.package.map((b) => ({ ...b, type: "package" as const })),
+    ...(bookings.driver ?? bookings.transport ?? []).map((b) => ({ ...b, type: "transport" as const })),
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }

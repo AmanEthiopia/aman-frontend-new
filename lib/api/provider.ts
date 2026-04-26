@@ -33,10 +33,12 @@ export interface PropertyBase {
 export interface PropertyPhoto {
   id: string
   url: string
+  photo_type?: string
   caption?: string
-  category: string
+  category?: string    // some endpoints return this instead of photo_type
   is_primary: boolean
-  order: number
+  display_order?: number
+  order?: number       // compat alias
 }
 
 // Amenity as returned by GET /hotels/provider/<id>/ — objects, not strings
@@ -469,14 +471,14 @@ export async function deleteHotel(hotelId: string): Promise<void> {
  * Publish a hotel
  */
 export async function publishHotel(hotelId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
-  return apiPost<{ is_published: boolean }>(`/hotels/provider/${hotelId}/publish/`)
+  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/hotels/provider/${hotelId}/publish/`)
 }
 
 /**
  * Unpublish a hotel
  */
 export async function unpublishHotel(hotelId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
-  return apiPost<{ is_published: boolean }>(`/hotels/provider/${hotelId}/unpublish/`)
+  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/hotels/provider/${hotelId}/unpublish/`)
 }
 
 /**
@@ -565,7 +567,7 @@ export async function deleteRestaurant(restaurantId: string): Promise<void> {
  * Publish a restaurant
  */
 export async function publishRestaurant(restaurantId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
-  return apiPost<{ is_published: boolean }>(`/restaurants/provider/${restaurantId}/publish/`)
+  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/restaurants/provider/${restaurantId}/publish/`)
 }
 
 // ============================================================================
@@ -626,7 +628,7 @@ export async function deleteDriver(driverId: string): Promise<void> {
  * Toggle publish state of a driver listing
  */
 export async function toggleDriverPublish(driverId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
-  return apiPost<{ is_published: boolean }>(`/drivers/${driverId}/publish/`)
+  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/drivers/${driverId}/publish/`)
 }
 
 // ============================================================================
@@ -674,7 +676,7 @@ export async function getMyTrip(tripId: string): Promise<ProviderTrip> {
  * Toggle publish / unpublish a trip
  */
 export async function toggleTripPublish(tripId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
-  return apiPost<{ is_published: boolean }>(`/trips/${tripId}/publish/`, {})
+  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/trips/${tripId}/publish/`, {})
 }
 
 /**
@@ -1060,14 +1062,160 @@ export async function deletePropertyPhoto(
 }
 
 /**
- * Set a photo as primary
+ * Set a photo as primary (generic — use type-specific helpers below instead)
  */
 export async function setPhotoAsPrimary(
   propertyType: PropertyCategory,
   propertyId: string,
   photoId: string
 ): Promise<PropertyPhoto> {
-  return apiPost<PropertyPhoto>(`/${propertyType}s/${propertyId}/photos/${photoId}/set-primary/`)
+  const prefix = propertyType === "hotel" || propertyType === "restaurant"
+    ? `/${propertyType}s/provider`
+    : `/${propertyType}s`
+  return apiPost<PropertyPhoto>(`${prefix}/${propertyId}/photos/${photoId}/set-primary/`)
+}
+
+// ============================================================================
+// HOTEL-SPECIFIC PHOTO APIs
+// ============================================================================
+
+export async function getHotelPhotos(hotelId: string): Promise<PropertyPhoto[]> {
+  const r = await apiGet<PropertyPhoto[] | { results: PropertyPhoto[] }>(`/hotels/provider/${hotelId}/photos/`)
+  return Array.isArray(r) ? r : r?.results ?? []
+}
+
+export async function uploadHotelPhoto(
+  hotelId: string,
+  file: File,
+  photoType: string,
+  isPrimary = false,
+  displayOrder?: number
+): Promise<PropertyPhoto> {
+  const fd = new FormData()
+  fd.append("photo", file)
+  fd.append("photo_type", photoType)
+  if (isPrimary) fd.append("is_primary", "true")
+  if (displayOrder !== undefined) fd.append("display_order", String(displayOrder))
+  return apiFetch<PropertyPhoto>(`/hotels/provider/${hotelId}/photos/`, { method: "POST", body: fd })
+}
+
+export async function deleteHotelPhoto(hotelId: string, photoId: string): Promise<void> {
+  return apiDelete(`/hotels/provider/${hotelId}/photos/${photoId}/`)
+}
+
+export async function setHotelPhotoPrimary(hotelId: string, photoId: string): Promise<PropertyPhoto> {
+  return apiPost<PropertyPhoto>(`/hotels/provider/${hotelId}/photos/${photoId}/set-primary/`)
+}
+
+// ============================================================================
+// ROOM-SPECIFIC PHOTO APIs
+// ============================================================================
+
+export async function getRoomPhotos(hotelId: string, roomId: string): Promise<PropertyPhoto[]> {
+  const r = await apiGet<PropertyPhoto[] | { results: PropertyPhoto[] }>(
+    `/hotels/provider/${hotelId}/rooms/${roomId}/photos/`
+  )
+  return Array.isArray(r) ? r : r?.results ?? []
+}
+
+export async function uploadRoomPhoto(hotelId: string, roomId: string, file: File): Promise<PropertyPhoto> {
+  const fd = new FormData()
+  fd.append("photo", file)
+  return apiFetch<PropertyPhoto>(`/hotels/provider/${hotelId}/rooms/${roomId}/photos/`, {
+    method: "POST",
+    body: fd,
+  })
+}
+
+export async function deleteRoomPhoto(hotelId: string, roomId: string, photoId: string): Promise<void> {
+  return apiDelete(`/hotels/provider/${hotelId}/rooms/${roomId}/photos/${photoId}/`)
+}
+
+// ============================================================================
+// RESTAURANT-SPECIFIC PHOTO APIs
+// ============================================================================
+
+export async function getRestaurantPhotos(restaurantId: string): Promise<PropertyPhoto[]> {
+  const r = await apiGet<PropertyPhoto[] | { results: PropertyPhoto[] }>(
+    `/restaurants/provider/${restaurantId}/photos/`
+  )
+  return Array.isArray(r) ? r : r?.results ?? []
+}
+
+export async function uploadRestaurantPhoto(
+  restaurantId: string,
+  file: File,
+  photoType: string,
+  isPrimary = false
+): Promise<PropertyPhoto> {
+  const fd = new FormData()
+  fd.append("photo", file)
+  fd.append("photo_type", photoType)
+  if (isPrimary) fd.append("is_primary", "true")
+  return apiFetch<PropertyPhoto>(`/restaurants/provider/${restaurantId}/photos/`, { method: "POST", body: fd })
+}
+
+export async function deleteRestaurantPhoto(restaurantId: string, photoId: string): Promise<void> {
+  return apiDelete(`/restaurants/provider/${restaurantId}/photos/${photoId}/`)
+}
+
+export async function setRestaurantPhotoPrimary(restaurantId: string, photoId: string): Promise<PropertyPhoto> {
+  return apiPost<PropertyPhoto>(`/restaurants/provider/${restaurantId}/photos/${photoId}/set-primary/`)
+}
+
+// ============================================================================
+// RESTAURANT MENU ITEMS
+// ============================================================================
+
+export interface MenuItem {
+  id: string
+  name: string
+  category?: string
+  description?: string
+  price: number | string
+  currency: string
+  is_available: boolean
+  is_popular: boolean
+  dietary_tags?: string[]
+  created_at?: string
+}
+
+export interface CreateMenuItemPayload {
+  name: string
+  category?: string
+  description?: string
+  price: number
+  currency?: string
+  is_available?: boolean
+  is_popular?: boolean
+  dietary_tags?: string[]
+}
+
+export async function getMenuItems(restaurantId: string): Promise<MenuItem[]> {
+  const r = await apiGet<MenuItem[] | { results: MenuItem[] }>(
+    `/restaurants/provider/${restaurantId}/menu/items/`
+  )
+  return Array.isArray(r) ? r : r?.results ?? []
+}
+
+export async function createMenuItem(restaurantId: string, payload: CreateMenuItemPayload): Promise<MenuItem> {
+  return apiPost<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/`, payload)
+}
+
+export async function updateMenuItem(
+  restaurantId: string,
+  itemId: string,
+  payload: Partial<CreateMenuItemPayload>
+): Promise<MenuItem> {
+  return apiPatch<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/${itemId}/`, payload)
+}
+
+export async function deleteMenuItem(restaurantId: string, itemId: string): Promise<void> {
+  return apiDelete(`/restaurants/provider/${restaurantId}/menu/items/${itemId}/`)
+}
+
+export async function toggleMenuItemAvailability(restaurantId: string, itemId: string): Promise<MenuItem> {
+  return apiPost<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/${itemId}/toggle-availability/`)
 }
 
 // ============================================================================
