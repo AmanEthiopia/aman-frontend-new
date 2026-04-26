@@ -35,6 +35,7 @@ import {
   Share2,
   AlertCircle,
   Users,
+  Clock,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
@@ -240,10 +241,15 @@ export default function HotelDetailPage() {
               {/* Header */}
               <div className="mb-6">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                  {(hotel.is_verified ?? hotel.isVerified) && (
+                  {(hotel.is_verified ?? hotel.isVerified) ? (
                     <Badge className="flex items-center gap-1 bg-primary text-primary-foreground">
                       <Shield className="h-3 w-3" />
                       Verified
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="flex items-center gap-1 border-muted-foreground/30 bg-background/80 text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      Unverified
                     </Badge>
                   )}
                   {(hotel.is_featured ?? hotel.isFeatured) && <Badge variant="secondary">Featured</Badge>}

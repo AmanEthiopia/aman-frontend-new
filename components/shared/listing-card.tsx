@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shield, MapPin, Star, Heart } from "lucide-react"
+import { Shield, MapPin, Star, Heart, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useApp } from "@/lib/contexts/app-context"
 import { formatRating } from "@/lib/utils"
@@ -11,14 +11,14 @@ import { SafeCardImage } from "@/components/ui/safe-image"
 
 interface ListingCardProps {
   id: string
-  slug?: string // Use slug for URL if available
+  slug?: string
   type: "hotel" | "restaurant" | "transport" | "experience"
   name: string
   imageUrl: string
   location: string
   city: string
   description: string
-  priceRange?: "budget" | "mid-range" | "luxury"
+  priceRange?: string // accepts any API value: budget, mid_range, fine_dining, upscale, etc.
   priceDisplay: string
   rating: number
   reviewCount: number
@@ -31,8 +31,13 @@ interface ListingCardProps {
 const priceRangeLabels: Record<string, { label: string; color: string }> = {
   budget: { label: "Budget", color: "bg-green-100 text-green-800" },
   "mid-range": { label: "Mid-Range", color: "bg-blue-100 text-blue-800" },
+  mid_range: { label: "Mid-Range", color: "bg-blue-100 text-blue-800" },
+  moderate: { label: "Moderate", color: "bg-blue-100 text-blue-800" },
+  upscale: { label: "Upscale", color: "bg-purple-100 text-purple-800" },
+  fine_dining: { label: "Fine Dining", color: "bg-amber-100 text-amber-800" },
   luxury: { label: "Luxury", color: "bg-amber-100 text-amber-800" },
 }
+const DEFAULT_PRICE_INFO = { label: "—", color: "bg-muted text-muted-foreground" }
 
 export function ListingCard({
   id,
@@ -53,7 +58,7 @@ export function ListingCard({
   safetyScore,
 }: ListingCardProps) {
   const { toggleSavedItem, isItemSaved } = useApp()
-  const priceInfo = priceRange ? priceRangeLabels[priceRange] : priceRangeLabels["mid-range"]
+  const priceInfo = priceRangeLabels[priceRange ?? ""] ?? DEFAULT_PRICE_INFO
   // Use slug for URL if available, fallback to id
   const href = `/${type}s/${slug || id}`
   const saved = isItemSaved(id)
@@ -70,10 +75,15 @@ export function ListingCard({
             <>
               {/* Badges */}
               <div className="absolute left-3 top-3 flex gap-2">
-                {isVerified && (
+                {isVerified ? (
                   <Badge className="flex items-center gap-1 bg-primary text-primary-foreground">
                     <Shield className="h-3 w-3" />
                     Verified
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="flex items-center gap-1 border-muted-foreground/30 bg-background/80 text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    Unverified
                   </Badge>
                 )}
                 {isFeatured && <Badge variant="secondary">Featured</Badge>}

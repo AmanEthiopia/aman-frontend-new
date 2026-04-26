@@ -28,6 +28,7 @@ import {
   Users,
   Star,
   Utensils,
+  Shield,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
@@ -132,16 +133,26 @@ export default function RestaurantDetailPage() {
           <div className="mb-8 flex items-start justify-between">
             <div>
               <h1 className="text-4xl font-bold">{restaurant.name}</h1>
-              {restaurant.cuisine && (
-                <div className="mt-2 flex gap-2">
-                  {Array.isArray(restaurant.cuisine) 
+              <div className="mt-2 flex flex-wrap gap-2">
+                {restaurant.isVerified ? (
+                  <Badge className="flex items-center gap-1 bg-primary text-primary-foreground">
+                    <Shield className="h-3 w-3" />
+                    Verified
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="flex items-center gap-1 border-muted-foreground/30 bg-background/80 text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    Unverified
+                  </Badge>
+                )}
+                {restaurant.cuisine && (
+                  Array.isArray(restaurant.cuisine)
                     ? restaurant.cuisine.map((c: string) => (
                         <Badge key={c} variant="secondary">{c}</Badge>
                       ))
                     : <Badge variant="secondary">{restaurant.cuisine}</Badge>
-                  }
-                </div>
-              )}
+                )}
+              </div>
             </div>
             <div className="flex gap-2">
               <Button

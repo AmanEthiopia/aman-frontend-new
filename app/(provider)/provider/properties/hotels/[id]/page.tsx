@@ -29,6 +29,8 @@ import {
   Upload,
   X,
   ImagePlus,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -264,11 +266,28 @@ function HotelPhotosSection({ hotelId }: { hotelId: string }) {
 
   async function handleSetPrimary(photoId: string) {
     try {
-      const updated = await providerAPI.setHotelPhotoPrimary(hotelId, photoId)
-      setPhotos((p) => p.map((x) => ({ ...x, is_primary: x.id === photoId })))
+      await providerAPI.setHotelPhotoPrimary(hotelId, photoId)
+      await loadPhotos()
       toast.success("Cover photo updated")
     } catch {
       toast.error("Failed to set primary photo")
+    }
+  }
+
+  async function handleReorder(index: number, direction: "up" | "down") {
+    const newPhotos = [...photos]
+    const swapIndex = direction === "up" ? index - 1 : index + 1
+    if (swapIndex < 0 || swapIndex >= newPhotos.length) return
+    ;[newPhotos[index], newPhotos[swapIndex]] = [newPhotos[swapIndex], newPhotos[index]]
+    setPhotos(newPhotos)
+    try {
+      await providerAPI.reorderHotelPhotos(
+        hotelId,
+        newPhotos.map((p, i) => ({ id: p.id, display_order: i + 1 }))
+      )
+    } catch {
+      toast.error("Failed to reorder photos")
+      await loadPhotos()
     }
   }
 
@@ -317,7 +336,7 @@ function HotelPhotosSection({ hotelId }: { hotelId: string }) {
           </div>
         ) : photos.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {photos.map((photo) => (
+            {photos.map((photo, index) => (
               <div key={photo.id} className="group relative aspect-video overflow-hidden rounded-lg bg-muted">
                 <img src={photo.url} alt="" className="h-full w-full object-cover" />
                 {photo.is_primary && (
@@ -335,6 +354,24 @@ function HotelPhotosSection({ hotelId }: { hotelId: string }) {
                       <Star className="h-3 w-3" />Set as Cover
                     </button>
                   )}
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleReorder(index, "up")}
+                      disabled={index === 0}
+                      className="flex items-center gap-1 text-xs text-white/80 hover:text-white disabled:opacity-30"
+                    >
+                      <ChevronUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleReorder(index, "down")}
+                      disabled={index === photos.length - 1}
+                      className="flex items-center gap-1 text-xs text-white/80 hover:text-white disabled:opacity-30"
+                    >
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleDelete(photo.id)}

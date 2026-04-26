@@ -3,7 +3,7 @@
  * Handles CRUD operations for Hotels, Restaurants, Drivers, and Trips/Events
  */
 
-import { apiGet, apiPost, apiPatch, apiDelete, apiFetch } from "./client"
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiFetch } from "./client"
 
 // ============================================================================
 // TYPES
@@ -14,14 +14,15 @@ export type PropertyCategory = "hotel" | "restaurant" | "driver" | "trip" | "tou
 export interface PropertyBase {
   id: string
   name: string
-  nickname?: string // Amharic alternative name
+  nickname?: string
   description: string
   category: PropertyCategory
   city_id: string
   city_name?: string
   address: string
   is_verified: boolean
-  is_active: boolean
+  is_active: boolean      // normalized from is_published on load
+  is_published?: boolean  // raw API field — same as is_active
   created_at: string
   updated_at: string
   cover_photo_url?: string
@@ -32,13 +33,45 @@ export interface PropertyBase {
 
 export interface PropertyPhoto {
   id: string
-  url: string
+  url?: string         // may be missing; use photo_url ?? url with mediaUrl()
+  photo_url?: string   // API field name
   photo_type?: string
   caption?: string
-  category?: string    // some endpoints return this instead of photo_type
+  category?: string
   is_primary: boolean
   display_order?: number
-  order?: number       // compat alias
+  order?: number
+}
+
+// Converts a relative /media/... path from the API into an absolute URL
+const MEDIA_HOST = (process.env.NEXT_PUBLIC_API_URL || "https://api.aman.yichalal.ai/api/v1").replace(/\/api\/v1\/?$/, "")
+export function mediaUrl(path?: string | null): string | undefined {
+  if (!path) return undefined
+  if (path.startsWith("http")) return path
+  return `${MEDIA_HOST}${path}`
+}
+
+// Normalizes a raw API property object: maps is_published → is_active,
+// and resolves photo_url → url so existing display code keeps working.
+function normalizeProp<T extends Record<string, any>>(raw: T): T {
+  const photos = (raw.photos ?? []).map((p: any) => ({
+    ...p,
+    url: mediaUrl(p.photo_url ?? p.url),
+  }))
+  const rooms = (raw.rooms ?? []).map((r: any) => ({
+    ...r,
+    photos: (r.photos ?? []).map((p: any) => ({
+      ...p,
+      url: mediaUrl(p.photo_url ?? p.url),
+    })),
+  }))
+  return {
+    ...raw,
+    is_active: raw.is_published ?? raw.is_active ?? false,
+    cover_photo_url: mediaUrl(raw.cover_photo_url) ?? raw.cover_photo_url,
+    photos,
+    ...(raw.rooms !== undefined ? { rooms } : {}),
+  }
 }
 
 // Amenity as returned by GET /hotels/provider/<id>/ — objects, not strings
@@ -402,8 +435,11 @@ export async function getMyProperties(params: {
 
   const queryString = queryParams.toString()
   const endpoint = queryString ? `/provider/properties/?${queryString}` : "/provider/properties/"
-  
-  return apiGet<PaginatedResponse<PropertyBase>>(endpoint)
+
+  const result = await apiGet<any>(endpoint)
+  // Normalize each item: is_published → is_active, photo_url → url
+  const items: PropertyBase[] = (Array.isArray(result) ? result : result?.results ?? []).map(normalizeProp)
+  return Array.isArray(result) ? (items as any) : { ...result, results: items }
 }
 
 /**
@@ -450,7 +486,8 @@ export async function getMyHotels(params: {
  * Get a specific hotel by ID
  */
 export async function getMyHotel(hotelId: string): Promise<ProviderHotel> {
-  return apiGet<ProviderHotel>(`/hotels/provider/${hotelId}/`)
+  const data = await apiGet<any>(`/hotels/provider/${hotelId}/`)
+  return normalizeProp(data) as ProviderHotel
 }
 
 /**
@@ -546,7 +583,8 @@ export async function getMyRestaurants(params: {
  * Get a specific restaurant by ID
  */
 export async function getMyRestaurant(restaurantId: string): Promise<ProviderRestaurant> {
-  return apiGet<ProviderRestaurant>(`/restaurants/provider/${restaurantId}/`)
+  const data = await apiGet<any>(`/restaurants/provider/${restaurantId}/`)
+  return normalizeProp(data) as ProviderRestaurant
 }
 
 /**
@@ -607,7 +645,8 @@ export async function getMyDrivers(params: {
  * Get a specific driver by ID
  */
 export async function getMyDriver(driverId: string): Promise<ProviderDriver> {
-  return apiGet<ProviderDriver>(`/drivers/${driverId}/`)
+  const data = await apiGet<any>(`/drivers/${driverId}/`)
+  return normalizeProp(data) as ProviderDriver
 }
 
 /**
@@ -669,7 +708,8 @@ export async function getMyTrips(params: {
  * Get a single trip by ID
  */
 export async function getMyTrip(tripId: string): Promise<ProviderTrip> {
-  return apiGet<ProviderTrip>(`/trips/${tripId}/`)
+  const data = await apiGet<any>(`/trips/${tripId}/`)
+  return normalizeProp(data) as ProviderTrip
 }
 
 /**
@@ -1107,6 +1147,13 @@ export async function setHotelPhotoPrimary(hotelId: string, photoId: string): Pr
   return apiPost<PropertyPhoto>(`/hotels/provider/${hotelId}/photos/${photoId}/set-primary/`)
 }
 
+export async function reorderHotelPhotos(
+  hotelId: string,
+  photoOrders: { id: string; display_order: number }[]
+): Promise<void> {
+  return apiPut(`/hotels/provider/${hotelId}/photos/reorder/`, { photos: photoOrders })
+}
+
 // ============================================================================
 // ROOM-SPECIFIC PHOTO APIs
 // ============================================================================
@@ -1161,6 +1208,13 @@ export async function deleteRestaurantPhoto(restaurantId: string, photoId: strin
 
 export async function setRestaurantPhotoPrimary(restaurantId: string, photoId: string): Promise<PropertyPhoto> {
   return apiPost<PropertyPhoto>(`/restaurants/provider/${restaurantId}/photos/${photoId}/set-primary/`)
+}
+
+export async function reorderRestaurantPhotos(
+  restaurantId: string,
+  photoOrders: { id: string; display_order: number }[]
+): Promise<void> {
+  return apiPut(`/restaurants/provider/${restaurantId}/photos/reorder/`, { photos: photoOrders })
 }
 
 // ============================================================================

@@ -129,7 +129,7 @@ function HotelsContent() {
                         priceDisplay={hotel.min_price ? `From $${hotel.min_price} / night` : hotel.priceMin ? `$${hotel.priceMin} - $${hotel.priceMax} / night` : "Contact for price"}
                         rating={hotel.average_rating ? parseFloat(hotel.average_rating) : hotel.rating || 0}
                         reviewCount={hotel.review_count || hotel.reviewCount || 0}
-                        isVerified={hotel.is_verified ?? hotel.isVerified ?? true}
+                        isVerified={hotel.is_verified ?? hotel.isVerified ?? false}
                         isFeatured={hotel.is_featured ?? hotel.isFeatured ?? false}
                         tags={hotel.amenities?.slice(0, 4) || [hotel.category, `${hotel.star_rating || 0} Star`].filter(Boolean)}
                         safetyScore={hotel.safetyScore}
