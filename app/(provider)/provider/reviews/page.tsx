@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -88,7 +89,7 @@ function ReviewCard({
       <CardContent className="pt-6">
         <div className="flex items-start gap-4">
           <Avatar>
-            <AvatarImage src={review.author.avatar_url} />
+            <AvatarImage src={getMediaUrl(review.author.avatar_url)} />
             <AvatarFallback>
               {isAdminReview ? (
                 <Shield className="h-5 w-5 text-green-600" />

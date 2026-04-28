@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, use, useRef } from "react"
+import { getMediaUrl } from "@/lib/utils/media"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -168,7 +169,7 @@ function RoomPhotosSection({ hotelId, roomId }: { hotelId: string; roomId: strin
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
               {photos.map((photo) => (
                 <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
-                  <img src={photo.url} alt="" className="h-full w-full object-cover" />
+                  <img src={getMediaUrl(photo.url)} alt="" className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => handleDelete(photo.id)}
@@ -338,7 +339,7 @@ function HotelPhotosSection({ hotelId }: { hotelId: string }) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {photos.map((photo, index) => (
               <div key={photo.id} className="group relative aspect-video overflow-hidden rounded-lg bg-muted">
-                <img src={photo.url} alt="" className="h-full w-full object-cover" />
+                <img src={getMediaUrl(photo.url)} alt="" className="h-full w-full object-cover" />
                 {photo.is_primary && (
                   <div className="absolute left-1 top-1 rounded bg-yellow-400 px-1.5 py-0.5 text-[10px] font-bold text-yellow-900">
                     Cover
@@ -850,7 +851,7 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
             <div className="relative aspect-[16/9]">
               {hotel.cover_photo_url ? (
                 <img
-                  src={hotel.cover_photo_url}
+                  src={getMediaUrl(hotel.cover_photo_url)}
                   alt={hotel.name}
                   className="h-full w-full object-cover"
                 />

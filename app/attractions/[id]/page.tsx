@@ -14,6 +14,7 @@ import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getAttractionBySlug, getAttractions } from "@/lib/api/content"
 import { APIError } from "@/lib/api/client"
+import { getMediaUrl } from "@/lib/utils/media"
 import type { Attraction } from "@/lib/types"
 import {
   MapPin,
@@ -169,7 +170,7 @@ export default function AttractionDetailPage() {
               {/* Hero Image */}
               <div className="mb-8 overflow-hidden rounded-xl">
                 <img
-                  src={attraction.image || "/placeholder.svg?height=400&width=800&query=attraction"}
+                  src={getMediaUrl(attraction.image) || "/placeholder.svg?height=400&width=800&query=attraction"}
                   alt={attraction.name}
                   className="h-96 w-full object-cover"
                 />

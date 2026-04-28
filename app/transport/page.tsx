@@ -9,6 +9,7 @@ import { DiscoveryFilters } from "@/components/shared/discovery-filters"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { getTransports } from "@/lib/api/transport"
 import type { Transport } from "@/lib/types"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
 
@@ -110,7 +111,7 @@ function TransportContent() {
                         slug={item.slug}
                         type="transport"
                         name={item.name}
-                        imageUrl={item.cover_photo || item.images?.[0]?.url || "/car-driver.jpg"}
+                        imageUrl={getMediaUrl(item.cover_photo || item.images?.[0]?.url) || "/car-driver.jpg"}
                         location={item.city_name || item.city?.name || ""}
                         city={item.city_name || item.city?.name || ""}
                         description={item.description || ""}

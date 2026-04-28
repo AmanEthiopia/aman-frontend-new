@@ -21,6 +21,7 @@ import {
 } from "@/lib/api/experiences"
 import { useAuth } from "@/contexts/auth-context"
 import { APIError } from "@/lib/api/client"
+import { getMediaUrl } from "@/lib/utils/media"
 import { formatRating } from "@/lib/utils"
 import {
   ArrowLeft,
@@ -233,7 +234,7 @@ export default function BookExperiencePage() {
     )
   }
 
-  const primaryPhoto = pkg.primary_photo?.photo_url || pkg.photos?.[0]?.photo_url
+  const primaryPhoto = getMediaUrl(pkg.primary_photo?.photo_url || pkg.photos?.[0]?.photo_url)
 
   return (
     <div className="flex min-h-screen flex-col">

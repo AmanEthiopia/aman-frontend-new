@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getExperienceBySlug, type Package, type PackageDay, type PackageDayItem } from "@/lib/api/experiences"
 import { APIError } from "@/lib/api/client"
+import { getMediaUrl } from "@/lib/utils/media"
 import {
   MapPin,
   ArrowLeft,
@@ -232,7 +233,7 @@ export default function ExperienceDetailPage() {
 
   const isSaved = isItemSaved(`experience-${pkg.id}`)
   const sortedDays = pkg.days?.sort((a, b) => a.day_number - b.day_number) || []
-  const primaryPhoto = pkg.primary_photo?.photo_url || pkg.photos?.[0]?.photo_url
+  const primaryPhoto = getMediaUrl(pkg.primary_photo?.photo_url || pkg.photos?.[0]?.photo_url)
   const priceDisplay = formatCurrency(pkg.price_per_person, pkg.price_currency)
 
   return (

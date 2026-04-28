@@ -8,6 +8,7 @@ import { ListingCard } from "@/components/shared/listing-card"
 import { DiscoveryFilters } from "@/components/shared/discovery-filters"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { getExperiences, type Package } from "@/lib/api/experiences"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
 
@@ -122,7 +123,7 @@ function ExperiencesContent() {
                         slug={pkg.slug}
                         type="experience"
                         name={pkg.title}
-                        imageUrl={pkg.primary_photo?.photo_url || pkg.photos?.[0]?.photo_url || "/tour-experience.jpg"}
+                        imageUrl={getMediaUrl(pkg.primary_photo?.photo_url || pkg.photos?.[0]?.photo_url) || "/tour-experience.jpg"}
                         location={pkg.cities?.map(c => c.city.name).join(" → ") || ""}
                         city={pkg.cities?.[0]?.city.name || ""}
                         description={pkg.short_description || pkg.description || ""}

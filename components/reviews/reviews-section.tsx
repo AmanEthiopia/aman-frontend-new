@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Star, Loader2, AlertCircle, User, ThumbsUp, MessageSquare } from "lucide-react"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -125,7 +126,7 @@ function ReviewCard({ review }: { review: Review }) {
       <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={review.author?.avatar_url} />
+            <AvatarImage src={getMediaUrl(review.author?.avatar_url) || undefined} />
             <AvatarFallback>{initials || "AN"}</AvatarFallback>
           </Avatar>
           <div>

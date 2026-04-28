@@ -33,6 +33,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getMediaUrl } from "@/lib/utils/media"
 import { formatRating } from "@/lib/utils"
 
 export default function BookHotelPage() {
@@ -473,7 +474,7 @@ export default function BookHotelPage() {
                     <CardContent className="p-4">
                       <div className="mb-4 overflow-hidden rounded-lg">
                         <img
-                          src={hotel.images?.[0]?.url || hotel.images?.[0]?.image_url || hotel.cover_photo || "/grand-hotel-exterior.png"}
+                          src={getMediaUrl(hotel.images?.[0]?.url || hotel.images?.[0]?.image_url || hotel.cover_photo) || "/grand-hotel-exterior.png"}
                           alt={hotel.name}
                           className="h-40 w-full object-cover"
                         />

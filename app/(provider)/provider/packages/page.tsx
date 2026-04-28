@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { getMediaUrl } from "@/lib/utils/media"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -157,7 +158,7 @@ export default function ProviderPackagesPage() {
             <Card key={pkg.id} className="overflow-hidden">
               <div className="relative aspect-video">
                 <img
-                  src={pkg.primary_photo?.photo_url || "/placeholder.svg?height=200&width=400&query=travel package"}
+                  src={getMediaUrl(pkg.primary_photo?.photo_url) || "/placeholder.svg?height=200&width=400&query=travel package"}
                   alt={pkg.title}
                   className="h-full w-full object-cover"
                 />

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { formatRating } from "@/lib/utils"
+import { getMediaUrl } from "@/lib/utils/media"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -104,7 +105,7 @@ function PropertyCard({
       <div className="relative aspect-[16/10]">
         {property.cover_photo_url ? (
           <img
-            src={property.cover_photo_url}
+            src={getMediaUrl(property.cover_photo_url)}
             alt={property.name}
             className="h-full w-full object-cover"
           />

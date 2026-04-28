@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { getMediaUrl } from "@/lib/utils/media"
 import {
   Calendar,
   MapPin,
@@ -141,7 +142,7 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCanc
         <div className="flex flex-col sm:flex-row">
           <div className="relative h-32 w-full sm:h-auto sm:w-40">
             <Image
-              src={booking.hotel.cover_photo_url || "/placeholder.svg?height=160&width=160"}
+              src={getMediaUrl(booking.hotel.cover_photo_url) || "/placeholder.svg?height=160&width=160"}
               alt={booking.hotel.name}
               fill
               className="object-cover sm:rounded-l-lg"
@@ -273,7 +274,7 @@ function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantR
         <div className="flex flex-col sm:flex-row">
           <div className="relative h-32 w-full sm:h-auto sm:w-40">
             <Image
-              src={booking.restaurant.cover_photo_url || "/placeholder.svg?height=160&width=160"}
+              src={getMediaUrl(booking.restaurant.cover_photo_url) || "/placeholder.svg?height=160&width=160"}
               alt={booking.restaurant.name}
               fill
               className="object-cover sm:rounded-l-lg"
@@ -373,7 +374,7 @@ function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; on
         <div className="flex flex-col sm:flex-row">
           <div className="relative h-32 w-full sm:h-auto sm:w-40">
             <Image
-              src={booking.package.cover_photo_url || "/placeholder.svg?height=160&width=160"}
+              src={getMediaUrl(booking.package.cover_photo_url) || "/placeholder.svg?height=160&width=160"}
               alt={booking.package.title}
               fill
               className="object-cover sm:rounded-l-lg"

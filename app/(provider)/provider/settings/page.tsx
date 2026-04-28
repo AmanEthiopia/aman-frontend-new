@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Badge } from "@/components/ui/badge"
 import {
   Select,
@@ -174,7 +175,7 @@ export default function ProviderSettingsPage() {
               <div className="flex items-center gap-6">
                 <div className="relative">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={userProfile?.profile?.profile_photo || "/diverse-business-owner.png"} />
+                    <AvatarImage src={getMediaUrl(userProfile?.profile?.profile_photo) || "/diverse-business-owner.png"} />
                     <AvatarFallback className="text-lg">
                       {profile.firstName[0]}{profile.lastName[0]}
                     </AvatarFallback>

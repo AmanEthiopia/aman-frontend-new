@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getRestaurantsPaginated } from "@/lib/api/restaurants"
+import { getMediaUrl } from "@/lib/utils/media"
 import { APIError } from "@/lib/api/client"
 import type { Restaurant } from "@/lib/types"
 import {
@@ -180,7 +181,7 @@ export default function RestaurantDetailPage() {
               {/* Hero Image */}
               <div className="mb-8 overflow-hidden rounded-xl">
                 <img
-                  src={restaurant.image || "/placeholder.svg?height=400&width=800&query=restaurant"}
+                  src={getMediaUrl(restaurant.image) || "/placeholder.svg?height=400&width=800&query=restaurant"}
                   alt={restaurant.name}
                   className="h-96 w-full object-cover"
                 />

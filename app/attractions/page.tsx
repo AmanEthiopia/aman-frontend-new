@@ -8,6 +8,7 @@ import { ListingCard } from "@/components/shared/listing-card"
 import { DiscoveryFilters } from "@/components/shared/discovery-filters"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { getAttractions, type Attraction } from "@/lib/api/content"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
 
@@ -92,7 +93,7 @@ function AttractionsContent() {
                   slug={attraction.slug}
                   type="attraction"
                   name={attraction.name}
-                  imageUrl={attraction.image || "/placeholder.svg?height=300&width=400&query=attraction"}
+                  imageUrl={getMediaUrl(attraction.image) || "/placeholder.svg?height=300&width=400&query=attraction"}
                   location={attraction.city || ""}
                   city={attraction.city || ""}
                   description={attraction.description || ""}

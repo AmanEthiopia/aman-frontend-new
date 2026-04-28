@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Textarea } from "@/components/ui/textarea"
 import {
   DropdownMenu,
@@ -75,7 +76,7 @@ function ConversationItem({
   
   const TypeIcon = TYPE_ICONS[conversation.related_to_type] || MessageSquare
   const participantName = conversation.other_participant?.name || "Unknown"
-  const participantAvatar = conversation.other_participant?.avatar_url
+  const participantAvatar = getMediaUrl(conversation.other_participant?.avatar_url)
   const unreadCount = conversation.unread_count || 0
   const lastMessageText = conversation.last_message?.text || ""
   const lastMessageAt = conversation.last_message_at || ""
@@ -145,7 +146,7 @@ function MessageBubble({
   
   const senderId = message.sender?.id || ""
   const senderName = message.sender?.name || "Unknown"
-  const senderAvatar = message.sender?.avatar_url
+  const senderAvatar = getMediaUrl(message.sender?.avatar_url)
   const isOwn = senderId === currentUserId
   const isSystem = message.is_system_message
 
@@ -465,7 +466,7 @@ function ProviderMessagesContent() {
               <CardHeader className="flex flex-row items-center justify-between border-b p-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarImage src={activeConversation.other_participant.avatar_url} />
+                    <AvatarImage src={getMediaUrl(activeConversation.other_participant.avatar_url)} />
                     <AvatarFallback>
                       {activeConversation.other_participant.name.slice(0, 2).toUpperCase()}
                     </AvatarFallback>

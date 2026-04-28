@@ -41,6 +41,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 import { formatRating } from "@/lib/utils"
+import { getMediaUrl } from "@/lib/utils/media"
 
 const amenityIcons: Record<string, React.ReactNode> = {
   WiFi: <Wifi className="h-4 w-4" />,
@@ -187,8 +188,8 @@ export default function HotelDetailPage() {
           {(() => {
             // Handle different image formats from API
             const images = hotel.images || hotel.photos || []
-            const coverPhoto = hotel.cover_photo || hotel.cover_photo_url
-            const mainImage = images[selectedImage]?.url || images[selectedImage]?.photo_url || coverPhoto || "/placeholder.svg?height=500&width=800&query=hotel room"
+            const coverPhoto = getMediaUrl(hotel.cover_photo || hotel.cover_photo_url)
+            const mainImage = getMediaUrl(images[selectedImage]?.url || images[selectedImage]?.photo_url) || coverPhoto || "/placeholder.svg?height=500&width=800&query=hotel room"
             
             return (
               <div className="grid gap-4 md:grid-cols-4">
@@ -212,7 +213,7 @@ export default function HotelDetailPage() {
                         }`}
                       >
                         <img
-                          src={image.url || image.photo_url || "/placeholder.svg?height=150&width=150&query=hotel"}
+                          src={getMediaUrl(image.url || image.photo_url) || "/placeholder.svg?height=150&width=150&query=hotel"}
                           alt={image.alt || `${hotel.name} photo ${index + 1}`}
                           className="h-full w-full object-cover"
                         />

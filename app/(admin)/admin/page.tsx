@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { getMediaUrl } from "@/lib/utils/media"
 import Link from "next/link"
 import {
   Users,
@@ -212,7 +213,7 @@ export default function AdminDashboardPage() {
                 >
                   <div className="flex items-start gap-3">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={dispute.traveler.avatar} />
+                      <AvatarImage src={getMediaUrl(dispute.traveler.avatar)} />
                       <AvatarFallback>{dispute.traveler.name[0]}</AvatarFallback>
                     </Avatar>
                     <div>
