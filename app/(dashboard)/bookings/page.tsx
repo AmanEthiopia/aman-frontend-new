@@ -130,6 +130,7 @@ function getBookingEndDate(booking: Booking): Date {
 }
 
 function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCancel: () => void }) {
+  if (!booking.hotel) return null
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const checkIn = new Date(booking.check_in_date)
@@ -263,6 +264,7 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCanc
 }
 
 function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantReservation; onCancel: () => void }) {
+  if (!booking.restaurant) return null
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const reservationDate = new Date(booking.reservation_date)
@@ -361,6 +363,7 @@ function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantR
 }
 
 function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; onCancel: () => void }) {
+  if (!booking.package) return null
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const startDate = new Date(booking.start_date)

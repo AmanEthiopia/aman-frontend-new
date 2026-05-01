@@ -327,7 +327,10 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
                       return (
                         <DropdownMenuItem
                           key={property.id}
-                          onClick={() => setSelectedProperty(property.name)}
+                          onClick={() => {
+                            setSelectedProperty(property.name)
+                            router.push(`/provider/properties/${property.category}s/${property.id}`)
+                          }}
                         >
                           <Icon className="mr-2 h-4 w-4" />
                           {property.name}
