@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { getMediaUrl } from "@/lib/utils/media"
 import { toast } from "sonner"
 import { getMyProperties, type PropertyBase } from "@/lib/api/provider"
 import { getProviderGuides, type Guide } from "@/lib/api/guides"
@@ -82,7 +83,7 @@ function PhotoCard({
   return (
     <div className="group relative overflow-hidden rounded-lg border bg-card">
       <div className="relative aspect-[4/3]">
-        <img src={photo.url || "/placeholder.svg"} alt={photo.caption} className="h-full w-full object-cover" />
+        <img src={getMediaUrl(photo.url) || "/placeholder.svg"} alt={photo.caption} className="h-full w-full object-cover" />
         {photo.isPrimary && (
           <Badge className="absolute left-2 top-2 gap-1">
             <Star className="h-3 w-3 fill-current" />
@@ -537,7 +538,7 @@ export default function ProviderPhotosPage() {
           {previewPhoto && (
             <>
               <img
-                src={previewPhoto.url || "/placeholder.svg"}
+                src={getMediaUrl(previewPhoto.url) || "/placeholder.svg"}
                 alt={previewPhoto.caption}
                 className="w-full rounded-lg"
               />

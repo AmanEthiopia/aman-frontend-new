@@ -370,7 +370,7 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2 px-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={getMediaUrl(userProfile?.profile?.profile_photo) || "/diverse-business-owner.png"} />
+                    <AvatarImage src={getMediaUrl(userProfile?.profile?.profile_photo) || undefined} />
                     <AvatarFallback>
                       {userProfile?.user?.first_name?.[0] || "P"}
                       {userProfile?.user?.last_name?.[0] || "O"}

@@ -6,6 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, Calendar, Map, MessageSquare, Settings, Bell } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -95,7 +96,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </Link>
               <Link href="/settings">
                 <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-transparent transition-all hover:ring-primary/20">
-                  <AvatarImage src="/traveler-avatar.jpg" />
+                  <AvatarImage src={getMediaUrl(userProfile?.profile?.profile_photo) || undefined} />
                   <AvatarFallback>{userProfile?.user?.first_name?.charAt(0) || "U"}</AvatarFallback>
                 </Avatar>
               </Link>

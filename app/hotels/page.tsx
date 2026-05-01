@@ -171,7 +171,7 @@ function HotelsContent() {
                           mediaUrl(hotel.cover_photo) ||
                           mediaUrl(hotel.images?.[0]?.url) ||
                           mediaUrl(hotel.images?.[0]?.photo_url) ||
-                          "/grand-hotel-exterior.png"
+                          "/placeholder.svg"
                         }
                         location={hotel.area || hotel.address || ""}
                         city={hotel.city_name || hotel.city?.name || ""}

@@ -474,7 +474,7 @@ export default function BookHotelPage() {
                     <CardContent className="p-4">
                       <div className="mb-4 overflow-hidden rounded-lg">
                         <img
-                          src={getMediaUrl(hotel.images?.[0]?.url || hotel.images?.[0]?.image_url || hotel.cover_photo) || "/grand-hotel-exterior.png"}
+                          src={getMediaUrl(hotel.images?.[0]?.url || hotel.images?.[0]?.image_url || hotel.cover_photo) || "/placeholder.svg"}
                           alt={hotel.name}
                           className="h-40 w-full object-cover"
                         />

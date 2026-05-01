@@ -54,7 +54,7 @@ const mockPendingBookings: ProviderBooking[] = [
     guest_name: "Sarah Johnson",
     guest_email: "sarah@email.com",
     guest_phone: "+1 555-0123",
-    guest_avatar: "/diverse-user-avatars.png",
+    guest_avatar: "",
     check_in: "2025-01-18",
     check_out: "2025-01-21",
     guests: 2,

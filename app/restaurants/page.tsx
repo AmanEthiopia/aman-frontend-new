@@ -163,7 +163,7 @@ function RestaurantsContent() {
                           mediaUrl(restaurant.cover_photo) ||
                           mediaUrl(restaurant.images?.[0]?.url) ||
                           mediaUrl(restaurant.images?.[0]?.photo_url) ||
-                          "/cozy-italian-restaurant.png"
+                          "/placeholder.svg"
                         }
                         location={restaurant.area || restaurant.address || ""}
                         city={restaurant.city_name || restaurant.city?.name || ""}

@@ -34,15 +34,8 @@ export function getMediaUrl(path: string | null | undefined): string {
 /**
  * Get placeholder image URL for missing images
  */
-export function getPlaceholderImage(type: "profile" | "hotel" | "city" | "restaurant" = "profile"): string {
-  const placeholders = {
-    profile: "/diverse-user-avatars.png",
-    hotel: "/modern-hotel-exterior.png",
-    city: "/vibrant-city-skyline.png",
-    restaurant: "/modern-restaurant-interior.png",
-  }
-
-  return placeholders[type]
+export function getPlaceholderImage(_type?: string): string {
+  return "/placeholder.svg"
 }
 
 /**

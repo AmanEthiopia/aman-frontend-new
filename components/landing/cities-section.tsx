@@ -133,12 +133,9 @@ export function CitiesSection() {
               >
                 <div className="aspect-[4/3] overflow-hidden">
                   <img
-                    src={getMediaUrl(city.cover_photo_url) || "/vibrant-city-skyline.png"}
+                    src={getMediaUrl(city.cover_photo_url) || "/placeholder.svg"}
                     alt={city.name}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    onError={(e) => {
-                      e.currentTarget.src = "/vibrant-city-skyline.png"
-                    }}
                   />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />

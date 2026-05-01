@@ -72,13 +72,7 @@ function UpcomingTripCard({ booking, hotel }: { booking: Booking; hotel: Hotel }
     <Card className="overflow-hidden">
       <div className="relative h-32 bg-gradient-to-br from-primary/20 to-primary/5">
         <img
-          src={
-            getMediaUrl(hotel?.images?.[0]?.url) ||
-            "/placeholder.svg?height=128&width=400&query=ethiopian hotel" ||
-            "/placeholder.svg" ||
-            "/placeholder.svg" ||
-            "/placeholder.svg"
-          }
+          src={getMediaUrl(hotel?.images?.[0]?.url) || "/placeholder.svg"}
           alt={booking.hotel_name}
           className="h-full w-full object-cover"
         />
@@ -362,19 +356,9 @@ export default function HomePage() {
                 <Card className="group cursor-pointer overflow-hidden transition-all hover:shadow-md">
                   <div className="relative h-24">
                     <img
-                      src={
-                        getMediaUrl(hotel.images?.[0]?.url) ||
-                        "/placeholder.svg?height=96&width=300&query=ethiopian hotel" ||
-                        "/placeholder.svg" ||
-                        "/placeholder.svg" ||
-                        "/placeholder.svg"
-                      }
+                      src={getMediaUrl(hotel.images?.[0]?.url) || "/placeholder.svg"}
                       alt={hotel.name}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                      onError={(e) => {
-                        console.error("[v0] HomePage: Image load error for hotel:", hotel.name)
-                        e.currentTarget.src = "/grand-hotel-exterior.png"
-                      }}
                     />
                   </div>
                   <CardContent className="py-3">

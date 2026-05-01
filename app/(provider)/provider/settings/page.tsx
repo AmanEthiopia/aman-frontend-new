@@ -175,7 +175,7 @@ export default function ProviderSettingsPage() {
               <div className="flex items-center gap-6">
                 <div className="relative">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={getMediaUrl(userProfile?.profile?.profile_photo) || "/diverse-business-owner.png"} />
+                    <AvatarImage src={getMediaUrl(userProfile?.profile?.profile_photo) || undefined} />
                     <AvatarFallback className="text-lg">
                       {profile.firstName[0]}{profile.lastName[0]}
                     </AvatarFallback>
