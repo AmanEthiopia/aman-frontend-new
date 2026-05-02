@@ -30,7 +30,6 @@ import {
   Globe,
   ArrowLeft,
   Heart,
-  Share2,
   AlertCircle,
   Clock,
   ChevronLeft,
@@ -560,9 +559,6 @@ export default function RestaurantDetailPage() {
             <div className="flex gap-2">
               <Button variant="outline" size="icon" onClick={() => toggleSavedItem(`restaurant-${restaurant.id}`)}>
                 <Heart className={`h-4 w-4 ${isSaved ? "fill-current text-red-500" : ""}`} />
-              </Button>
-              <Button variant="outline" size="icon">
-                <Share2 className="h-4 w-4" />
               </Button>
               <AddToItineraryButton itemType="restaurant" itemId={restaurant.id} itemName={restaurant.name} />
             </div>

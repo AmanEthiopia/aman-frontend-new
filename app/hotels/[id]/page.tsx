@@ -34,7 +34,6 @@ import {
   Dumbbell,
   Sparkles,
   Heart,
-  Share2,
   AlertCircle,
   Users,
   Clock,
@@ -190,10 +189,6 @@ export default function HotelDetailPage() {
               <Button variant="outline" size="sm" onClick={() => toggleSavedItem(hotel.id)}>
                 <Heart className={`mr-1 h-4 w-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
                 {saved ? "Saved" : "Save"}
-              </Button>
-              <Button variant="outline" size="sm">
-                <Share2 className="mr-1 h-4 w-4" />
-                Share
               </Button>
             </div>
           </div>

@@ -18,7 +18,6 @@ import {
   MapPin,
   ArrowLeft,
   Heart,
-  Share2,
   AlertCircle,
   Clock,
   Users,
@@ -626,9 +625,6 @@ export default function ExperienceDetailPage() {
                       onClick={() => toggleSavedItem(`experience-${pkg.id}`)}
                     >
                       <Heart className={`h-4 w-4 ${isSaved ? "fill-current text-red-500" : ""}`} />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Share2 className="h-4 w-4" />
                     </Button>
                     <AddToItineraryButton
                       itemType="experience"

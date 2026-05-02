@@ -23,7 +23,6 @@ import {
   Globe,
   ArrowLeft,
   Heart,
-  Share2,
   AlertCircle,
   Clock,
   DollarSign,
@@ -152,9 +151,6 @@ export default function AttractionDetailPage() {
               >
                 <Heart className={`h-4 w-4 ${isSaved ? "fill-current text-red-500" : ""}`} />
               </Button>
-<Button variant="outline" size="icon">
-<Share2 className="h-4 w-4" />
-</Button>
 <AddToItineraryButton
   itemType="attraction"
   itemId={attraction.id}
