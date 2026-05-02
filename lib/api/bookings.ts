@@ -218,7 +218,7 @@ export interface PackageBookingResponse {
 
 export interface CreatePackageBookingPayload {
   package_id: string
-  start_date: string
+  departure_id: string
   num_adults: number
   num_children?: number
   guest_name: string

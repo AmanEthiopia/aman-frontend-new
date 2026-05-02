@@ -38,12 +38,17 @@ import {
   addPackageDayItem,
   updatePackageDayItem,
   deletePackageDayItem,
+  getPackageDepartures,
+  createDeparture,
+  updateDeparture,
+  deleteDeparture,
   type Package,
   type PackageDay,
   type PackageDayItem,
   type PackageCity,
   type PackageCategory,
   type PackageItemType,
+  type Departure,
 } from "@/lib/api/experiences"
 import { getCities, type City } from "@/lib/api/content"
 import { searchHotels } from "@/lib/api/hotels"
@@ -66,6 +71,8 @@ import {
   Save,
   Eye,
   Calendar,
+  CalendarDays,
+  Pencil,
 } from "lucide-react"
 
 const CATEGORIES: { value: PackageCategory; label: string }[] = [
@@ -107,6 +114,20 @@ export default function EditPackagePage() {
   const [addCityOpen, setAddCityOpen] = useState(false)
   const [addDayOpen, setAddDayOpen] = useState(false)
   const [addItemOpen, setAddItemOpen] = useState<{ dayId: string } | null>(null)
+
+  // Departure state
+  const [departures, setDepartures] = useState<Departure[]>([])
+  const [departuresLoading, setDeparturesLoading] = useState(false)
+  const [departureDialogOpen, setDepartureDialogOpen] = useState(false)
+  const [editingDeparture, setEditingDeparture] = useState<Departure | null>(null)
+  const [departureForm, setDepartureForm] = useState({
+    start_date: "",
+    end_date: "",
+    max_seats: 10,
+    is_active: true,
+    notes: "",
+  })
+  const [departureSubmitting, setDepartureSubmitting] = useState(false)
 
   // Form states for dialogs
   const [newCity, setNewCity] = useState({ city_id: "", order: 1, night_count: 1 })
@@ -156,10 +177,70 @@ export default function EditPackagePage() {
     }
   }, [])
 
+  const loadDepartures = useCallback(async () => {
+    setDeparturesLoading(true)
+    try {
+      const data = await getPackageDepartures(packageId)
+      setDepartures(data)
+    } catch {
+      // Silently fail
+    } finally {
+      setDeparturesLoading(false)
+    }
+  }, [packageId])
+
   useEffect(() => {
     loadPackage()
     loadAvailableData()
-  }, [loadPackage, loadAvailableData])
+    loadDepartures()
+  }, [loadPackage, loadAvailableData, loadDepartures])
+
+  const openAddDeparture = () => {
+    setEditingDeparture(null)
+    setDepartureForm({ start_date: "", end_date: "", max_seats: 10, is_active: true, notes: "" })
+    setDepartureDialogOpen(true)
+  }
+
+  const openEditDeparture = (dep: Departure) => {
+    setEditingDeparture(dep)
+    setDepartureForm({
+      start_date: dep.start_date,
+      end_date: dep.end_date,
+      max_seats: dep.max_seats,
+      is_active: dep.is_active,
+      notes: dep.notes || "",
+    })
+    setDepartureDialogOpen(true)
+  }
+
+  const handleDepartureSubmit = async () => {
+    setDepartureSubmitting(true)
+    try {
+      if (editingDeparture) {
+        await updateDeparture(packageId, editingDeparture.id, departureForm)
+      } else {
+        await createDeparture(packageId, departureForm)
+      }
+      await loadDepartures()
+      setDepartureDialogOpen(false)
+      showSuccess(editingDeparture ? "Departure updated" : "Departure added")
+    } catch (err: any) {
+      setError(err.message || "Failed to save departure")
+    } finally {
+      setDepartureSubmitting(false)
+    }
+  }
+
+  const handleDeleteDeparture = async (depId: string) => {
+    if (!confirm("Delete this departure? This cannot be undone.")) return
+    try {
+      await deleteDeparture(packageId, depId)
+      setDepartures((prev) => prev.filter((d) => d.id !== depId))
+      showSuccess("Departure deleted")
+    } catch (err: any) {
+      setError(err.message || "Failed to delete departure")
+    }
+  }
 
   const showSuccess = (message: string) => {
     setSuccessMessage(message)
@@ -407,6 +488,7 @@ export default function EditPackagePage() {
         <TabsList>
           <TabsTrigger value="itinerary">Itinerary Builder</TabsTrigger>
           <TabsTrigger value="cities">Cities</TabsTrigger>
+          <TabsTrigger value="departures">Departures</TabsTrigger>
           <TabsTrigger value="details">Package Details</TabsTrigger>
         </TabsList>
 
@@ -782,6 +864,168 @@ export default function EditPackagePage() {
                 ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Departures Tab */}
+        <TabsContent value="departures" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Departure Windows</h2>
+              <p className="text-sm text-muted-foreground">
+                Define fixed start/end dates that travelers can book.
+              </p>
+            </div>
+            <Button onClick={openAddDeparture}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Departure
+            </Button>
+          </div>
+
+          {departuresLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-20 animate-pulse rounded-lg bg-muted" />
+              ))}
+            </div>
+          ) : departures.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <CalendarDays className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                <h3 className="mt-4 text-lg font-semibold">No departures yet</h3>
+                <p className="text-muted-foreground">Add departure windows so travelers can book this package.</p>
+                <Button className="mt-4" onClick={openAddDeparture}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add First Departure
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {departures
+                .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+                .map((dep) => {
+                  const seatsLeft = dep.available_seats
+                  const urgent = seatsLeft > 0 && seatsLeft <= 3
+                  const full = seatsLeft === 0
+                  return (
+                    <Card key={dep.id}>
+                      <CardContent className="flex items-center justify-between p-4">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <CalendarDays className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              {new Date(dep.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              {" – "}
+                              {new Date(dep.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            </p>
+                            <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                              <span>{dep.max_seats} max seats</span>
+                              {full ? (
+                                <Badge variant="secondary">Fully Booked</Badge>
+                              ) : urgent ? (
+                                <Badge variant="destructive">{seatsLeft} left</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-green-600 border-green-300">{seatsLeft} available</Badge>
+                              )}
+                              {!dep.is_active && <Badge variant="outline">Inactive</Badge>}
+                            </div>
+                            {dep.notes && <p className="mt-1 text-xs text-muted-foreground">{dep.notes}</p>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => openEditDeparture(dep)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteDeparture(dep.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+            </div>
+          )}
+
+          {/* Add/Edit Departure Dialog */}
+          <Dialog open={departureDialogOpen} onOpenChange={setDepartureDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingDeparture ? "Edit Departure" : "Add Departure"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel htmlFor="dep-start">Start Date *</FieldLabel>
+                    <Input
+                      id="dep-start"
+                      type="date"
+                      value={departureForm.start_date}
+                      onChange={(e) => setDepartureForm({ ...departureForm, start_date: e.target.value })}
+                      required
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="dep-end">End Date *</FieldLabel>
+                    <Input
+                      id="dep-end"
+                      type="date"
+                      min={departureForm.start_date}
+                      value={departureForm.end_date}
+                      onChange={(e) => setDepartureForm({ ...departureForm, end_date: e.target.value })}
+                      required
+                    />
+                  </Field>
+                </div>
+                <Field>
+                  <FieldLabel htmlFor="dep-seats">Max Seats *</FieldLabel>
+                  <Input
+                    id="dep-seats"
+                    type="number"
+                    min={1}
+                    value={departureForm.max_seats}
+                    onChange={(e) => setDepartureForm({ ...departureForm, max_seats: parseInt(e.target.value) || 1 })}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="dep-notes">Notes (optional)</FieldLabel>
+                  <Input
+                    id="dep-notes"
+                    value={departureForm.notes}
+                    onChange={(e) => setDepartureForm({ ...departureForm, notes: e.target.value })}
+                    placeholder="e.g. Special occasion, limited availability..."
+                  />
+                </Field>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="dep-active"
+                    checked={departureForm.is_active}
+                    onChange={(e) => setDepartureForm({ ...departureForm, is_active: e.target.checked })}
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  <label htmlFor="dep-active" className="text-sm font-medium">
+                    Active (visible to travelers)
+                  </label>
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button variant="outline" onClick={() => setDepartureDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleDepartureSubmit}
+                    disabled={departureSubmitting || !departureForm.start_date || !departureForm.end_date}
+                  >
+                    {departureSubmitting ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
+                    ) : editingDeparture ? "Update Departure" : "Add Departure"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Details Tab */}

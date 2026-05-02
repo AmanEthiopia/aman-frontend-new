@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
@@ -18,6 +18,7 @@ import {
   getExperienceBySlug,
   createPackageBooking,
   type Package,
+  type Departure,
 } from "@/lib/api/experiences"
 import { useAuth } from "@/contexts/auth-context"
 import { APIError } from "@/lib/api/client"
@@ -25,7 +26,7 @@ import { getMediaUrl } from "@/lib/utils/media"
 import { formatRating } from "@/lib/utils"
 import {
   ArrowLeft,
-  Calendar,
+  CalendarDays,
   Users,
   AlertCircle,
   CheckCircle,
@@ -36,6 +37,7 @@ import {
   Star,
   Shield,
   Loader2,
+  AlertTriangle,
 } from "lucide-react"
 
 function formatCurrency(amount: string | number, currency = "USD"): string {
@@ -48,13 +50,24 @@ function formatCurrency(amount: string | number, currency = "USD"): string {
   }).format(num)
 }
 
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
 export default function BookExperiencePage() {
   const params = useParams()
-  const router = useRouter()
+  const searchParams = useSearchParams()
   const slug = params.id as string
-  const { user, isAuthenticated } = useAuth()
+  const departureId = searchParams.get("departure")
+  const { userProfile, isAuthenticated } = useAuth()
 
   const [pkg, setPkg] = useState<Package | null>(null)
+  const [departure, setDeparture] = useState<Departure | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -62,7 +75,6 @@ export default function BookExperiencePage() {
   const [bookingNumber, setBookingNumber] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
-    startDate: "",
     numAdults: 1,
     numChildren: 0,
     guestName: "",
@@ -78,14 +90,19 @@ export default function BookExperiencePage() {
       try {
         const data = await getExperienceBySlug(slug)
         setPkg(data)
-        
-        // Pre-fill user info if authenticated
-        if (user) {
-          setFormData(prev => ({
+
+        if (departureId && data.departures) {
+          const dep = data.departures.find((d) => d.id === departureId)
+          if (dep) setDeparture(dep)
+        }
+
+        if (userProfile?.user) {
+          const u = userProfile.user
+          setFormData((prev) => ({
             ...prev,
-            guestName: user.full_name || `${user.first_name || ""} ${user.last_name || ""}`.trim(),
-            guestEmail: user.email || "",
-            guestPhone: user.phone || "",
+            guestName: `${u.first_name || ""} ${u.last_name || ""}`.trim(),
+            guestEmail: u.email || "",
+            guestPhone: u.phone || "",
           }))
         }
       } catch (err) {
@@ -100,9 +117,8 @@ export default function BookExperiencePage() {
     }
 
     loadPackage()
-  }, [slug, user])
+  }, [slug, userProfile, departureId])
 
-  // Calculate pricing
   const pricePerPerson = pkg ? parseFloat(pkg.price_per_person) : 0
   const childPrice = pkg?.child_price ? parseFloat(pkg.child_price) : pricePerPerson * 0.5
   const adultTotal = pricePerPerson * formData.numAdults
@@ -110,14 +126,13 @@ export default function BookExperiencePage() {
   const totalPrice = adultTotal + childTotal
   const currency = pkg?.price_currency || "USD"
 
-  // Date validation
-  const today = new Date()
-  const minDate = new Date(today.setDate(today.getDate() + 1)).toISOString().split("T")[0]
+  const maxSeats = departure?.available_seats ?? Infinity
+  const totalPax = formData.numAdults + formData.numChildren
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!pkg || !isAuthenticated) return
+
+    if (!pkg || !isAuthenticated || !departure) return
 
     setSubmitting(true)
     setError(null)
@@ -125,7 +140,7 @@ export default function BookExperiencePage() {
     try {
       const response = await createPackageBooking({
         package_id: pkg.id,
-        start_date: formData.startDate,
+        departure_id: departure.id,
         num_adults: formData.numAdults,
         num_children: formData.numChildren,
         guest_name: formData.guestName,
@@ -136,12 +151,6 @@ export default function BookExperiencePage() {
 
       setBookingNumber(response.booking.booking_number)
       setSuccess(true)
-
-      // If payment is required, redirect to payment
-      if (response.payment?.required && response.payment.client_secret) {
-        // TODO: Integrate Stripe payment
-        // For now, just show success
-      }
     } catch (err) {
       if (err instanceof APIError) {
         setError(err.message)
@@ -207,6 +216,11 @@ export default function BookExperiencePage() {
                 <p className="mt-2 text-muted-foreground">
                   Your booking for <strong>{pkg.title}</strong> has been submitted.
                 </p>
+                {departure && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Departure: {formatDate(departure.start_date)} – {formatDate(departure.end_date)}
+                  </p>
+                )}
                 {bookingNumber && (
                   <p className="mt-4 rounded-lg bg-muted p-3 font-mono text-lg">
                     Booking #: {bookingNumber}
@@ -241,7 +255,6 @@ export default function BookExperiencePage() {
       <Header />
       <main className="flex-1 bg-muted/30">
         <div className="container mx-auto px-4 py-8">
-          {/* Breadcrumb */}
           <Link
             href={`/experiences/${pkg.slug}`}
             className="mb-6 inline-flex items-center gap-2 text-primary hover:underline"
@@ -257,10 +270,22 @@ export default function BookExperiencePage() {
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 Please{" "}
-                <Link href={`/auth/login?redirect=/book/experience/${slug}`} className="font-medium underline">
+                <Link href={`/auth/login?redirect=/book/experience/${slug}?departure=${departureId}`} className="font-medium underline">
                   sign in
                 </Link>{" "}
                 to complete your booking.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!departure && (
+            <Alert className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No departure selected.{" "}
+                <Link href={`/experiences/${pkg.slug}`} className="font-medium underline">
+                  Go back and select a departure date.
+                </Link>
               </AlertDescription>
             </Alert>
           )}
@@ -269,27 +294,59 @@ export default function BookExperiencePage() {
             {/* Booking Form */}
             <div className="lg:col-span-2">
               <form onSubmit={handleSubmit}>
+                {/* Selected Departure */}
                 <Card className="mb-6">
                   <CardHeader>
-                    <CardTitle>Trip Details</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <CalendarDays className="h-5 w-5 text-primary" />
+                      Selected Departure
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {departure ? (
+                      <div className="rounded-lg border bg-muted/30 p-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-semibold">
+                              {formatDate(departure.start_date)}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              to {formatDate(departure.end_date)}
+                            </p>
+                          </div>
+                          {departure.available_seats <= 3 ? (
+                            <Badge variant="destructive" className="flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              {departure.available_seats} seats left
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-green-600 border-green-300">
+                              {departure.available_seats} seats available
+                            </Badge>
+                          )}
+                        </div>
+                        {departure.notes && (
+                          <p className="mt-2 text-sm text-muted-foreground">{departure.notes}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
+                        <CalendarDays className="mx-auto mb-2 h-8 w-8" />
+                        <p>No departure selected</p>
+                        <Link href={`/experiences/${pkg.slug}`} className="mt-2 inline-block text-sm text-primary underline">
+                          Select a departure
+                        </Link>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle>Travelers</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <FieldGroup>
-                      <Field>
-                        <FieldLabel htmlFor="startDate">Start Date *</FieldLabel>
-                        <Input
-                          id="startDate"
-                          type="date"
-                          min={minDate}
-                          required
-                          value={formData.startDate}
-                          onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                        />
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {pkg.duration_days}-day experience starting on this date
-                        </p>
-                      </Field>
-
                       <div className="grid gap-4 sm:grid-cols-2">
                         <Field>
                           <FieldLabel>Adults *</FieldLabel>
@@ -308,7 +365,10 @@ export default function BookExperiencePage() {
                               type="button"
                               variant="outline"
                               size="icon"
-                              disabled={pkg.max_group_size ? formData.numAdults + formData.numChildren >= pkg.max_group_size : false}
+                              disabled={
+                                (pkg.max_group_size ? totalPax >= pkg.max_group_size : false) ||
+                                totalPax >= maxSeats
+                              }
                               onClick={() => setFormData({ ...formData, numAdults: formData.numAdults + 1 })}
                             >
                               <Plus className="h-4 w-4" />
@@ -336,7 +396,10 @@ export default function BookExperiencePage() {
                               type="button"
                               variant="outline"
                               size="icon"
-                              disabled={pkg.max_group_size ? formData.numAdults + formData.numChildren >= pkg.max_group_size : false}
+                              disabled={
+                                (pkg.max_group_size ? totalPax >= pkg.max_group_size : false) ||
+                                totalPax >= maxSeats
+                              }
                               onClick={() => setFormData({ ...formData, numChildren: formData.numChildren + 1 })}
                             >
                               <Plus className="h-4 w-4" />
@@ -347,6 +410,14 @@ export default function BookExperiencePage() {
                           </p>
                         </Field>
                       </div>
+                      {departure && totalPax > departure.available_seats && (
+                        <Alert variant="destructive">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertDescription>
+                            Only {departure.available_seats} seats available for this departure.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </FieldGroup>
                   </CardContent>
                 </Card>
@@ -418,7 +489,12 @@ export default function BookExperiencePage() {
                   type="submit"
                   size="lg"
                   className="w-full"
-                  disabled={submitting || !isAuthenticated}
+                  disabled={
+                    submitting ||
+                    !isAuthenticated ||
+                    !departure ||
+                    (departure ? totalPax > departure.available_seats : false)
+                  }
                 >
                   {submitting ? (
                     <>
@@ -426,7 +502,7 @@ export default function BookExperiencePage() {
                       Processing...
                     </>
                   ) : (
-                    `Confirm Booking - ${formatCurrency(totalPrice, currency)}`
+                    `Confirm Booking — ${formatCurrency(totalPrice, currency)}`
                   )}
                 </Button>
 
@@ -442,7 +518,6 @@ export default function BookExperiencePage() {
             <div>
               <Card className="sticky top-20">
                 <CardContent className="pt-6">
-                  {/* Package Preview */}
                   <div className="mb-4 overflow-hidden rounded-lg">
                     <img
                       src={primaryPhoto || "/placeholder.svg?height=200&width=400&query=travel experience"}
@@ -456,7 +531,7 @@ export default function BookExperiencePage() {
                     <p className="text-sm text-muted-foreground">{pkg.nickname}</p>
                   )}
 
-                  <div className="mt-4 flex items-center gap-2 text-sm">
+                  <div className="mt-3 flex items-center gap-3 text-sm">
                     {pkg.average_rating && (
                       <span className="flex items-center gap-1">
                         <Star className="h-3.5 w-3.5 fill-primary text-primary" />
@@ -472,23 +547,28 @@ export default function BookExperiencePage() {
                   {pkg.cities && pkg.cities.length > 0 && (
                     <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
                       <MapPin className="h-3.5 w-3.5" />
-                      {pkg.cities.map(c => c.city.name).join(" → ")}
+                      {pkg.cities.map((c) => c.city.name).join(" → ")}
+                    </div>
+                  )}
+
+                  {departure && (
+                    <div className="mt-3 flex items-center gap-1 text-sm text-muted-foreground">
+                      <CalendarDays className="h-3.5 w-3.5" />
+                      {new Date(departure.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {" – "}
+                      {new Date(departure.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </div>
                   )}
 
                   {/* Price Breakdown */}
                   <div className="mt-6 space-y-2 border-t pt-4">
                     <div className="flex justify-between text-sm">
-                      <span>
-                        Adults ({formData.numAdults} x {formatCurrency(pricePerPerson, currency)})
-                      </span>
+                      <span>Adults ({formData.numAdults} × {formatCurrency(pricePerPerson, currency)})</span>
                       <span>{formatCurrency(adultTotal, currency)}</span>
                     </div>
                     {formData.numChildren > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span>
-                          Children ({formData.numChildren} x {formatCurrency(childPrice, currency)})
-                        </span>
+                        <span>Children ({formData.numChildren} × {formatCurrency(childPrice, currency)})</span>
                         <span>{formatCurrency(childTotal, currency)}</span>
                       </div>
                     )}
@@ -498,7 +578,6 @@ export default function BookExperiencePage() {
                     </div>
                   </div>
 
-                  {/* Trust Badges */}
                   <div className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
                     <Shield className="h-4 w-4 text-primary" />
                     <span>Secure booking with instant confirmation</span>

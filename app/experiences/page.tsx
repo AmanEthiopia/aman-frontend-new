@@ -134,8 +134,14 @@ function ExperiencesContent() {
                         isFeatured={false}
                         tags={[
                           CATEGORY_LABELS[pkg.category] || pkg.category,
-                          `${pkg.duration_days} days`
-                        ].filter(Boolean)}
+                          `${pkg.duration_days} days`,
+                          pkg.next_departure
+                            ? `Next: ${new Date(pkg.next_departure.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                            : null,
+                          pkg.next_departure && pkg.next_departure.available_seats <= 3
+                            ? `${pkg.next_departure.available_seats} seats left`
+                            : null,
+                        ].filter(Boolean) as string[]}
                       />
                     ))}
                   </div>

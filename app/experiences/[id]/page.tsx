@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getExperienceBySlug, type Package, type PackageDay, type PackageDayItem } from "@/lib/api/experiences"
+import { getExperienceBySlug, type Package, type PackageDay, type PackageDayItem, type Departure } from "@/lib/api/experiences"
 import { APIError } from "@/lib/api/client"
 import { getMediaUrl } from "@/lib/utils/media"
 import {
@@ -21,7 +21,6 @@ import {
   Share2,
   AlertCircle,
   Clock,
-  DollarSign,
   Users,
   Star,
   Calendar,
@@ -34,12 +33,13 @@ import {
   Globe,
   ChevronRight,
   Backpack,
+  CalendarDays,
+  AlertTriangle,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
-import { ContactDialog } from "@/components/messaging/contact-dialog"
 import { formatRating } from "@/lib/utils"
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -155,6 +155,83 @@ function ItineraryDay({ day, dayNumber }: { day: PackageDay; dayNumber: number }
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function DepartureSelector({ pkg }: { pkg: Package }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  const departures = pkg.departures ?? []
+  const selected = departures.find((d) => d.id === selectedId) ?? null
+
+  function formatDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  }
+
+  return (
+    <div className="space-y-3">
+      {departures.length === 0 ? (
+        <div className="rounded-lg border border-dashed p-6 text-center">
+          <CalendarDays className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+          <p className="font-medium text-muted-foreground">No upcoming dates</p>
+          <p className="text-sm text-muted-foreground">Check back later for new departures</p>
+        </div>
+      ) : (
+        <>
+          <p className="text-sm font-medium text-muted-foreground">Select a departure date</p>
+          <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+            {departures.map((dep) => {
+              const full = dep.available_seats === 0
+              const urgent = dep.available_seats > 0 && dep.available_seats <= 3
+              const isSelected = selectedId === dep.id
+
+              return (
+                <button
+                  key={dep.id}
+                  disabled={full}
+                  onClick={() => setSelectedId(isSelected ? null : dep.id)}
+                  className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                    full
+                      ? "cursor-not-allowed opacity-50"
+                      : isSelected
+                      ? "border-primary bg-primary/5"
+                      : "hover:border-primary/50 hover:bg-muted/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">
+                        {formatDate(dep.start_date)} – {formatDate(dep.end_date)}
+                      </p>
+                    </div>
+                    {full ? (
+                      <Badge variant="secondary" className="text-xs">Fully Booked</Badge>
+                    ) : urgent ? (
+                      <Badge variant="destructive" className="text-xs">
+                        <AlertTriangle className="mr-1 h-3 w-3" />
+                        {dep.available_seats} left
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                        {dep.available_seats} seats
+                      </Badge>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          <Link
+            href={selected ? `/book/experience/${pkg.slug}?departure=${selected.id}` : "#"}
+            onClick={(e) => !selected && e.preventDefault()}
+          >
+            <Button className="w-full" size="lg" disabled={!selected}>
+              {selected ? "Book This Departure" : "Select a Date"}
+            </Button>
+          </Link>
+        </>
+      )}
     </div>
   )
 }
@@ -513,26 +590,36 @@ export default function ExperienceDetailPage() {
                     )}
                   </div>
 
-                  <div className="mb-6 space-y-3 border-t pt-4">
-                    <div className="flex items-center justify-between text-sm">
+                  <div className="mb-4 space-y-2 border-t pt-4 text-sm">
+                    <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Duration</span>
                       <span className="font-medium">{pkg.duration_days} Days</span>
                     </div>
                     {pkg.max_group_size && (
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Max Group</span>
                         <span className="font-medium">{pkg.max_group_size} people</span>
                       </div>
                     )}
                     {pkg.languages && pkg.languages.length > 0 && (
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Languages</span>
                         <span className="font-medium">{pkg.languages.join(", ")}</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex gap-2 mb-4">
+                  <div className="border-t pt-4 mb-4">
+                    <DepartureSelector pkg={pkg} />
+                  </div>
+
+                  {!pkg.payment_required && (
+                    <p className="text-center text-xs text-muted-foreground mb-3">
+                      No upfront payment required
+                    </p>
+                  )}
+
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="icon"
@@ -540,38 +627,21 @@ export default function ExperienceDetailPage() {
                     >
                       <Heart className={`h-4 w-4 ${isSaved ? "fill-current text-red-500" : ""}`} />
                     </Button>
-<Button variant="outline" size="icon">
-<Share2 className="h-4 w-4" />
-</Button>
-<AddToItineraryButton
-  itemType="experience"
-  itemId={pkg.id}
-  itemName={pkg.title}
-/>
-</div>
+                    <Button variant="outline" size="icon">
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                    <AddToItineraryButton
+                      itemType="experience"
+                      itemId={pkg.id}
+                      itemName={pkg.title}
+                    />
+                  </div>
 
-<Link href={`/book/experience/${pkg.slug}`}>
-                    <Button className="w-full" size="lg">
-                      Book Now
+                  <Link href="/messages" className="block mt-3">
+                    <Button variant="outline" size="sm" className="w-full">
+                      Ask a Question
                     </Button>
                   </Link>
-
-                  {!pkg.payment_required && (
-                    <p className="mt-2 text-center text-xs text-muted-foreground">
-                      No upfront payment required
-                    </p>
-                  )}
-                  
-                  <ContactDialog
-                    contextType="experience"
-                    contextId={pkg.id}
-                    contextName={pkg.title}
-                    trigger={
-                      <Button variant="outline" size="lg" className="w-full mt-3">
-                        Ask a Question
-                      </Button>
-                    }
-                  />
                 </CardContent>
               </Card>
             </div>

@@ -88,6 +88,16 @@ export interface PackageDay {
   items: PackageDayItem[]
 }
 
+export interface Departure {
+  id: string
+  start_date: string
+  end_date: string
+  max_seats: number
+  available_seats: number
+  is_active: boolean
+  notes?: string
+}
+
 export interface PackageOrganizer {
   id: string
   name: string
@@ -123,6 +133,8 @@ export interface Package {
   photos?: PackagePhoto[]
   cities?: PackageCity[]
   days?: PackageDay[]
+  next_departure?: Departure        // list view: nearest upcoming departure
+  departures?: Departure[]          // detail view: all upcoming active departures
   created_at?: string
   updated_at?: string
 }
@@ -243,7 +255,7 @@ export async function getFeaturedExperiences(): Promise<Package[]> {
 
 export interface PackageBookingRequest {
   package_id: string
-  start_date: string
+  departure_id: string
   num_adults: number
   num_children?: number
   guest_name: string
@@ -268,7 +280,7 @@ export interface PackageBookingResponse {
       price_per_person: string
       currency: string
     }
-    start_date: string
+    departure?: Departure
     num_adults: number
     num_children: number
     total_price: string
@@ -302,7 +314,7 @@ export interface PackageBooking {
     currency: string
     primary_photo_url?: string
   }
-  start_date: string
+  departure?: Departure
   num_adults: number
   num_children: number
   total_price: string
@@ -498,6 +510,41 @@ export async function updatePackageDayItem(
 
 export async function deletePackageDayItem(packageId: string, dayId: string, itemId: string): Promise<void> {
   await apiDelete(`/experiences/provider/${packageId}/days/${dayId}/items/${itemId}/`)
+}
+
+// ============================================================================
+// Provider Departure Management
+// ============================================================================
+
+export interface CreateDepartureRequest {
+  start_date: string
+  end_date: string
+  max_seats: number
+  is_active?: boolean
+  notes?: string
+}
+
+export async function getPackageDepartures(packageId: string): Promise<Departure[]> {
+  const r = await apiGet<Departure[] | { results: Departure[] }>(
+    `/experiences/provider/${packageId}/departures/`
+  )
+  return Array.isArray(r) ? r : r?.results ?? []
+}
+
+export async function createDeparture(packageId: string, data: CreateDepartureRequest): Promise<Departure> {
+  return apiPost<Departure>(`/experiences/provider/${packageId}/departures/`, data)
+}
+
+export async function updateDeparture(
+  packageId: string,
+  departureId: string,
+  data: Partial<CreateDepartureRequest>
+): Promise<Departure> {
+  return apiPatch<Departure>(`/experiences/provider/${packageId}/departures/${departureId}/`, data)
+}
+
+export async function deleteDeparture(packageId: string, departureId: string): Promise<void> {
+  await apiDelete(`/experiences/provider/${packageId}/departures/${departureId}/`)
 }
 
 // ============================================================================

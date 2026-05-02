@@ -732,9 +732,22 @@ export default function RestaurantDetailPage() {
 
             {/* Right sidebar */}
             <div className="space-y-6">
-              {/* Reservation form */}
+              {/* Reservation form — shown unless explicitly disabled */}
               {restaurant.accepts_reservations !== false && (
                 <ReservationForm restaurant={restaurant} />
+              )}
+              {restaurant.accepts_reservations === false && (
+                <Card>
+                  <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+                    <CalendarCheck className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                    This restaurant does not accept online reservations. Please call to book.
+                    {restaurant.phone && (
+                      <a href={`tel:${restaurant.phone}`} className="mt-2 block font-medium text-primary hover:underline">
+                        {restaurant.phone}
+                      </a>
+                    )}
+                  </CardContent>
+                </Card>
               )}
 
               {/* Contact */}
