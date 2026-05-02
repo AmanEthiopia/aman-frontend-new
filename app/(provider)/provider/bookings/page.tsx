@@ -16,13 +16,20 @@ import {
   Map,
   MessageSquare,
   Phone,
+  Plus,
+  BedDouble,
+  Minus,
+  User,
+  Mail,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Textarea } from "@/components/ui/textarea"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +45,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { toast } from "sonner"
 import {
   getAllProviderBookings,
@@ -50,10 +63,16 @@ import {
   rejectPackageBooking,
   confirmDriverBooking,
   rejectDriverBooking,
+  createManualHotelBooking,
   type NormalizedBooking,
   type BookingStatus,
   type BookingServiceType,
+  type HotelBooking,
+  type BookingRoomAssignment,
 } from "@/lib/api/bookings"
+import { getMyHotels } from "@/lib/api/provider"
+import { getHotelRooms } from "@/lib/api/hotels"
+import type { Room } from "@/lib/types"
 
 // ============================================================================
 // Status config
@@ -100,7 +119,7 @@ function timeAgo(date: string) {
 // Confirm / Reject router
 // ============================================================================
 
-async function confirmBooking(b: NormalizedBooking): Promise<void> {
+async function confirmBookingDefault(b: NormalizedBooking): Promise<void> {
   if (b.service_type === "hotel")      await confirmHotelBooking(b.id)
   else if (b.service_type === "restaurant") await confirmRestaurantReservation(b.id)
   else if (b.service_type === "trip")  await confirmPackageBooking(b.id)
@@ -115,7 +134,7 @@ async function rejectBooking(b: NormalizedBooking, reason?: string): Promise<voi
 }
 
 // ============================================================================
-// Booking Detail Modal
+// Booking Detail Modal (with unit assignment for hotel bookings)
 // ============================================================================
 
 function BookingDetailModal({
@@ -129,12 +148,38 @@ function BookingDetailModal({
   booking: NormalizedBooking | null
   open: boolean
   onClose: () => void
-  onConfirm: () => void
+  onConfirm: (assignments?: BookingRoomAssignment[]) => void
   onReject: (reason?: string) => void
   isLoading: boolean
 }) {
   const [rejectReason, setRejectReason] = useState("")
   const [showRejectForm, setShowRejectForm] = useState(false)
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [roomsLoading, setRoomsLoading] = useState(false)
+  // assignments: booking_room_id → selected unit_ids
+  const [assignments, setAssignments] = useState<Record<string, string[]>>({})
+
+  const hotelBooking = booking?.service_type === "hotel" ? (booking.raw as HotelBooking) : null
+
+  useEffect(() => {
+    if (!open) {
+      setShowRejectForm(false)
+      setRejectReason("")
+      setAssignments({})
+      setRooms([])
+      return
+    }
+    if (hotelBooking?.hotel?.id && hotelBooking.check_in_date && hotelBooking.check_out_date) {
+      setRoomsLoading(true)
+      getHotelRooms(hotelBooking.hotel.id, {
+        check_in: hotelBooking.check_in_date,
+        check_out: hotelBooking.check_out_date,
+      })
+        .then(setRooms)
+        .catch(() => setRooms([]))
+        .finally(() => setRoomsLoading(false))
+    }
+  }, [open, hotelBooking?.hotel?.id, hotelBooking?.check_in_date, hotelBooking?.check_out_date])
 
   if (!booking) return null
   const status = statusConfig[booking.status] ?? statusConfig.pending
@@ -146,9 +191,30 @@ function BookingDetailModal({
     onClose()
   }
 
+  const handleConfirm = () => {
+    if (booking.service_type === "hotel") {
+      const assignmentList: BookingRoomAssignment[] = Object.entries(assignments)
+        .filter(([, ids]) => ids.length > 0)
+        .map(([booking_room_id, unit_ids]) => ({ booking_room_id, unit_ids }))
+      onConfirm(assignmentList.length > 0 ? assignmentList : undefined)
+    } else {
+      onConfirm()
+    }
+  }
+
+  const toggleUnit = (bookingRoomId: string, unitId: string) => {
+    setAssignments((prev) => {
+      const current = prev[bookingRoomId] ?? []
+      const next = current.includes(unitId)
+        ? current.filter((id) => id !== unitId)
+        : [...current, unitId]
+      return { ...prev, [bookingRoomId]: next }
+    })
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Icon className="h-5 w-5" />
@@ -158,9 +224,12 @@ function BookingDetailModal({
         </DialogHeader>
 
         <div className="space-y-5 py-3">
-          {/* Status */}
-          <div className="flex items-center gap-2">
+          {/* Status + Source badges */}
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant={status.variant}>{status.label}</Badge>
+            {hotelBooking?.source === "manual" && (
+              <Badge className="bg-amber-100 text-amber-800 border-amber-200">Walk-in</Badge>
+            )}
           </div>
 
           {/* Guest */}
@@ -207,6 +276,68 @@ function BookingDetailModal({
             </div>
           </div>
 
+          {/* Hotel room breakdown */}
+          {(hotelBooking?.rooms?.length ?? 0) > 0 && (
+            <div className="rounded-lg border p-3 space-y-2">
+              <p className="text-sm font-medium">Rooms Requested</p>
+              {hotelBooking!.rooms.map((br) => (
+                <div key={br.id} className="text-sm">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{br.room_name} × {br.quantity}</span>
+                    <span>${br.subtotal}</span>
+                  </div>
+                  {br.assigned_unit_numbers && br.assigned_unit_numbers.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {br.assigned_unit_numbers.map((u) => (
+                        <Badge key={u} variant="secondary" className="text-xs">{u}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Unit assignment for pending hotel bookings */}
+          {booking.status === "pending" && hotelBooking && !showRejectForm && (
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium">Assign Room Numbers (Optional)</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Select specific room units to assign to this booking</p>
+              </div>
+              {roomsLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {(hotelBooking.rooms ?? []).map((br) => {
+                const room = rooms.find((r) => r.id === br.room_id)
+                if (!room?.units?.length) return null
+                const selectedIds = assignments[br.id] ?? []
+                return (
+                  <div key={br.id} className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">{br.room_name} — pick {br.quantity}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {room.units.filter((u) => u.is_active).map((unit) => {
+                        const isSelected = selectedIds.includes(unit.id)
+                        return (
+                          <button
+                            key={unit.id}
+                            type="button"
+                            onClick={() => toggleUnit(br.id, unit.id)}
+                            className={`rounded border px-2 py-0.5 text-xs transition-colors ${
+                              isSelected
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border hover:bg-muted"
+                            }`}
+                          >
+                            {unit.label || unit.unit_number}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           {booking.special_requests && (
             <div className="rounded-lg border p-3">
               <p className="text-sm font-medium">Special Requests</p>
@@ -233,7 +364,7 @@ function BookingDetailModal({
                 <XCircle className="mr-2 h-4 w-4" />
                 Reject
               </Button>
-              <Button onClick={onConfirm} disabled={isLoading}>
+              <Button onClick={handleConfirm} disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
                 Confirm
               </Button>
@@ -258,6 +389,235 @@ function BookingDetailModal({
 }
 
 // ============================================================================
+// Walk-in Booking Modal
+// ============================================================================
+
+function WalkInBookingModal({
+  open,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [hotels, setHotels] = useState<any[]>([])
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [hotelsLoading, setHotelsLoading] = useState(true)
+  const [roomsLoading, setRoomsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedHotelId, setSelectedHotelId] = useState("")
+  const [selectedRooms, setSelectedRooms] = useState<Record<string, number>>({})
+  const [formData, setFormData] = useState({
+    checkIn: "",
+    checkOut: "",
+    guestName: "",
+    guestEmail: "",
+    guestPhone: "",
+    numAdults: 1,
+    numChildren: 0,
+    notes: "",
+  })
+
+  useEffect(() => {
+    if (!open) return
+    setHotelsLoading(true)
+    getMyHotels({})
+      .then((res) => setHotels(Array.isArray(res) ? res : (res as any)?.results ?? []))
+      .catch(() => setHotels([]))
+      .finally(() => setHotelsLoading(false))
+  }, [open])
+
+  useEffect(() => {
+    if (!selectedHotelId) { setRooms([]); return }
+    setRoomsLoading(true)
+    getHotelRooms(selectedHotelId, formData.checkIn && formData.checkOut ? { check_in: formData.checkIn, check_out: formData.checkOut } : undefined)
+      .then(setRooms)
+      .catch(() => setRooms([]))
+      .finally(() => setRoomsLoading(false))
+  }, [selectedHotelId, formData.checkIn, formData.checkOut])
+
+  const setRoomQty = (roomId: string, delta: number) => {
+    setSelectedRooms((prev) => {
+      const current = prev[roomId] ?? 0
+      const room = rooms.find((r) => r.id === roomId)
+      const maxAvail = room?.available_units ?? room?.total_units ?? 99
+      const next = Math.max(0, Math.min(current + delta, maxAvail))
+      if (next === 0) {
+        const { [roomId]: _, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [roomId]: next }
+    })
+  }
+
+  const roomsPayload = Object.entries(selectedRooms)
+    .filter(([, qty]) => qty > 0)
+    .map(([room_id, quantity]) => ({ room_id, quantity }))
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedHotelId || roomsPayload.length === 0) {
+      toast.error("Select a hotel and at least one room")
+      return
+    }
+    if (!formData.checkIn || !formData.checkOut || formData.checkOut <= formData.checkIn) {
+      toast.error("Select valid check-in and check-out dates")
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      await createManualHotelBooking({
+        hotel_id: selectedHotelId,
+        check_in_date: formData.checkIn,
+        check_out_date: formData.checkOut,
+        rooms: roomsPayload,
+        num_adults: formData.numAdults,
+        num_children: formData.numChildren || undefined,
+        guest_name: formData.guestName,
+        guest_email: formData.guestEmail,
+        guest_phone: formData.guestPhone || undefined,
+        special_requests: formData.notes || undefined,
+      })
+      toast.success("Walk-in booking created")
+      onSuccess()
+      onClose()
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create booking")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const today = new Date().toISOString().split("T")[0]
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Plus className="h-5 w-5" />
+            Walk-in Booking
+          </DialogTitle>
+          <DialogDescription>Create a manual booking for an in-person guest</DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-5 py-2">
+          {/* Hotel selection */}
+          <div className="space-y-2">
+            <Label>Hotel *</Label>
+            {hotelsLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading hotels...
+              </div>
+            ) : (
+              <Select value={selectedHotelId} onValueChange={(v) => { setSelectedHotelId(v); setSelectedRooms({}) }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a hotel" />
+                </SelectTrigger>
+                <SelectContent>
+                  {hotels.map((h) => (
+                    <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Check-in *</Label>
+              <Input type="date" min={today} value={formData.checkIn} onChange={(e) => setFormData((p) => ({ ...p, checkIn: e.target.value }))} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Check-out *</Label>
+              <Input type="date" min={formData.checkIn || today} value={formData.checkOut} onChange={(e) => setFormData((p) => ({ ...p, checkOut: e.target.value }))} required />
+            </div>
+          </div>
+
+          {/* Room selection */}
+          {selectedHotelId && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                Rooms *
+                {roomsLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+              </Label>
+              {rooms.length === 0 && !roomsLoading && (
+                <p className="text-sm text-muted-foreground">No rooms found for this hotel.</p>
+              )}
+              {rooms.map((room) => {
+                const qty = selectedRooms[room.id] ?? 0
+                const maxQty = room.available_units ?? room.total_units ?? 99
+                return (
+                  <div key={room.id} className={`flex items-center justify-between rounded-lg border p-3 ${qty > 0 ? "border-primary bg-primary/5" : ""}`}>
+                    <div>
+                      <p className="text-sm font-medium">{room.name}</p>
+                      <p className="text-xs text-muted-foreground">${room.price_per_night}/night · {room.max_guests} guests max</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => setRoomQty(room.id, -1)} disabled={qty === 0} className="flex h-7 w-7 items-center justify-center rounded-full border disabled:opacity-40 hover:bg-muted">
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="w-5 text-center text-sm font-semibold">{qty}</span>
+                      <button type="button" onClick={() => setRoomQty(room.id, 1)} disabled={qty >= maxQty} className="flex h-7 w-7 items-center justify-center rounded-full border bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90">
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Guest info */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Guest Name *</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input className="pl-10" placeholder="Full name" value={formData.guestName} onChange={(e) => setFormData((p) => ({ ...p, guestName: e.target.value }))} required />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input className="pl-10" type="email" placeholder="guest@example.com" value={formData.guestEmail} onChange={(e) => setFormData((p) => ({ ...p, guestEmail: e.target.value }))} required />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input placeholder="+251 91 ..." value={formData.guestPhone} onChange={(e) => setFormData((p) => ({ ...p, guestPhone: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Adults *</Label>
+              <Input type="number" min={1} max={20} value={formData.numAdults} onChange={(e) => setFormData((p) => ({ ...p, numAdults: Number(e.target.value) }))} required />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Notes</Label>
+            <Textarea placeholder="Any notes about this booking..." value={formData.notes} onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))} rows={2} />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting || roomsPayload.length === 0}>
+              {isSubmitting ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
+              ) : (
+                <><Plus className="mr-2 h-4 w-4" />Create Booking</>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ============================================================================
 // Booking row
 // ============================================================================
 
@@ -276,6 +636,7 @@ function BookingRow({
 }) {
   const status = statusConfig[booking.status] ?? statusConfig.pending
   const Icon = serviceIcons[booking.service_type]
+  const isManual = (booking.raw as HotelBooking).source === "manual"
 
   return (
     <Card>
@@ -289,6 +650,9 @@ function BookingRow({
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold">{booking.guest_name}</span>
                 <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
+                {isManual && (
+                  <Badge className="text-xs bg-amber-100 text-amber-800 border-amber-200">Walk-in</Badge>
+                )}
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Icon className="h-4 w-4" />
@@ -368,6 +732,7 @@ export default function ProviderBookingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [selectedBooking, setSelectedBooking] = useState<NormalizedBooking | null>(null)
+  const [showWalkIn, setShowWalkIn] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [serviceFilter, setServiceFilter] = useState<"all" | BookingServiceType>("all")
 
@@ -406,10 +771,14 @@ export default function ProviderBookingsPage() {
   const confirmed = filtered.filter((b) => b.status === "confirmed")
   const past      = filtered.filter((b) => ["completed", "cancelled", "rejected", "no_show"].includes(b.status))
 
-  const handleConfirm = async (booking: NormalizedBooking) => {
+  const handleConfirm = async (booking: NormalizedBooking, assignments?: BookingRoomAssignment[]) => {
     setActionLoading(booking.id)
     try {
-      await confirmBooking(booking)
+      if (booking.service_type === "hotel") {
+        await confirmHotelBooking(booking.id, assignments)
+      } else {
+        await confirmBookingDefault(booking)
+      }
       toast.success("Booking confirmed")
       await loadBookings()
     } catch {
@@ -444,15 +813,21 @@ export default function ProviderBookingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold">Bookings</h1>
           <p className="text-muted-foreground">Manage reservations across all your services</p>
         </div>
-        <Button variant="outline" onClick={loadBookings}>
-          <Clock className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowWalkIn(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Walk-in Booking
+          </Button>
+          <Button variant="outline" onClick={loadBookings}>
+            <Clock className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Search & Filter */}
@@ -505,7 +880,7 @@ export default function ProviderBookingsPage() {
                 key={b.id}
                 booking={b}
                 onViewDetails={() => setSelectedBooking(b)}
-                onConfirm={() => handleConfirm(b)}
+                onConfirm={() => b.service_type === "hotel" ? setSelectedBooking(b) : handleConfirm(b)}
                 onReject={() => setSelectedBooking(b)}
                 isLoading={actionLoading === b.id}
               />
@@ -566,9 +941,15 @@ export default function ProviderBookingsPage() {
         booking={selectedBooking}
         open={!!selectedBooking}
         onClose={() => setSelectedBooking(null)}
-        onConfirm={() => selectedBooking && handleConfirm(selectedBooking)}
+        onConfirm={(assignments) => selectedBooking && handleConfirm(selectedBooking, assignments)}
         onReject={(reason) => selectedBooking && handleReject(selectedBooking, reason)}
         isLoading={actionLoading === selectedBooking?.id}
+      />
+
+      <WalkInBookingModal
+        open={showWalkIn}
+        onClose={() => setShowWalkIn(false)}
+        onSuccess={loadBookings}
       />
     </div>
   )

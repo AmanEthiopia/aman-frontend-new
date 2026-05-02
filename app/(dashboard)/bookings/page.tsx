@@ -119,7 +119,7 @@ function getBookingEndDate(booking: Booking): Date {
       return new Date(booking.reservation_date)
     case "package": {
       const start = new Date(booking.start_date)
-      start.setDate(start.getDate() + booking.package.duration_days)
+      start.setDate(start.getDate() + (booking.package?.duration_days ?? 1))
       return start
     }
     case "transport":
@@ -130,12 +130,16 @@ function getBookingEndDate(booking: Booking): Date {
 }
 
 function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCancel: () => void }) {
-  if (!booking.hotel) return null
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const checkIn = new Date(booking.check_in_date)
   const checkOut = new Date(booking.check_out_date)
   const isPast = checkOut < new Date()
+
+  // hotel object may not be populated by the backend — use safe access throughout
+  const hotelName = booking.hotel?.name ?? `Booking #${booking.booking_number}`
+  const hotelAddress = booking.hotel?.address
+  const hotelCover = booking.hotel?.cover_photo_url
 
   return (
     <Card className={isPast ? "opacity-75" : ""}>
@@ -143,8 +147,8 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCanc
         <div className="flex flex-col sm:flex-row">
           <div className="relative h-32 w-full sm:h-auto sm:w-40">
             <Image
-              src={getMediaUrl(booking.hotel.cover_photo_url) || "/placeholder.svg?height=160&width=160"}
-              alt={booking.hotel.name}
+              src={getMediaUrl(hotelCover) || "/placeholder.svg?height=160&width=160"}
+              alt={hotelName}
               fill
               className="object-cover sm:rounded-l-lg"
             />
@@ -158,14 +162,16 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCanc
             <div>
               <div className="mb-2 flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold">{booking.hotel.name}</h3>
-                  {booking.hotel.nickname && (
+                  <h3 className="font-semibold">{hotelName}</h3>
+                  {booking.hotel?.nickname && (
                     <span className="text-sm text-muted-foreground">{booking.hotel.nickname}</span>
                   )}
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-3 w-3" />
-                    {booking.hotel.address}
-                  </div>
+                  {hotelAddress && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <MapPin className="h-3 w-3" />
+                      {hotelAddress}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <Badge variant={status.variant} className="gap-1">
@@ -199,13 +205,19 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCanc
                 </div>
               </div>
 
-              {booking.rooms.length > 0 && (
-                <div className="mt-2 text-sm text-muted-foreground">
-                  {booking.rooms.map((room, idx) => (
-                    <span key={room.id}>
-                      {idx > 0 && ", "}
-                      {room.quantity}x {room.room_name}
-                    </span>
+              {(booking.rooms?.length ?? 0) > 0 && (
+                <div className="mt-2 text-sm text-muted-foreground space-y-1">
+                  {booking.rooms.map((room) => (
+                    <div key={room.id}>
+                      <span>{room.quantity}× {room.room_name}</span>
+                      {room.assigned_unit_numbers && room.assigned_unit_numbers.length > 0 && (
+                        <span className="ml-2 inline-flex flex-wrap gap-1">
+                          {room.assigned_unit_numbers.map((u) => (
+                            <span key={u} className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium">Room {u}</span>
+                          ))}
+                        </span>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -264,11 +276,14 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCanc
 }
 
 function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantReservation; onCancel: () => void }) {
-  if (!booking.restaurant) return null
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const reservationDate = new Date(booking.reservation_date)
   const isPast = reservationDate < new Date()
+
+  const restaurantName = booking.restaurant?.name ?? `Reservation #${booking.reservation_number}`
+  const restaurantAddress = booking.restaurant?.address
+  const restaurantCover = booking.restaurant?.cover_photo_url
 
   return (
     <Card className={isPast ? "opacity-75" : ""}>
@@ -276,8 +291,8 @@ function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantR
         <div className="flex flex-col sm:flex-row">
           <div className="relative h-32 w-full sm:h-auto sm:w-40">
             <Image
-              src={getMediaUrl(booking.restaurant.cover_photo_url) || "/placeholder.svg?height=160&width=160"}
-              alt={booking.restaurant.name}
+              src={getMediaUrl(restaurantCover) || "/placeholder.svg?height=160&width=160"}
+              alt={restaurantName}
               fill
               className="object-cover sm:rounded-l-lg"
             />
@@ -291,14 +306,16 @@ function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantR
             <div>
               <div className="mb-2 flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold">{booking.restaurant.name}</h3>
-                  {booking.restaurant.nickname && (
+                  <h3 className="font-semibold">{restaurantName}</h3>
+                  {booking.restaurant?.nickname && (
                     <span className="text-sm text-muted-foreground">{booking.restaurant.nickname}</span>
                   )}
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-3 w-3" />
-                    {booking.restaurant.address}
-                  </div>
+                  {restaurantAddress && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <MapPin className="h-3 w-3" />
+                      {restaurantAddress}
+                    </div>
+                  )}
                 </div>
                 <Badge variant={status.variant} className="gap-1">
                   <StatusIcon className="h-3 w-3" />
@@ -363,13 +380,15 @@ function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantR
 }
 
 function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; onCancel: () => void }) {
-  if (!booking.package) return null
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const startDate = new Date(booking.start_date)
   const endDate = new Date(startDate)
-  endDate.setDate(endDate.getDate() + booking.package.duration_days - 1)
+  endDate.setDate(endDate.getDate() + (booking.package?.duration_days ?? 1) - 1)
   const isPast = endDate < new Date()
+
+  const packageTitle = booking.package?.title ?? `Booking #${booking.booking_number}`
+  const packageCover = booking.package?.cover_photo_url
 
   return (
     <Card className={isPast ? "opacity-75" : ""}>
@@ -377,8 +396,8 @@ function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; on
         <div className="flex flex-col sm:flex-row">
           <div className="relative h-32 w-full sm:h-auto sm:w-40">
             <Image
-              src={getMediaUrl(booking.package.cover_photo_url) || "/placeholder.svg?height=160&width=160"}
-              alt={booking.package.title}
+              src={getMediaUrl(packageCover) || "/placeholder.svg?height=160&width=160"}
+              alt={packageTitle}
               fill
               className="object-cover sm:rounded-l-lg"
             />
@@ -392,8 +411,8 @@ function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; on
             <div>
               <div className="mb-2 flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold">{booking.package.title}</h3>
-                  {booking.package.nickname && (
+                  <h3 className="font-semibold">{packageTitle}</h3>
+                  {booking.package?.nickname && (
                     <span className="text-sm text-muted-foreground">{booking.package.nickname}</span>
                   )}
                 </div>
@@ -421,7 +440,7 @@ function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; on
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span>{booking.package.duration_days} days</span>
+                  <span>{booking.package?.duration_days ?? "—"} days</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Users className="h-4 w-4 text-muted-foreground" />
@@ -443,7 +462,7 @@ function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; on
                 <p className="text-lg font-bold">{booking.currency} {parseFloat(booking.total_price).toLocaleString()}</p>
               </div>
               <div className="flex gap-2">
-                <Link href={`/experiences/${booking.package.slug}`}>
+                <Link href={`/experiences/${booking.package?.slug ?? ""}`}>
                   <Button variant="outline" size="sm">
                     View Itinerary
                   </Button>

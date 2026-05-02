@@ -1223,9 +1223,11 @@ export interface MenuItem {
   description?: string
   price: number | string
   currency: string
+  photo_url?: string
   is_available: boolean
   is_popular: boolean
   dietary_tags?: string[]
+  display_order?: number
   created_at?: string
 }
 
@@ -1238,6 +1240,7 @@ export interface CreateMenuItemPayload {
   is_available?: boolean
   is_popular?: boolean
   dietary_tags?: string[]
+  display_order?: number
 }
 
 export async function getMenuItems(restaurantId: string): Promise<MenuItem[]> {
@@ -1247,8 +1250,30 @@ export async function getMenuItems(restaurantId: string): Promise<MenuItem[]> {
   return Array.isArray(r) ? r : r?.results ?? []
 }
 
+export async function getMenuCategories(restaurantId: string): Promise<string[]> {
+  const r = await apiGet<string[] | { results: string[] }>(
+    `/restaurants/provider/${restaurantId}/menu/categories/`
+  )
+  return Array.isArray(r) ? r : r?.results ?? []
+}
+
 export async function createMenuItem(restaurantId: string, payload: CreateMenuItemPayload): Promise<MenuItem> {
   return apiPost<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/`, payload)
+}
+
+export async function createMenuItemWithPhoto(restaurantId: string, payload: CreateMenuItemPayload & { photo?: File }): Promise<MenuItem> {
+  const fd = new FormData()
+  Object.entries(payload).forEach(([k, v]) => {
+    if (v === undefined || v === null) return
+    if (k === "photo" && v instanceof File) {
+      fd.append("photo_url", v)
+    } else if (k === "dietary_tags" && Array.isArray(v)) {
+      v.forEach((tag) => fd.append("dietary_tags", tag))
+    } else {
+      fd.append(k, String(v))
+    }
+  })
+  return apiFetch<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/`, { method: "POST", body: fd })
 }
 
 export async function updateMenuItem(
@@ -1257,6 +1282,19 @@ export async function updateMenuItem(
   payload: Partial<CreateMenuItemPayload>
 ): Promise<MenuItem> {
   return apiPatch<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/${itemId}/`, payload)
+}
+
+export async function uploadMenuItemPhoto(restaurantId: string, itemId: string, file: File): Promise<MenuItem> {
+  const fd = new FormData()
+  fd.append("photo", file)
+  return apiFetch<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/${itemId}/photo/`, { method: "POST", body: fd })
+}
+
+export async function reorderMenuItems(
+  restaurantId: string,
+  items: { id: string; display_order: number }[]
+): Promise<void> {
+  return apiPost(`/restaurants/provider/${restaurantId}/menu/items/reorder/`, { items })
 }
 
 export async function deleteMenuItem(restaurantId: string, itemId: string): Promise<void> {

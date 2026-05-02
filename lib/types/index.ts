@@ -49,31 +49,43 @@ export interface HotelImage {
 export interface Restaurant {
   id: string
   name: string
-  cityId: string
-  city?: City
-  description: string
-  address: string
-  area: string
-  cuisineTypes: string[]
-  priceRange: "budget" | "mid-range" | "luxury"
-  priceMin: number
-  priceMax: number
-  amenities: string[]
-  isVerified: boolean
-  isFeatured: boolean
-  contactPhone: string
-  images: RestaurantImage[]
-  rating: number
-  reviewCount: number
-  openingHours: string
-  safetyScore: number
+  slug: string
+  description?: string
+  address?: string
+  area?: string
+  city_name?: string
+  city?: { id: string; name: string; slug: string }
+  cuisine_types?: string[]
+  price_range?: string
+  price_min?: number
+  price_max?: number
+  average_rating?: string | number
+  review_count?: number
+  cover_photo?: string
+  cover_photo_url?: string
+  is_verified?: boolean
+  is_featured?: boolean
+  is_active?: boolean
+  accepts_reservations?: boolean
+  has_wifi?: boolean
+  has_parking?: boolean
+  delivery_available?: boolean
+  has_dine_in?: boolean
+  has_takeaway?: boolean
+  seating_capacity?: number
+  opening_hours?: Record<string, string>
+  phone?: string
+  email?: string
+  website?: string
+  photos?: RestaurantImage[]
 }
 
 export interface RestaurantImage {
   id: string
-  url: string
-  alt: string
-  isPrimary: boolean
+  url?: string
+  photo_url?: string
+  alt?: string
+  is_primary?: boolean
 }
 
 export interface Transport {
@@ -288,16 +300,27 @@ export interface TrustRecommendation {
   disputeFreeDays: number
 }
 
+export interface RoomUnit {
+  id: string
+  unit_number: string
+  label?: string
+  is_active: boolean
+}
+
 export interface Room {
   id: string
   hotel_id: string
   name: string
   description: string
+  bed_type?: string
   price_per_night: number
   max_guests: number
   amenities: string[]
   images: RoomImage[]
   is_available: boolean
+  total_units?: number
+  available_units?: number | null  // null = no dates; number = with dates; 0 = fully booked
+  units?: RoomUnit[]
 }
 
 export interface RoomImage {

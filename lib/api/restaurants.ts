@@ -1,6 +1,34 @@
 import { apiFetch, apiGet } from "./client"
 import type { Restaurant } from "@/lib/types"
 
+// ============================================================================
+// Public Menu Types
+// ============================================================================
+
+export interface PublicMenuItem {
+  id: string
+  category: string
+  name: string
+  description?: string
+  price: string
+  currency: string
+  photo_url?: string
+  is_available: boolean
+  is_popular: boolean
+  dietary_tags?: string[]
+  display_order: number
+}
+
+export interface MenuCategory {
+  category: string
+  items: PublicMenuItem[]
+}
+
+export interface RestaurantMenu {
+  restaurant_slug: string
+  categories: MenuCategory[]
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.aman.yichalal.ai/api/v1"
 
 export interface RestaurantFilters {
@@ -100,4 +128,12 @@ export async function getRestaurantById(idOrSlug: string): Promise<Restaurant> {
  */
 export async function getFeaturedRestaurants(): Promise<Restaurant[]> {
   return getRestaurants({ page_size: 6 })
+}
+
+/**
+ * Get restaurant menu grouped by category
+ */
+export async function getRestaurantMenu(slug: string, showUnavailable = false): Promise<RestaurantMenu> {
+  const params = showUnavailable ? "?show_unavailable=true" : ""
+  return apiFetch<RestaurantMenu>(`/restaurants/${slug}/menu/${params}`)
 }

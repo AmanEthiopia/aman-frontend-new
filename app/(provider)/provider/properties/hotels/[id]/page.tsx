@@ -32,7 +32,10 @@ import {
   ImagePlus,
   ChevronUp,
   ChevronDown,
+  Hash,
 } from "lucide-react"
+import { getRoomUnits, createRoomUnit, updateRoomUnit, deleteRoomUnit } from "@/lib/api/hotels"
+import type { RoomUnit } from "@/lib/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -96,6 +99,165 @@ const ROOM_AMENITIES = [
   "Coffee Maker",
 ]
 
+
+function RoomUnitsSection({ hotelId, roomId }: { hotelId: string; roomId: string }) {
+  const [units, setUnits] = useState<RoomUnit[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const [isAdding, setIsAdding] = useState(false)
+  const [newUnitNumber, setNewUnitNumber] = useState("")
+  const [newUnitLabel, setNewUnitLabel] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+
+  async function loadUnits() {
+    setIsLoading(true)
+    try {
+      const data = await getRoomUnits(hotelId, roomId)
+      setUnits(data)
+    } catch {
+      toast.error("Failed to load room units")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function handleToggle() {
+    if (!isOpen) loadUnits()
+    setIsOpen((v) => !v)
+  }
+
+  async function handleAdd() {
+    if (!newUnitNumber.trim()) return
+    setIsSaving(true)
+    try {
+      const unit = await createRoomUnit(hotelId, roomId, {
+        unit_number: newUnitNumber.trim(),
+        label: newUnitLabel.trim() || undefined,
+        is_active: true,
+      })
+      setUnits((p) => [...p, unit])
+      setNewUnitNumber("")
+      setNewUnitLabel("")
+      setIsAdding(false)
+      toast.success("Room unit added")
+    } catch {
+      toast.error("Failed to add room unit")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function handleToggleActive(unit: RoomUnit) {
+    try {
+      const updated = await updateRoomUnit(hotelId, roomId, unit.id, { is_active: !unit.is_active })
+      setUnits((p) => p.map((u) => (u.id === unit.id ? updated : u)))
+    } catch {
+      toast.error("Failed to update unit")
+    }
+  }
+
+  async function handleDelete(unitId: string) {
+    try {
+      await deleteRoomUnit(hotelId, roomId, unitId)
+      setUnits((p) => p.filter((u) => u.id !== unitId))
+      toast.success("Unit removed")
+    } catch {
+      toast.error("Failed to delete unit")
+    }
+  }
+
+  return (
+    <div className="mt-3 border-t pt-3">
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        <Hash className="h-4 w-4" />
+        Room Units {units.length > 0 ? `(${units.length})` : ""}
+        <span className="ml-1 text-xs">{isOpen ? "▲" : "▼"}</span>
+      </button>
+
+      {isOpen && (
+        <div className="mt-3 space-y-3">
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : (
+            <>
+              {units.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {units.map((unit) => (
+                    <div
+                      key={unit.id}
+                      className={`group flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
+                        unit.is_active ? "border-border bg-background" : "border-border/50 bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      <span className="font-medium">{unit.label || unit.unit_number}</span>
+                      {unit.label && <span className="text-muted-foreground">#{unit.unit_number}</span>}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleActive(unit)}
+                        title={unit.is_active ? "Mark inactive" : "Mark active"}
+                        className="ml-0.5 text-muted-foreground hover:text-foreground"
+                      >
+                        {unit.is_active ? (
+                          <CheckCircle2 className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <XCircle className="h-3 w-3" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(unit.id)}
+                        className="ml-0.5 hidden text-muted-foreground hover:text-destructive group-hover:inline"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No room units added. Add physical room numbers to enable unit-level availability tracking.</p>
+              )}
+
+              {isAdding ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Input
+                    placeholder="Room # (e.g. 101)"
+                    value={newUnitNumber}
+                    onChange={(e) => setNewUnitNumber(e.target.value)}
+                    className="h-8 w-28 text-sm"
+                  />
+                  <Input
+                    placeholder="Label (optional)"
+                    value={newUnitLabel}
+                    onChange={(e) => setNewUnitLabel(e.target.value)}
+                    className="h-8 w-36 text-sm"
+                  />
+                  <Button type="button" size="sm" onClick={handleAdd} disabled={isSaving || !newUnitNumber.trim()}>
+                    {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setIsAdding(false)}>Cancel</Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAdding(true)}
+                >
+                  <Plus className="mr-1.5 h-3 w-3" />
+                  Add Unit
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function RoomPhotosSection({ hotelId, roomId }: { hotelId: string; roomId: string }) {
   const [photos, setPhotos] = useState<PropertyPhoto[]>([])
@@ -169,7 +331,7 @@ function RoomPhotosSection({ hotelId, roomId }: { hotelId: string; roomId: strin
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
               {photos.map((photo) => (
                 <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
-                  <img src={getMediaUrl(photo.url)} alt="" className="h-full w-full object-cover" />
+                  <img src={getMediaUrl(photo.url) || "/placeholder.svg"} alt="" className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => handleDelete(photo.id)}
@@ -339,7 +501,7 @@ function HotelPhotosSection({ hotelId }: { hotelId: string }) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {photos.map((photo, index) => (
               <div key={photo.id} className="group relative aspect-video overflow-hidden rounded-lg bg-muted">
-                <img src={getMediaUrl(photo.url)} alt="" className="h-full w-full object-cover" />
+                <img src={getMediaUrl(photo.url) || "/placeholder.svg"} alt="" className="h-full w-full object-cover" />
                 {photo.is_primary && (
                   <div className="absolute left-1 top-1 rounded bg-yellow-400 px-1.5 py-0.5 text-[10px] font-bold text-yellow-900">
                     Cover
@@ -695,6 +857,7 @@ function RoomCard({
             </DropdownMenu>
           </div>
         </div>
+        <RoomUnitsSection hotelId={hotelId} roomId={room.id} />
         <RoomPhotosSection hotelId={hotelId} roomId={room.id} />
       </CardContent>
     </Card>

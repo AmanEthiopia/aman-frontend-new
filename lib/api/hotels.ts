@@ -1,5 +1,5 @@
-import { apiFetch } from "./client"
-import type { Hotel, Room } from "@/lib/types"
+import { apiFetch, apiPost, apiPatch, apiDelete } from "./client"
+import type { Hotel, Room, RoomUnit } from "@/lib/types"
 
 const API_BASE_URL = "https://api.aman.yichalal.ai/api/v1"
 
@@ -127,8 +127,59 @@ export async function getHotelById(idOrSlug: string): Promise<Hotel> {
 }
 
 /**
- * Get rooms for a hotel
+ * Get rooms for a hotel, optionally with date-based availability
+ * Pass check_in/check_out to get available_units populated per room
  */
-export async function getHotelRooms(hotelId: string): Promise<Room[]> {
-  return apiFetch<Room[]>(`/hotels/${hotelId}/rooms/`)
+export async function getHotelRooms(
+  hotelId: string,
+  params?: { check_in?: string; check_out?: string }
+): Promise<Room[]> {
+  const qs = new URLSearchParams()
+  if (params?.check_in) qs.append("check_in", params.check_in)
+  if (params?.check_out) qs.append("check_out", params.check_out)
+  const query = qs.toString() ? `?${qs.toString()}` : ""
+  const result = await apiFetch<Room[] | { results: Room[] }>(`/hotels/${hotelId}/rooms/${query}`)
+  return Array.isArray(result) ? result : (result as any)?.results ?? []
+}
+
+// ============================================================================
+// Room Unit Management (physical room numbers)
+// ============================================================================
+
+export interface CreateRoomUnitPayload {
+  unit_number: string
+  label?: string
+  is_active?: boolean
+}
+
+export async function getRoomUnits(hotelId: string, roomId: string): Promise<RoomUnit[]> {
+  const result = await apiFetch<RoomUnit[] | { results: RoomUnit[] }>(
+    `/hotels/provider/${hotelId}/rooms/${roomId}/units/`
+  )
+  return Array.isArray(result) ? result : (result as any)?.results ?? []
+}
+
+export async function createRoomUnit(
+  hotelId: string,
+  roomId: string,
+  payload: CreateRoomUnitPayload
+): Promise<RoomUnit> {
+  return apiPost<RoomUnit>(`/hotels/provider/${hotelId}/rooms/${roomId}/units/`, payload)
+}
+
+export async function updateRoomUnit(
+  hotelId: string,
+  roomId: string,
+  unitId: string,
+  payload: Partial<CreateRoomUnitPayload>
+): Promise<RoomUnit> {
+  return apiPatch<RoomUnit>(`/hotels/provider/${hotelId}/rooms/${roomId}/units/${unitId}/`, payload)
+}
+
+export async function deleteRoomUnit(
+  hotelId: string,
+  roomId: string,
+  unitId: string
+): Promise<void> {
+  return apiDelete(`/hotels/provider/${hotelId}/rooms/${roomId}/units/${unitId}/`)
 }

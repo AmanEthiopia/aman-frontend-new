@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/ui/header"
@@ -9,6 +9,8 @@ import { Footer } from "@/components/ui/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { TrustBadge } from "@/components/shared/trust-badge"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
@@ -36,6 +38,10 @@ import {
   AlertCircle,
   Users,
   Clock,
+  BedDouble,
+  CheckCircle2,
+  XCircle,
+  Loader2,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
@@ -52,33 +58,38 @@ const amenityIcons: Record<string, React.ReactNode> = {
 
 export default function HotelDetailPage() {
   const params = useParams()
-  const slug = params.id as string // Can be slug or id
-  const [hotel, setHotel] = useState<any>(null) // Use any to handle API response variations
+  const slug = params.id as string
+  const [hotel, setHotel] = useState<any>(null)
   const [rooms, setRooms] = useState<Room[]>([])
+  const [roomsLoading, setRoomsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState(0)
+  const [checkIn, setCheckIn] = useState("")
+  const [checkOut, setCheckOut] = useState("")
   const { toggleSavedItem, isItemSaved, setIsAIAssistantOpen } = useApp()
+
+  const loadRooms = useCallback(async (hotelId: string, ci?: string, co?: string) => {
+    setRoomsLoading(true)
+    try {
+      const roomsData = await getHotelRooms(hotelId, ci && co ? { check_in: ci, check_out: co } : undefined)
+      setRooms(roomsData || [])
+    } catch {
+      setRooms([])
+    } finally {
+      setRoomsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     async function loadHotel() {
       setLoading(true)
       setError(null)
-
       try {
-        // API supports both slug and id lookup
         const hotelData = await getHotelById(slug)
         setHotel(hotelData)
-        
-        // Try to load rooms if hotel id is available
         if (hotelData?.id) {
-          try {
-            const roomsData = await getHotelRooms(hotelData.id)
-            setRooms(roomsData || [])
-          } catch {
-            // Rooms are optional
-            setRooms([])
-          }
+          await loadRooms(hotelData.id)
         }
       } catch (err) {
         console.error("[v0] Failed to load hotel:", err)
@@ -91,9 +102,14 @@ export default function HotelDetailPage() {
         setLoading(false)
       }
     }
-
     loadHotel()
-  }, [slug])
+  }, [slug, loadRooms])
+
+  useEffect(() => {
+    if (hotel?.id && checkIn && checkOut && checkOut > checkIn) {
+      loadRooms(hotel.id, checkIn, checkOut)
+    }
+  }, [hotel?.id, checkIn, checkOut, loadRooms])
 
   if (loading) {
     return (
@@ -322,40 +338,147 @@ export default function HotelDetailPage() {
               )}
 
               {/* Rooms */}
-              {rooms.length > 0 && (
-                <div className="mb-8">
-                  <h2 className="mb-4 text-lg font-semibold">Available Rooms</h2>
-                  <div className="space-y-4">
-                    {rooms.map((room) => (
-                      <Card key={room.id}>
-                        <CardContent className="p-4">
-                          <div className="flex flex-col gap-4 md:flex-row">
-                            <div className="flex-1">
-                              <h3 className="mb-1 font-semibold">{room.name}</h3>
-                              <p className="mb-2 text-sm text-muted-foreground">{room.description}</p>
-                              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Users className="h-4 w-4" />
-                                  <span>Up to {room.max_guests} guests</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end justify-between">
-                              <div className="mb-2 text-right">
-                                <div className="text-2xl font-bold">${room.price_per_night}</div>
-                                <div className="text-sm text-muted-foreground">per night</div>
-                              </div>
-                              <Button size="sm" asChild>
-                                <Link href={`/book/hotel/${hotel.id}?room=${room.id}`}>Book Room</Link>
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+              <div className="mb-8">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">Room Types & Availability</h2>
+                  {roomsLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                 </div>
-              )}
+
+                {/* Date range for availability check */}
+                <Card className="mb-4">
+                  <CardContent className="p-4">
+                    <p className="mb-3 text-sm text-muted-foreground">Select dates to check availability</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Check-in</Label>
+                        <Input
+                          type="date"
+                          value={checkIn}
+                          min={new Date().toISOString().split("T")[0]}
+                          onChange={(e) => setCheckIn(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Check-out</Label>
+                        <Input
+                          type="date"
+                          value={checkOut}
+                          min={checkIn || new Date().toISOString().split("T")[0]}
+                          onChange={(e) => setCheckOut(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {rooms.length > 0 ? (
+                  <div className="space-y-4">
+                    {rooms.map((room) => {
+                      const hasDateRange = checkIn && checkOut && checkOut > checkIn
+                      const available = room.available_units
+                      const total = room.total_units ?? 0
+                      const booked = total - (available ?? 0)
+                      const allBooked = hasDateRange && available === 0
+                      const canBook = !hasDateRange || (available !== null && available !== undefined && available > 0)
+
+                      return (
+                        <Card key={room.id} className={allBooked ? "opacity-60" : ""}>
+                          <CardContent className="p-4">
+                            <div className="flex flex-col gap-4 md:flex-row">
+                              <div className="flex-1">
+                                <div className="mb-1 flex items-center gap-2 flex-wrap">
+                                  <h3 className="font-semibold">{room.name}</h3>
+                                  {room.bed_type && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <BedDouble className="mr-1 h-3 w-3" />
+                                      {room.bed_type}
+                                    </Badge>
+                                  )}
+                                  {allBooked && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      <XCircle className="mr-1 h-3 w-3" />
+                                      Fully Booked
+                                    </Badge>
+                                  )}
+                                  {hasDateRange && !allBooked && available !== null && available !== undefined && (
+                                    <Badge variant="secondary" className="text-xs text-green-700 bg-green-50 border-green-200">
+                                      <CheckCircle2 className="mr-1 h-3 w-3" />
+                                      {available} available
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="mb-2 text-sm text-muted-foreground">{room.description}</p>
+                                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <Users className="h-4 w-4" />
+                                    <span>Up to {room.max_guests} guests</span>
+                                  </div>
+                                  {total > 0 && (
+                                    <div className="flex items-center gap-1">
+                                      <BedDouble className="h-4 w-4" />
+                                      <span>{total} unit{total !== 1 ? "s" : ""} total</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Availability unit grid */}
+                                {hasDateRange && total > 0 && (
+                                  <div className="mt-3">
+                                    <p className="mb-1.5 text-xs text-muted-foreground">Unit availability</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {Array.from({ length: total }).map((_, i) => {
+                                        const isAvail = i < (available ?? 0)
+                                        return (
+                                          <div
+                                            key={i}
+                                            title={isAvail ? "Available" : "Booked"}
+                                            className={`h-6 w-6 rounded text-xs flex items-center justify-center font-medium ${
+                                              isAvail
+                                                ? "bg-green-100 text-green-700 border border-green-200"
+                                                : "bg-red-100 text-red-600 border border-red-200"
+                                            }`}
+                                          >
+                                            {i + 1}
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                    {booked > 0 && (
+                                      <p className="mt-1 text-xs text-muted-foreground">
+                                        {booked} booked · {available ?? 0} free
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex flex-col items-end justify-between gap-2">
+                                <div className="text-right">
+                                  <div className="text-2xl font-bold">${room.price_per_night}</div>
+                                  <div className="text-sm text-muted-foreground">per night</div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  asChild
+                                  disabled={!!allBooked}
+                                  className={allBooked ? "opacity-50 pointer-events-none" : ""}
+                                >
+                                  <Link
+                                    href={`/book/hotel/${hotel.slug || hotel.id}?room=${room.id}${checkIn ? `&check_in=${checkIn}` : ""}${checkOut ? `&check_out=${checkOut}` : ""}`}
+                                  >
+                                    {allBooked ? "Fully Booked" : "Book Room"}
+                                  </Link>
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                ) : !roomsLoading ? (
+                  <p className="text-sm text-muted-foreground">No rooms listed yet. Contact the hotel directly.</p>
+                ) : null}
+              </div>
 
               {/* Safety */}
               {(hotel.safetyScore || hotel.safety_score) && (
@@ -436,8 +559,34 @@ export default function HotelDetailPage() {
                       </div>
                     </div>
 
+                    {/* Quick date selector in sidebar */}
+                    <div className="mb-4 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">Check-in</Label>
+                          <Input
+                            type="date"
+                            value={checkIn}
+                            min={new Date().toISOString().split("T")[0]}
+                            onChange={(e) => setCheckIn(e.target.value)}
+                            className="text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Check-out</Label>
+                          <Input
+                            type="date"
+                            value={checkOut}
+                            min={checkIn || new Date().toISOString().split("T")[0]}
+                            onChange={(e) => setCheckOut(e.target.value)}
+                            className="text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     <Button size="lg" className="mb-4 w-full" asChild>
-                      <Link href={`/book/hotel/${hotel.slug || hotel.id}`}>
+                      <Link href={`/book/hotel/${hotel.slug || hotel.id}${checkIn ? `?check_in=${checkIn}` : ""}${checkOut ? `${checkIn ? "&" : "?"}check_out=${checkOut}` : ""}`}>
                         <Calendar className="mr-2 h-4 w-4" />
                         Book Now
                       </Link>

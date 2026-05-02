@@ -31,6 +31,8 @@ export interface HotelBookingRoom {
   price_per_night: string
   num_nights: number
   subtotal: string
+  assigned_unit_ids?: string[]
+  assigned_unit_numbers?: string[]
 }
 
 export interface HotelBookingHotel {
@@ -67,6 +69,7 @@ export interface HotelBooking {
   cancelled_at?: string | null
   cancellation_reason?: string | null
   created_at: string
+  source?: "online" | "manual"
 }
 
 export interface HotelBookingResponse {
@@ -126,6 +129,7 @@ export interface RestaurantReservation {
   restaurant: RestaurantBookingRestaurant
   reservation_date: string
   reservation_time: string
+  duration_minutes?: number
   party_size: number
   total_price?: string
   currency?: string
@@ -142,6 +146,7 @@ export interface CreateRestaurantReservationPayload {
   restaurant_id: string
   reservation_date: string
   reservation_time: string
+  duration_minutes?: number
   party_size: number
   guest_name: string
   guest_email: string
@@ -149,9 +154,15 @@ export interface CreateRestaurantReservationPayload {
   special_requests?: string
 }
 
-// API returns the reservation directly (flat), not wrapped in {reservation, payment}
-export async function createRestaurantReservation(payload: CreateRestaurantReservationPayload): Promise<RestaurantReservation> {
-  return apiPost<RestaurantReservation>("/bookings/restaurant/", payload)
+export interface RestaurantReservationResponse {
+  reservation: RestaurantReservation
+  payment: PaymentInfo
+}
+
+export async function createRestaurantReservation(
+  payload: CreateRestaurantReservationPayload
+): Promise<RestaurantReservationResponse> {
+  return apiPost<RestaurantReservationResponse>("/bookings/restaurant/", payload)
 }
 
 export async function getMyRestaurantReservations(status?: BookingStatus): Promise<RestaurantReservation[]> {
@@ -303,12 +314,41 @@ export async function getProviderHotelBookings(params?: { status?: BookingStatus
   return Array.isArray(result) ? result : result?.results ?? []
 }
 
-export async function confirmHotelBooking(bookingId: string): Promise<HotelBooking> {
-  return apiPost<HotelBooking>(`/bookings/provider/hotel/${bookingId}/confirm/`, {})
+export interface BookingRoomAssignment {
+  booking_room_id: string
+  unit_ids: string[]
+}
+
+export async function confirmHotelBooking(
+  bookingId: string,
+  assignments?: BookingRoomAssignment[]
+): Promise<HotelBooking> {
+  return apiPost<HotelBooking>(`/bookings/provider/hotel/${bookingId}/confirm/`, {
+    ...(assignments && assignments.length > 0 ? { assignments } : {}),
+  })
 }
 
 export async function rejectHotelBooking(bookingId: string, reason?: string): Promise<HotelBooking> {
   return apiPost<HotelBooking>(`/bookings/provider/hotel/${bookingId}/reject/`, { reason })
+}
+
+export interface CreateManualHotelBookingPayload {
+  hotel_id: string
+  check_in_date: string
+  check_out_date: string
+  rooms: Array<{ room_id: string; quantity: number }>
+  num_adults: number
+  num_children?: number
+  guest_name: string
+  guest_email: string
+  guest_phone?: string
+  special_requests?: string
+}
+
+export async function createManualHotelBooking(
+  payload: CreateManualHotelBookingPayload
+): Promise<HotelBooking> {
+  return apiPost<HotelBooking>("/bookings/provider/hotel/manual/", payload)
 }
 
 // Restaurant
