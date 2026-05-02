@@ -76,7 +76,7 @@ export async function getConversations(filters?: {
   if (filters?.page) params.append("page", String(filters.page))
 
   try {
-    const raw = await apiGet<any>(`/messaging/?${params.toString()}`)
+    const raw = await apiGet<any>(`/messages/?${params.toString()}`)
     // Handles { count, results } (new) and { data, meta } (old)
     const conversations: Conversation[] = raw?.results ?? raw?.data ?? []
     const count: number = raw?.count ?? raw?.meta?.pagination?.count ?? conversations.length
@@ -92,14 +92,14 @@ export async function getConversations(filters?: {
 export async function startConversation(
   payload: StartConversationPayload
 ): Promise<{ id: string; reused: boolean }> {
-  return apiPost<{ id: string; reused: boolean }>("/messaging/start/", payload)
+  return apiPost<{ id: string; reused: boolean }>("/messages/start/", payload)
 }
 
 /**
  * Get conversation detail (metadata + participants)
  */
 export async function getConversationDetail(conversationId: string): Promise<ConversationDetail> {
-  return apiGet<ConversationDetail>(`/messaging/${conversationId}/`)
+  return apiGet<ConversationDetail>(`/messages/${conversationId}/`)
 }
 
 /**
@@ -113,7 +113,7 @@ export async function getMessages(
   if (after) params.append("after", after)
 
   try {
-    const raw = await apiGet<any>(`/messaging/${conversationId}/messages/?${params.toString()}`)
+    const raw = await apiGet<any>(`/messages/${conversationId}/messages/?${params.toString()}`)
     const messages: Message[] = raw?.results ?? raw?.data ?? []
     return { data: messages }
   } catch {
@@ -129,7 +129,7 @@ export async function sendMessage(
   messageText: string,
   attachmentUrl?: string
 ): Promise<Message> {
-  return apiPost<Message>(`/messaging/${conversationId}/messages/send/`, {
+  return apiPost<Message>(`/messages/${conversationId}/messages/send/`, {
     message_text: messageText,
     attachment_url: attachmentUrl || null,
   })
@@ -139,14 +139,14 @@ export async function sendMessage(
  * Mark conversation as read
  */
 export async function markConversationRead(conversationId: string): Promise<void> {
-  await apiPost(`/messaging/${conversationId}/read/`, {})
+  await apiPost(`/messages/${conversationId}/read/`, {})
 }
 
 /**
  * Flag conversation as dispute (traveler)
  */
 export async function flagConversation(conversationId: string, reason: string): Promise<void> {
-  await apiPost(`/messaging/${conversationId}/flag/`, { reason })
+  await apiPost(`/messages/${conversationId}/flag/`, { reason })
 }
 
 /**
@@ -174,7 +174,7 @@ export async function getFlaggedConversations(filters?: {
   if (filters?.page) params.append("page", String(filters.page))
 
   try {
-    const raw = await apiGet<any>(`/messaging/admin/flagged/?${params.toString()}`)
+    const raw = await apiGet<any>(`/messages/admin/flagged/?${params.toString()}`)
     return { data: raw?.results ?? raw?.data ?? [], count: raw?.count ?? 0 }
   } catch {
     return { data: [], count: 0 }
@@ -182,11 +182,11 @@ export async function getFlaggedConversations(filters?: {
 }
 
 export async function getAdminConversation(conversationId: string): Promise<ConversationDetail & { messages: Message[] }> {
-  return apiGet(`/messaging/admin/${conversationId}/`)
+  return apiGet(`/messages/admin/${conversationId}/`)
 }
 
 export async function resolveDispute(conversationId: string, resolutionNote: string): Promise<void> {
-  await apiPost(`/messaging/admin/${conversationId}/resolve/`, { resolution_note: resolutionNote })
+  await apiPost(`/messages/admin/${conversationId}/resolve/`, { resolution_note: resolutionNote })
 }
 
 // ============================================================================
