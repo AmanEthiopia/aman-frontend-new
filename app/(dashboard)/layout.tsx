@@ -25,10 +25,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       if (!isAuthenticated) return
       try {
         const response = await getConversations()
-        const conversations = response?.results || response || []
-        const total = Array.isArray(conversations)
-          ? conversations.reduce((sum, c) => sum + (c?.unread_count || 0), 0)
-          : 0
+        const conversations = response?.data ?? []
+        const total = conversations.reduce((sum, c) => sum + (c?.unread_count || 0), 0)
         setUnreadCount(total)
       } catch {
         setUnreadCount(0)

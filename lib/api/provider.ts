@@ -1116,7 +1116,8 @@ export async function setPhotoAsPrimary(
 
 export async function getHotelPhotos(hotelId: string): Promise<PropertyPhoto[]> {
   const r = await apiGet<PropertyPhoto[] | { results: PropertyPhoto[] }>(`/hotels/provider/${hotelId}/photos/`)
-  return Array.isArray(r) ? r : r?.results ?? []
+  const raw = Array.isArray(r) ? r : r?.results ?? []
+  return raw.map((p: any) => ({ ...p, url: mediaUrl(p.photo_url ?? p.url) }))
 }
 
 export async function uploadHotelPhoto(
@@ -1131,7 +1132,8 @@ export async function uploadHotelPhoto(
   fd.append("photo_type", photoType)
   if (isPrimary) fd.append("is_primary", "true")
   if (displayOrder !== undefined) fd.append("display_order", String(displayOrder))
-  return apiFetch<PropertyPhoto>(`/hotels/provider/${hotelId}/photos/`, { method: "POST", body: fd })
+  const p = await apiFetch<any>(`/hotels/provider/${hotelId}/photos/`, { method: "POST", body: fd })
+  return { ...p, url: mediaUrl(p.photo_url ?? p.url) }
 }
 
 export async function deleteHotelPhoto(hotelId: string, photoId: string): Promise<void> {
@@ -1157,16 +1159,18 @@ export async function getRoomPhotos(hotelId: string, roomId: string): Promise<Pr
   const r = await apiGet<PropertyPhoto[] | { results: PropertyPhoto[] }>(
     `/hotels/provider/${hotelId}/rooms/${roomId}/photos/`
   )
-  return Array.isArray(r) ? r : r?.results ?? []
+  const raw = Array.isArray(r) ? r : r?.results ?? []
+  return raw.map((p: any) => ({ ...p, url: mediaUrl(p.photo_url ?? p.url) }))
 }
 
 export async function uploadRoomPhoto(hotelId: string, roomId: string, file: File): Promise<PropertyPhoto> {
   const fd = new FormData()
   fd.append("photo", file)
-  return apiFetch<PropertyPhoto>(`/hotels/provider/${hotelId}/rooms/${roomId}/photos/`, {
+  const p = await apiFetch<any>(`/hotels/provider/${hotelId}/rooms/${roomId}/photos/`, {
     method: "POST",
     body: fd,
   })
+  return { ...p, url: mediaUrl(p.photo_url ?? p.url) }
 }
 
 export async function deleteRoomPhoto(hotelId: string, roomId: string, photoId: string): Promise<void> {
@@ -1181,7 +1185,8 @@ export async function getRestaurantPhotos(restaurantId: string): Promise<Propert
   const r = await apiGet<PropertyPhoto[] | { results: PropertyPhoto[] }>(
     `/restaurants/provider/${restaurantId}/photos/`
   )
-  return Array.isArray(r) ? r : r?.results ?? []
+  const raw = Array.isArray(r) ? r : r?.results ?? []
+  return raw.map((p: any) => ({ ...p, url: mediaUrl(p.photo_url ?? p.url) }))
 }
 
 export async function uploadRestaurantPhoto(
@@ -1194,7 +1199,8 @@ export async function uploadRestaurantPhoto(
   fd.append("photo", file)
   fd.append("photo_type", photoType)
   if (isPrimary) fd.append("is_primary", "true")
-  return apiFetch<PropertyPhoto>(`/restaurants/provider/${restaurantId}/photos/`, { method: "POST", body: fd })
+  const p = await apiFetch<any>(`/restaurants/provider/${restaurantId}/photos/`, { method: "POST", body: fd })
+  return { ...p, url: mediaUrl(p.photo_url ?? p.url) }
 }
 
 export async function deleteRestaurantPhoto(restaurantId: string, photoId: string): Promise<void> {

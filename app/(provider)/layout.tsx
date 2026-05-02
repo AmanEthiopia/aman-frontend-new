@@ -238,10 +238,8 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
       try {
         // Fetch unread messages count
         const conversationsResponse = await getConversations()
-        const conversations = conversationsResponse?.results || conversationsResponse || []
-        const total = Array.isArray(conversations)
-          ? conversations.reduce((sum: number, c: any) => sum + (c?.unread_count || 0), 0)
-          : 0
+        const conversations = conversationsResponse?.data ?? []
+        const total = conversations.reduce((sum: number, c: any) => sum + (c?.unread_count || 0), 0)
         setUnreadMessages(total)
       } catch {
         setUnreadMessages(0)

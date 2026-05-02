@@ -77,9 +77,9 @@ export async function getConversations(filters?: {
 
   try {
     const raw = await apiGet<any>(`/messages/?${params.toString()}`)
-    // Handles { count, results } (new) and { data, meta } (old)
-    const conversations: Conversation[] = raw?.results ?? raw?.data ?? []
-    const count: number = raw?.count ?? raw?.meta?.pagination?.count ?? conversations.length
+    // Client already unwraps envelope.data, so raw may be the array directly
+    const conversations: Conversation[] = Array.isArray(raw) ? raw : (raw?.results ?? raw?.data ?? [])
+    const count: number = conversations.length
     return { data: conversations, count }
   } catch {
     return { data: [], count: 0 }
@@ -114,7 +114,7 @@ export async function getMessages(
 
   try {
     const raw = await apiGet<any>(`/messages/${conversationId}/messages/?${params.toString()}`)
-    const messages: Message[] = raw?.results ?? raw?.data ?? []
+    const messages: Message[] = Array.isArray(raw) ? raw : (raw?.results ?? raw?.data ?? [])
     return { data: messages }
   } catch {
     return { data: [] }
@@ -154,7 +154,7 @@ export async function flagConversation(conversationId: string, reason: string): 
  */
 export async function getUnreadCount(): Promise<number> {
   try {
-    const raw = await apiGet<{ unread_count: number }>("/messaging/unread-count/")
+    const raw = await apiGet<{ unread_count: number }>("/messages/unread-count/")
     return raw?.unread_count ?? 0
   } catch {
     return 0
