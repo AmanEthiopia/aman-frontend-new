@@ -1,162 +1,143 @@
 import type { Restaurant } from "@/lib/types"
-import { mockCities } from "./cities"
 
 export const mockRestaurants: Restaurant[] = [
   {
     id: "rest-1",
     name: "Yod Abyssinia",
-    cityId: "city-1",
-    city: mockCities[0],
+    slug: "yod-abyssinia",
+    city: { id: "city-1", name: "Addis Ababa", slug: "addis-ababa" },
+    city_name: "Addis Ababa",
     description:
       "Award-winning cultural restaurant featuring traditional Ethiopian cuisine, live music, and dance performances nightly.",
     address: "Bole Road, Addis Ababa",
     area: "Bole",
-    cuisineTypes: ["Ethiopian Traditional", "Vegetarian Friendly"],
-    priceRange: "mid-range",
-    priceMin: 15,
-    priceMax: 40,
-    amenities: ["Live Music", "Cultural Shows", "Group Seating", "Vegetarian Options", "Private Events"],
-    isVerified: true,
-    isFeatured: true,
-    contactPhone: "+251 11 661 2985",
-    images: [{ id: "img-r1", url: "/ethiopian-restaurant-traditional-interior-injera.jpg", alt: "Yod Abyssinia Interior", isPrimary: true }],
-    rating: 4.7,
-    reviewCount: 456,
-    openingHours: "11:00 AM - 11:00 PM",
-    safetyScore: 96,
+    cuisine_types: ["Ethiopian Traditional", "Vegetarian Friendly"],
+    price_range: "moderate",
+    price_min: 15,
+    price_max: 40,
+    is_verified: true,
+    is_featured: true,
+    phone: "+251 11 661 2985",
+    photos: [{ id: "img-r1", url: "/ethiopian-restaurant-traditional-interior-injera.jpg", alt: "Yod Abyssinia Interior", is_primary: true }],
+    average_rating: 4.7,
+    review_count: 456,
   },
   {
     id: "rest-2",
     name: "Tomoca Coffee",
-    cityId: "city-1",
-    city: mockCities[0],
+    slug: "tomoca-coffee",
+    city: { id: "city-1", name: "Addis Ababa", slug: "addis-ababa" },
+    city_name: "Addis Ababa",
     description: "Legendary coffee house since 1953, serving Ethiopia's finest Arabica coffee in a historic setting.",
     address: "Piazza, Churchill Avenue",
     area: "Piazza",
-    cuisineTypes: ["Coffee", "Cafe", "Ethiopian Pastries"],
-    priceRange: "budget",
-    priceMin: 2,
-    priceMax: 8,
-    amenities: ["Historic Setting", "Fresh Roasted Coffee", "Takeaway"],
-    isVerified: true,
-    isFeatured: true,
-    contactPhone: "+251 11 111 2233",
-    images: [{ id: "img-r2", url: "/placeholder.svg?height=400&width=600", alt: "Tomoca Coffee", isPrimary: true }],
-    rating: 4.8,
-    reviewCount: 892,
-    openingHours: "6:00 AM - 8:00 PM",
-    safetyScore: 94,
+    cuisine_types: ["Coffee", "Cafe", "Ethiopian Pastries"],
+    price_range: "budget",
+    price_min: 2,
+    price_max: 8,
+    is_verified: true,
+    is_featured: true,
+    phone: "+251 11 111 2233",
+    photos: [{ id: "img-r2", url: "/placeholder.svg?height=400&width=600", alt: "Tomoca Coffee", is_primary: true }],
+    average_rating: 4.8,
+    review_count: 892,
   },
   {
     id: "rest-3",
     name: "Sishu Restaurant",
-    cityId: "city-1",
-    city: mockCities[0],
+    slug: "sishu-restaurant",
+    city: { id: "city-1", name: "Addis Ababa", slug: "addis-ababa" },
+    city_name: "Addis Ababa",
     description: "Upscale Ethiopian fusion restaurant combining traditional flavors with modern culinary techniques.",
     address: "Kazanchis, Near Hilton",
     area: "Kazanchis",
-    cuisineTypes: ["Ethiopian Fusion", "Fine Dining", "International"],
-    priceRange: "luxury",
-    priceMin: 30,
-    priceMax: 80,
-    amenities: ["Fine Dining", "Wine Selection", "Private Dining", "Outdoor Terrace"],
-    isVerified: true,
-    isFeatured: true,
-    contactPhone: "+251 11 515 9999",
-    images: [{ id: "img-r3", url: "/placeholder.svg?height=400&width=600", alt: "Sishu Restaurant", isPrimary: true }],
-    rating: 4.6,
-    reviewCount: 234,
-    openingHours: "12:00 PM - 10:30 PM",
-    safetyScore: 98,
+    cuisine_types: ["Ethiopian Fusion", "Fine Dining", "International"],
+    price_range: "fine_dining",
+    price_min: 30,
+    price_max: 80,
+    is_verified: true,
+    is_featured: true,
+    phone: "+251 11 515 9999",
+    photos: [{ id: "img-r3", url: "/placeholder.svg?height=400&width=600", alt: "Sishu Restaurant", is_primary: true }],
+    average_rating: 4.6,
+    review_count: 234,
   },
   {
     id: "rest-4",
     name: "Desset Fish Market",
-    cityId: "city-2",
-    city: mockCities[1],
+    slug: "desset-fish-market",
+    city: { id: "city-2", name: "Bahir Dar", slug: "bahir-dar" },
+    city_name: "Bahir Dar",
     description:
       "Fresh fish straight from Lake Tana, grilled to perfection. A Bahir Dar institution for seafood lovers.",
     address: "Lake Shore Road",
     area: "Lakefront",
-    cuisineTypes: ["Seafood", "Ethiopian", "Grilled Fish"],
-    priceRange: "budget",
-    priceMin: 8,
-    priceMax: 25,
-    amenities: ["Lake Views", "Fresh Daily Catch", "Outdoor Seating"],
-    isVerified: true,
-    isFeatured: true,
-    contactPhone: "+251 58 220 4444",
-    images: [
-      { id: "img-r4", url: "/placeholder.svg?height=400&width=600", alt: "Desset Fish Market", isPrimary: true },
-    ],
-    rating: 4.5,
-    reviewCount: 178,
-    openingHours: "10:00 AM - 9:00 PM",
-    safetyScore: 90,
+    cuisine_types: ["Seafood", "Ethiopian", "Grilled Fish"],
+    price_range: "budget",
+    price_min: 8,
+    price_max: 25,
+    is_verified: true,
+    is_featured: true,
+    phone: "+251 58 220 4444",
+    photos: [{ id: "img-r4", url: "/placeholder.svg?height=400&width=600", alt: "Desset Fish Market", is_primary: true }],
+    average_rating: 4.5,
+    review_count: 178,
   },
   {
     id: "rest-5",
     name: "Four Sisters Restaurant",
-    cityId: "city-3",
-    city: mockCities[2],
+    slug: "four-sisters-restaurant",
+    city: { id: "city-3", name: "Gondar", slug: "gondar" },
+    city_name: "Gondar",
     description:
       "Family-run restaurant famous for authentic Gondar cuisine, including the region's special tibs and kitfo.",
     address: "Royal Enclosure Road",
     area: "Castle District",
-    cuisineTypes: ["Ethiopian Traditional", "Gondar Specialties"],
-    priceRange: "mid-range",
-    priceMin: 10,
-    priceMax: 30,
-    amenities: ["Traditional Setting", "Family Recipes", "Garden Seating"],
-    isVerified: true,
-    isFeatured: true,
-    contactPhone: "+251 58 111 5555",
-    images: [
-      { id: "img-r5", url: "/placeholder.svg?height=400&width=600", alt: "Four Sisters Restaurant", isPrimary: true },
-    ],
-    rating: 4.6,
-    reviewCount: 145,
-    openingHours: "11:00 AM - 10:00 PM",
-    safetyScore: 92,
+    cuisine_types: ["Ethiopian Traditional", "Gondar Specialties"],
+    price_range: "moderate",
+    price_min: 10,
+    price_max: 30,
+    is_verified: true,
+    is_featured: true,
+    phone: "+251 58 111 5555",
+    photos: [{ id: "img-r5", url: "/placeholder.svg?height=400&width=600", alt: "Four Sisters Restaurant", is_primary: true }],
+    average_rating: 4.6,
+    review_count: 145,
   },
   {
     id: "rest-6",
     name: "Ben Abeba",
-    cityId: "city-4",
-    city: mockCities[3],
+    slug: "ben-abeba",
+    city: { id: "city-4", name: "Lalibela", slug: "lalibela" },
+    city_name: "Lalibela",
     description:
       "Architecturally stunning restaurant with panoramic views of Lalibela's landscape. Scottish-Ethiopian fusion cuisine.",
     address: "Above Lalibela Town",
     area: "Hilltop",
-    cuisineTypes: ["Fusion", "Ethiopian", "International"],
-    priceRange: "mid-range",
-    priceMin: 15,
-    priceMax: 45,
-    amenities: ["Panoramic Views", "Unique Architecture", "Sunset Dining"],
-    isVerified: true,
-    isFeatured: true,
-    contactPhone: "+251 33 336 1111",
-    images: [
-      { id: "img-r6", url: "/placeholder.svg?height=400&width=600", alt: "Ben Abeba Restaurant", isPrimary: true },
-    ],
-    rating: 4.8,
-    reviewCount: 267,
-    openingHours: "8:00 AM - 9:00 PM",
-    safetyScore: 94,
+    cuisine_types: ["Fusion", "Ethiopian", "International"],
+    price_range: "moderate",
+    price_min: 15,
+    price_max: 45,
+    is_verified: true,
+    is_featured: true,
+    phone: "+251 33 336 1111",
+    photos: [{ id: "img-r6", url: "/placeholder.svg?height=400&width=600", alt: "Ben Abeba Restaurant", is_primary: true }],
+    average_rating: 4.8,
+    review_count: 267,
   },
 ]
 
-export function getRestaurantById(id: string): Restaurant | undefined {
-  return mockRestaurants.find((r) => r.id === id)
+export function getMockRestaurantById(id: string): Restaurant | undefined {
+  return mockRestaurants.find((r) => r.id === id || r.slug === id)
 }
 
-export function getRestaurantsByCity(cityId: string): Restaurant[] {
-  return mockRestaurants.filter((r) => r.cityId === cityId)
+export function getMockRestaurantsByCity(citySlug: string): Restaurant[] {
+  return mockRestaurants.filter((r) => r.city?.slug === citySlug || r.city_name?.toLowerCase() === citySlug.toLowerCase())
 }
 
-export function searchRestaurants(params: {
+export function searchMockRestaurants(params: {
   city?: string
-  priceRange?: string
+  price_range?: string
   cuisine?: string
   search?: string
 }): Restaurant[] {
@@ -166,23 +147,23 @@ export function searchRestaurants(params: {
     results = results.filter((r) => r.city?.name.toLowerCase() === params.city?.toLowerCase())
   }
 
-  if (params.priceRange && params.priceRange !== "all") {
-    results = results.filter((r) => r.priceRange === params.priceRange)
+  if (params.price_range && params.price_range !== "all") {
+    results = results.filter((r) => r.price_range === params.price_range)
   }
 
   if (params.cuisine && params.cuisine !== "all") {
-    results = results.filter((r) => r.cuisineTypes.some((c) => c.toLowerCase().includes(params.cuisine!.toLowerCase())))
+    results = results.filter((r) => r.cuisine_types?.some((c) => c.toLowerCase().includes(params.cuisine!.toLowerCase())))
   }
 
   if (params.search) {
-    const searchLower = params.search.toLowerCase()
+    const q = params.search.toLowerCase()
     results = results.filter(
       (r) =>
-        r.name.toLowerCase().includes(searchLower) ||
-        r.description.toLowerCase().includes(searchLower) ||
-        r.cuisineTypes.some((c) => c.toLowerCase().includes(searchLower)),
+        r.name.toLowerCase().includes(q) ||
+        r.description?.toLowerCase().includes(q) ||
+        r.cuisine_types?.some((c) => c.toLowerCase().includes(q)),
     )
   }
 
-  return results.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0))
+  return results.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0))
 }

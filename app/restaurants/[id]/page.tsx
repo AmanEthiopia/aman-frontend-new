@@ -51,7 +51,6 @@ import {
 import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
-import { ContactDialog } from "@/components/messaging/contact-dialog"
 import { toast } from "sonner"
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -739,16 +738,11 @@ export default function RestaurantDetailPage() {
               )}
 
               {/* Contact */}
-              <ContactDialog
-                contextType="restaurant"
-                contextId={restaurant.id}
-                contextName={restaurant.name}
-                trigger={
-                  <Button variant="outline" size="lg" className="w-full">
-                    Send Message
-                  </Button>
-                }
-              />
+              <Link href="/messages">
+                <Button variant="outline" size="lg" className="w-full">
+                  Send Message
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

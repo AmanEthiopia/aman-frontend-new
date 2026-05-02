@@ -606,7 +606,6 @@ export async function getAllProviderBookings(): Promise<NormalizedBooking[]> {
 export type TransportBooking = DriverBooking
 export type CreateTransportBookingPayload = CreateDriverBookingPayload
 export type TransportBookingResponse = { booking: DriverBooking; payment?: PaymentInfo }
-export type RestaurantReservationResponse = RestaurantReservation
 
 export interface AllBookingsResponse {
   hotel: HotelBooking[]

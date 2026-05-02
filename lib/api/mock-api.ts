@@ -2,7 +2,7 @@
 // Ready to be replaced with real Django REST API calls
 
 import { mockHotels, searchHotels, getHotelById } from "@/lib/mock-data/hotels"
-import { mockRestaurants, searchRestaurants, getRestaurantById } from "@/lib/mock-data/restaurants"
+import { mockRestaurants, searchMockRestaurants, getMockRestaurantById } from "@/lib/mock-data/restaurants"
 import { mockTransport, searchTransport, getTransportById } from "@/lib/mock-data/transport"
 import { mockExperiences, searchExperiences, getExperienceById } from "@/lib/mock-data/experiences"
 import { mockCities, getCityById } from "@/lib/mock-data/cities"
@@ -52,13 +52,13 @@ export async function fetchHotel(id: string): Promise<ApiResponse<Hotel>> {
 // Restaurants API
 export async function fetchRestaurants(params?: {
   city?: string
-  priceRange?: string
+  price_range?: string
   cuisine?: string
   search?: string
 }): Promise<ApiResponse<Restaurant[]>> {
   await delay(300 + Math.random() * 200)
   try {
-    const restaurants = params ? searchRestaurants(params) : mockRestaurants
+    const restaurants = params ? searchMockRestaurants(params) : mockRestaurants
     return { data: restaurants, error: null, loading: false }
   } catch {
     return { data: null, error: "Failed to fetch restaurants", loading: false }
@@ -68,7 +68,7 @@ export async function fetchRestaurants(params?: {
 export async function fetchRestaurant(id: string): Promise<ApiResponse<Restaurant>> {
   await delay(200 + Math.random() * 150)
   try {
-    const restaurant = getRestaurantById(id)
+    const restaurant = getMockRestaurantById(id)
     if (!restaurant) {
       return { data: null, error: "Restaurant not found", loading: false }
     }
