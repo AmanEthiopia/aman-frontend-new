@@ -12,6 +12,7 @@ import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getExperienceBySlug, type Package, type PackageDay, type PackageDayItem, type Departure } from "@/lib/api/experiences"
+import { ContactDialog } from "@/components/messaging/contact-dialog"
 import { APIError } from "@/lib/api/client"
 import { getMediaUrl } from "@/lib/utils/media"
 import {
@@ -633,11 +634,25 @@ export default function ExperienceDetailPage() {
                     />
                   </div>
 
-                  <Link href="/messages" className="block mt-3">
-                    <Button variant="outline" size="sm" className="w-full">
-                      Ask a Question
-                    </Button>
-                  </Link>
+                  {pkg.provider_id ? (
+                    <ContactDialog
+                      recipientId={pkg.provider_id}
+                      recipientName={pkg.organizer?.name || "Organizer"}
+                      relatedToType="experience"
+                      relatedToId={pkg.id}
+                      relatedToName={pkg.title}
+                    >
+                      <Button variant="outline" size="sm" className="w-full mt-3">
+                        Ask a Question
+                      </Button>
+                    </ContactDialog>
+                  ) : (
+                    <Link href="/messages" className="block mt-3">
+                      <Button variant="outline" size="sm" className="w-full">
+                        Ask a Question
+                      </Button>
+                    </Link>
+                  )}
                 </CardContent>
               </Card>
             </div>

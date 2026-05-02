@@ -632,16 +632,19 @@ export default function HotelDetailPage() {
                           Visit Website
                         </a>
                       )}
-                      <ContactDialog
-                        contextType="hotel"
-                        contextId={hotel.id}
-                        contextName={hotel.name}
-                        trigger={
+                      {hotel.provider_id && (
+                        <ContactDialog
+                          recipientId={hotel.provider_id}
+                          recipientName={hotel.name}
+                          relatedToType="hotel"
+                          relatedToId={hotel.id}
+                          relatedToName={hotel.name}
+                        >
                           <Button variant="outline" size="sm" className="w-full mt-2">
                             Send Message
                           </Button>
-                        }
-                      />
+                        </ContactDialog>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  getReviews,
+  getProviderReviews,
   replyToReview,
   updateReviewReply,
   deleteReviewReply,
@@ -224,12 +224,12 @@ export default function ProviderReviewsPage() {
 
       try {
         setReviewsLoading(true)
-        const response = await getReviews({
+        const response = await getProviderReviews({
           type: property.type,
           id: property.id,
         })
-        setPinnedReviews(response.pinned)
-        setReviews(response.data)
+        setPinnedReviews([])  // provider endpoint has no pinned
+        setReviews(response.results)
       } catch (error) {
         console.error("Failed to load reviews:", error)
       } finally {

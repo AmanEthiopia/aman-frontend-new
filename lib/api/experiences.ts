@@ -128,6 +128,7 @@ export interface Package {
   average_rating?: string
   review_count?: number
   is_published: boolean
+  provider_id?: string
   organizer?: PackageOrganizer
   primary_photo?: PackagePhoto
   photos?: PackagePhoto[]

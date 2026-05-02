@@ -16,6 +16,7 @@ import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getRestaurantById } from "@/lib/api/restaurants"
+import { ContactDialog } from "@/components/messaging/contact-dialog"
 import { getRestaurantMenu } from "@/lib/api/restaurants"
 import type { MenuCategory } from "@/lib/api/restaurants"
 import { createRestaurantReservation } from "@/lib/api/bookings"
@@ -747,11 +748,25 @@ export default function RestaurantDetailPage() {
               )}
 
               {/* Contact */}
-              <Link href="/messages">
-                <Button variant="outline" size="lg" className="w-full">
-                  Send Message
-                </Button>
-              </Link>
+              {restaurant.provider_id ? (
+                <ContactDialog
+                  recipientId={restaurant.provider_id}
+                  recipientName={restaurant.name}
+                  relatedToType="restaurant"
+                  relatedToId={restaurant.id}
+                  relatedToName={restaurant.name}
+                >
+                  <Button variant="outline" size="lg" className="w-full">
+                    Send Message
+                  </Button>
+                </ContactDialog>
+              ) : (
+                <Link href="/messages">
+                  <Button variant="outline" size="lg" className="w-full">
+                    Send Message
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

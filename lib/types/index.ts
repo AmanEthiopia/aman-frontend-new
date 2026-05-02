@@ -14,6 +14,7 @@ export interface City {
 export interface Hotel {
   id: string
   name: string
+  provider_id?: string
   cityId: string
   city?: City
   description: string
@@ -50,6 +51,7 @@ export interface Restaurant {
   id: string
   name: string
   slug: string
+  provider_id?: string
   description?: string
   address?: string
   area?: string
@@ -404,7 +406,7 @@ export type {
 export type {
   Conversation,
   Message,
-  ContextType,
+  RelatedToType,
 } from "@/lib/api/messages"
 
 // Re-export verification types

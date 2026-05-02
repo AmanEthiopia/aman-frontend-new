@@ -23,6 +23,7 @@ export interface Message {
 
 export interface LastMessage {
   text: string
+  sender_id?: string
   created_at: string
 }
 
@@ -37,6 +38,7 @@ export interface Conversation {
   subject: string
   related_to_type: RelatedToType
   related_to_id: string
+  property_name?: string   // resolved by server
   last_message_at: string
   is_flagged: boolean
   is_resolved: boolean
@@ -54,7 +56,7 @@ export interface StartConversationPayload {
   recipient_id: string
   related_to_type: RelatedToType
   related_to_id: string
-  subject: string
+  subject?: string
   message: string
 }
 
@@ -63,56 +65,59 @@ export interface StartConversationPayload {
 // ============================================================================
 
 /**
- * List my conversations
+ * List my conversations — normalizes { count, results } → returns data array
  */
 export async function getConversations(filters?: {
   related_to_type?: RelatedToType
   page?: number
-}): Promise<{ data: Conversation[]; meta: { pagination: { count: number; total_pages: number } } }> {
+}): Promise<{ data: Conversation[]; count: number }> {
   const params = new URLSearchParams()
   if (filters?.related_to_type) params.append("related_to_type", filters.related_to_type)
   if (filters?.page) params.append("page", String(filters.page))
 
   try {
-    const response = await apiGet<{ data: Conversation[]; meta: any }>(`/messages/?${params.toString()}`)
-    return response
+    const raw = await apiGet<any>(`/messaging/?${params.toString()}`)
+    // Handles { count, results } (new) and { data, meta } (old)
+    const conversations: Conversation[] = raw?.results ?? raw?.data ?? []
+    const count: number = raw?.count ?? raw?.meta?.pagination?.count ?? conversations.length
+    return { data: conversations, count }
   } catch {
-    return { data: [], meta: { pagination: { count: 0, total_pages: 1 } } }
+    return { data: [], count: 0 }
   }
 }
 
 /**
- * Start a new conversation (or reuse existing one)
+ * Start a new conversation or reuse existing one
  */
 export async function startConversation(
   payload: StartConversationPayload
 ): Promise<{ id: string; reused: boolean }> {
-  return apiPost<{ id: string; reused: boolean }>("/messages/start/", payload)
+  return apiPost<{ id: string; reused: boolean }>("/messaging/start/", payload)
 }
 
 /**
- * Get conversation detail
+ * Get conversation detail (metadata + participants)
  */
 export async function getConversationDetail(conversationId: string): Promise<ConversationDetail> {
-  return apiGet<ConversationDetail>(`/messages/${conversationId}/`)
+  return apiGet<ConversationDetail>(`/messaging/${conversationId}/`)
 }
 
 /**
- * Get messages in a conversation (supports polling with 'after' param)
+ * Get messages in a conversation — normalizes response and supports polling with ?after=
  */
 export async function getMessages(
   conversationId: string,
   after?: string
-): Promise<{ data: Message[]; meta: any }> {
+): Promise<{ data: Message[] }> {
   const params = new URLSearchParams()
   if (after) params.append("after", after)
 
   try {
-    return await apiGet<{ data: Message[]; meta: any }>(
-      `/messages/${conversationId}/messages/?${params.toString()}`
-    )
+    const raw = await apiGet<any>(`/messaging/${conversationId}/messages/?${params.toString()}`)
+    const messages: Message[] = raw?.results ?? raw?.data ?? []
+    return { data: messages }
   } catch {
-    return { data: [], meta: {} }
+    return { data: [] }
   }
 }
 
@@ -124,7 +129,7 @@ export async function sendMessage(
   messageText: string,
   attachmentUrl?: string
 ): Promise<Message> {
-  return apiPost<Message>(`/messages/${conversationId}/messages/send/`, {
+  return apiPost<Message>(`/messaging/${conversationId}/messages/send/`, {
     message_text: messageText,
     attachment_url: attachmentUrl || null,
   })
@@ -134,48 +139,54 @@ export async function sendMessage(
  * Mark conversation as read
  */
 export async function markConversationRead(conversationId: string): Promise<void> {
-  await apiPost(`/messages/${conversationId}/read/`, {})
+  await apiPost(`/messaging/${conversationId}/read/`, {})
 }
 
 /**
  * Flag conversation as dispute (traveler)
  */
 export async function flagConversation(conversationId: string, reason: string): Promise<void> {
-  await apiPost(`/messages/${conversationId}/flag/`, { reason })
+  await apiPost(`/messaging/${conversationId}/flag/`, { reason })
+}
+
+/**
+ * Get total unread message count for badge
+ */
+export async function getUnreadCount(): Promise<number> {
+  try {
+    const raw = await apiGet<{ unread_count: number }>("/messaging/unread-count/")
+    return raw?.unread_count ?? 0
+  } catch {
+    return 0
+  }
 }
 
 // ============================================================================
 // Admin APIs
 // ============================================================================
 
-/**
- * Admin: List flagged conversations
- */
 export async function getFlaggedConversations(filters?: {
   is_resolved?: boolean
   page?: number
-}): Promise<{ data: Conversation[]; meta: any }> {
+}): Promise<{ data: Conversation[]; count: number }> {
   const params = new URLSearchParams()
   if (filters?.is_resolved !== undefined) params.append("is_resolved", String(filters.is_resolved))
   if (filters?.page) params.append("page", String(filters.page))
 
-  return apiGet(`/messages/admin/flagged/?${params.toString()}`)
+  try {
+    const raw = await apiGet<any>(`/messaging/admin/flagged/?${params.toString()}`)
+    return { data: raw?.results ?? raw?.data ?? [], count: raw?.count ?? 0 }
+  } catch {
+    return { data: [], count: 0 }
+  }
 }
 
-/**
- * Admin: View any conversation
- */
 export async function getAdminConversation(conversationId: string): Promise<ConversationDetail & { messages: Message[] }> {
-  return apiGet(`/messages/admin/${conversationId}/`)
+  return apiGet(`/messaging/admin/${conversationId}/`)
 }
 
-/**
- * Admin: Resolve dispute
- */
 export async function resolveDispute(conversationId: string, resolutionNote: string): Promise<void> {
-  await apiPost(`/messages/admin/${conversationId}/resolve/`, {
-    resolution_note: resolutionNote,
-  })
+  await apiPost(`/messaging/admin/${conversationId}/resolve/`, { resolution_note: resolutionNote })
 }
 
 // ============================================================================
@@ -224,7 +235,7 @@ export function formatMessageTime(dateString: string): string {
 }
 
 /**
- * Polling hook helper - stores last fetch timestamp
+ * Polling helper — returns a stop function
  */
 export function createMessagePoller(
   conversationId: string,
@@ -236,27 +247,18 @@ export function createMessagePoller(
 
   const poll = async () => {
     if (!isRunning) return
-
     try {
       const { data } = await getMessages(conversationId, lastFetch)
       if (data.length > 0) {
         onNewMessages(data)
         lastFetch = new Date().toISOString()
       }
-    } catch (error) {
-      console.error("Polling error:", error)
+    } catch {
+      // Silently continue polling
     }
-
-    if (isRunning) {
-      setTimeout(poll, intervalMs)
-    }
+    if (isRunning) setTimeout(poll, intervalMs)
   }
 
-  // Start polling
   setTimeout(poll, intervalMs)
-
-  // Return stop function
-  return () => {
-    isRunning = false
-  }
+  return () => { isRunning = false }
 }

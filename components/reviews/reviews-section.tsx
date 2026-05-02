@@ -22,6 +22,7 @@ import {
 import {
   getReviews,
   submitReview,
+  extractReviewError,
   formatReviewDate,
   type Review,
   type ReviewableType,
@@ -221,7 +222,7 @@ function WriteReviewDialog({
       setComment("")
       onSuccess()
     } catch (err: any) {
-      setError(err.message || "Failed to submit review")
+      setError(extractReviewError(err))
     } finally {
       setSubmitting(false)
     }
@@ -325,21 +326,13 @@ export function ReviewsSection({
           page 
         })
         
-        // Safely access pagination data with defaults
-        const pagination = response?.meta?.pagination || { 
-          current_page: 1, 
-          total_pages: 1, 
-          count: 0 
-        }
-        
         if (page === 1) {
-          setPinnedReviews(response?.pinned || [])
-          setReviews(response?.data || [])
+          setPinnedReviews(response.pinned)
+          setReviews(response.results)
         } else {
-          setReviews((prev) => [...prev, ...(response?.data || [])])
+          setReviews((prev) => [...prev, ...response.results])
         }
-        
-        setHasMore(pagination.current_page < pagination.total_pages)
+        setHasMore(response.hasMore)
       } catch (err: any) {
         console.error("[v0] Error loading reviews:", err)
         setError(err.message || "Failed to load reviews")

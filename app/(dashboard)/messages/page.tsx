@@ -233,8 +233,8 @@ function EmptyConversation() {
 
 function MessagesContent() {
   const searchParams = useSearchParams()
-  const { user } = useAuth()
-  const currentUserId = user?.id || ""
+  const { userProfile } = useAuth()
+  const currentUserId = userProfile?.user?.id || ""
 
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -260,7 +260,7 @@ function MessagesContent() {
       try {
         setLoading(true)
         const { data } = await getConversations()
-        setConversations(data)
+        setConversations(data ?? [])
       } catch (err: any) {
         setError(err.message || "Failed to load conversations")
       } finally {
@@ -277,8 +277,8 @@ function MessagesContent() {
     async function loadMessages() {
       try {
         setMessagesLoading(true)
-        const { data } = await getMessages(selectedConversation!)
-        setMessages(data)
+        const { data: msgData } = await getMessages(selectedConversation!)
+        setMessages(msgData ?? [])
 
         // Mark as read
         await markConversationRead(selectedConversation!).catch(() => {})

@@ -235,8 +235,8 @@ function EmptyConversation() {
 
 function ProviderMessagesContent() {
   const searchParams = useSearchParams()
-  const { user } = useAuth()
-  const currentUserId = user?.id || ""
+  const { userProfile } = useAuth()
+  const currentUserId = userProfile?.user?.id || ""
 
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -259,11 +259,11 @@ function ProviderMessagesContent() {
       try {
         setLoading(true)
         const { data } = await getConversations()
-        setConversations(data)
-        
-        // Auto-select first conversation if none selected
-        if (!selectedConversation && data.length > 0) {
-          setSelectedConversation(data[0].id)
+        const convList = data ?? []
+        setConversations(convList)
+
+        if (!selectedConversation && convList.length > 0) {
+          setSelectedConversation(convList[0].id)
         }
       } catch (err: any) {
         setError(err.message || "Failed to load conversations")
@@ -281,8 +281,8 @@ function ProviderMessagesContent() {
     async function loadMessages() {
       try {
         setMessagesLoading(true)
-        const { data } = await getMessages(selectedConversation!)
-        setMessages(data)
+        const { data: msgData } = await getMessages(selectedConversation!)
+        setMessages(msgData ?? [])
 
         // Mark as read
         await markConversationRead(selectedConversation!).catch(() => {})
