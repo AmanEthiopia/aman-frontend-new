@@ -25,6 +25,7 @@ import {
   X,
   Home,
   Package,
+  CalendarDays,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getMediaUrl } from "@/lib/utils/media"
@@ -70,7 +71,6 @@ function getSidebarItems(pendingBookings: number, unreadMessages: number): NavIt
         { href: "/provider/properties/new?type=hotel", label: "Add Hotel", icon: Building2 },
         { href: "/provider/properties/new?type=restaurant", label: "Add Restaurant", icon: UtensilsCrossed },
         { href: "/provider/properties/new?type=driver", label: "Add Driver", icon: Car },
-        { href: "/provider/properties/new?type=trip", label: "Add Trip/Event", icon: Map },
       ],
     },
     {
@@ -90,6 +90,8 @@ function getSidebarItems(pendingBookings: number, unreadMessages: number): NavIt
       children: [
         { href: "/provider/packages", label: "All Packages", icon: Package },
         { href: "/provider/packages/new", label: "Create Package", icon: Plus },
+        { href: "/provider/properties?tab=trip", label: "My Trips/Events", icon: CalendarDays },
+        { href: "/provider/properties/new?type=trip", label: "Add Trip/Event", icon: Map },
       ],
     },
     { href: "/provider/bookings", label: "Bookings", icon: Calendar, badge: pendingBookings > 0 ? pendingBookings : undefined },

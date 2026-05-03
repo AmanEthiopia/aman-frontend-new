@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { formatRating } from "@/lib/utils"
 import { getMediaUrl } from "@/lib/utils/media"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   Building2,
   UtensilsCrossed,
@@ -214,12 +214,16 @@ function AddPropertyCard({ type }: { type: PropertyCategory }) {
   )
 }
 
-export default function ProviderPropertiesPage() {
+function ProviderPropertiesContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [properties, setProperties] = useState<PropertyBase[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState<"all" | PropertyCategory>("all")
+  const [activeTab, setActiveTab] = useState<"all" | PropertyCategory>(() => {
+    const tab = searchParams.get("tab") as PropertyCategory | null
+    return tab && ["hotel", "restaurant", "driver", "trip"].includes(tab) ? tab : "all"
+  })
   const [deleteProperty, setDeleteProperty] = useState<PropertyBase | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -321,18 +325,20 @@ export default function ProviderPropertiesPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            {(Object.keys(propertyTypeConfig) as PropertyCategory[]).map((type) => {
-              const config = propertyTypeConfig[type]
-              const Icon = config.icon
-              return (
-                <DropdownMenuItem key={type} asChild>
-                  <Link href={`/provider/properties/new?type=${type}`} className="flex items-center">
-                    <Icon className={`mr-2 h-4 w-4 ${config.color}`} />
-                    {config.label}
-                  </Link>
-                </DropdownMenuItem>
-              )
-            })}
+            {(Object.keys(propertyTypeConfig) as PropertyCategory[])
+              .filter((type) => type !== "trip")
+              .map((type) => {
+                const config = propertyTypeConfig[type]
+                const Icon = config.icon
+                return (
+                  <DropdownMenuItem key={type} asChild>
+                    <Link href={`/provider/properties/new?type=${type}`} className="flex items-center">
+                      <Icon className={`mr-2 h-4 w-4 ${config.color}`} />
+                      {config.label}
+                    </Link>
+                  </DropdownMenuItem>
+                )
+              })}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -471,5 +477,13 @@ export default function ProviderPropertiesPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  )
+}
+
+export default function ProviderPropertiesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+      <ProviderPropertiesContent />
+    </Suspense>
   )
 }

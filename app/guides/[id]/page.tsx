@@ -345,16 +345,17 @@ export default function GuideDetailPage() {
 
 {/* Contact Button */}
 <ContactDialog
-  contextType="guide"
-  contextId={guide.id}
-  contextName={guide.title || guide.nickname || "Guide"}
-  trigger={
-    <Button variant="outline" size="lg" className="w-full">
-      <MessageSquare className="mr-2 h-4 w-4" />
-      Contact Guide
-    </Button>
-  }
-/>
+  recipientId={guide.provider_id || ""}
+  recipientName={guide.organizer?.name || guide.title}
+  relatedToType="guide"
+  relatedToId={guide.id}
+  relatedToName={guide.title}
+>
+  <Button variant="outline" size="lg" className="w-full">
+    <MessageSquare className="mr-2 h-4 w-4" />
+    Contact Guide
+  </Button>
+</ContactDialog>
 
 {/* Add to Itinerary */}
 <AddToItineraryButton

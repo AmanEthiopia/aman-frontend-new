@@ -134,7 +134,7 @@ export default function BookGuidePage() {
 
       const response = await createGuideBooking(payload)
       setSuccess(true)
-      setBookingNumber(response.booking.booking_number)
+      setBookingNumber(response.booking_number)
       toast.success("Booking submitted successfully!")
     } catch (err: any) {
       const message = err.message || "Failed to submit booking"
