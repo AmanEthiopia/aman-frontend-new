@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Star,
   Mountain,
+  Map,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -203,6 +204,7 @@ export default function HomePage() {
     { icon: UtensilsCrossed, label: "Restaurants", href: "/restaurants", color: "bg-orange-500/10 text-orange-600" },
     { icon: Car, label: "Transport", href: "/transport", color: "bg-green-500/10 text-green-600" },
     { icon: Compass, label: "Experiences", href: "/experiences", color: "bg-purple-500/10 text-purple-600" },
+    { icon: Map, label: "Guides", href: "/guides", color: "bg-teal-500/10 text-teal-600" },
     { icon: Mountain, label: "Attractions", href: "/attractions", color: "bg-amber-500/10 text-amber-600" },
     { icon: MapPin, label: "Cities", href: "/cities", color: "bg-rose-500/10 text-rose-600" },
   ]
@@ -276,7 +278,7 @@ export default function HomePage() {
       {/* Quick Actions */}
       <section>
         <h2 className="mb-4 text-lg font-semibold">Discover Ethiopia</h2>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+        <div className="grid grid-cols-4 gap-3 sm:grid-cols-7">
           {quickActions.map((action) => {
             const Icon = action.icon
             return (

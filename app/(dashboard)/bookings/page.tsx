@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { getMediaUrl } from "@/lib/utils/media"
@@ -47,6 +47,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useAllBookings, useCancelHotelBooking, useCancelRestaurantReservation, useCancelPackageBooking } from "@/lib/hooks/use-bookings"
 import type { Booking, BookingStatus, HotelBooking, RestaurantReservation, PackageBooking, TransportBooking } from "@/lib/api/bookings"
+import { getMyGuideBookings, cancelGuideBooking, type GuideBooking, SERVICE_TYPE_LABELS } from "@/lib/api/guides"
 import { toast } from "sonner"
 
 const statusConfig: Record<BookingStatus, { label: string; icon: typeof Clock; variant: "default" | "secondary" | "destructive" | "outline"; color: string }> = {
@@ -574,6 +575,123 @@ function TransportBookingCard({ booking }: { booking: TransportBooking }) {
   )
 }
 
+function GuideBookingCard({ booking, onCancel }: { booking: GuideBooking; onCancel: () => void }) {
+  const bookingDate = new Date(booking.booking_date)
+  const isPast = bookingDate < new Date()
+
+  const statusColors: Record<string, string> = {
+    pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+    confirmed: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+    rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+    cancelled: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
+    completed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  }
+  const statusIcons: Record<string, typeof Clock> = {
+    pending: Clock,
+    confirmed: CheckCircle2,
+    rejected: XCircle,
+    cancelled: Ban,
+    completed: CheckCircle2,
+  }
+  const StatusIcon = statusIcons[booking.status] || Clock
+
+  return (
+    <Card className={isPast ? "opacity-75" : ""}>
+      <CardContent className="p-0">
+        <div className="flex flex-col sm:flex-row">
+          <div className="relative flex h-32 w-full items-center justify-center bg-teal-50 dark:bg-teal-950/20 sm:h-auto sm:w-40 sm:rounded-l-lg">
+            <Compass className="h-12 w-12 text-teal-400" />
+            <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-teal-600 px-2 py-0.5 text-xs font-medium text-white">
+              <Compass className="h-3 w-3" />
+              Guide
+            </div>
+          </div>
+
+          <div className="flex flex-1 flex-col justify-between p-4">
+            <div>
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div>
+                  <h3 className="font-semibold">{booking.guide.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {SERVICE_TYPE_LABELS[booking.guide.service_type as keyof typeof SERVICE_TYPE_LABELS]}
+                  </p>
+                </div>
+                <Badge className={`gap-1 border-0 ${statusColors[booking.status] || statusColors.pending}`}>
+                  <StatusIcon className="h-3 w-3" />
+                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                </Badge>
+              </div>
+
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4" />
+                  {bookingDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+                </span>
+                {booking.start_time && (
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" />
+                    {booking.start_time}
+                  </span>
+                )}
+                <span className="flex items-center gap-1.5">
+                  <Users className="h-4 w-4" />
+                  {booking.num_adults} adult{booking.num_adults !== 1 ? "s" : ""}
+                  {booking.num_children > 0 && `, ${booking.num_children} child${booking.num_children !== 1 ? "ren" : ""}`}
+                </span>
+              </div>
+
+              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-mono">{booking.booking_number}</span>
+                {booking.hours_requested && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {booking.hours_requested} hrs
+                  </span>
+                )}
+              </div>
+
+              {booking.special_requests && (
+                <div className="mt-2 rounded-md bg-muted/50 p-2 text-sm">
+                  <p className="font-medium text-muted-foreground">Special Requests:</p>
+                  <p className="mt-0.5">{booking.special_requests}</p>
+                </div>
+              )}
+
+              {booking.cancellation_reason && (
+                <div className="mt-2 rounded-md bg-destructive/5 p-2 text-sm text-destructive">
+                  <p className="font-medium">Reason: {booking.cancellation_reason}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 flex items-center justify-between border-t pt-4">
+              <div>
+                <span className="text-sm text-muted-foreground">Total</span>
+                <p className="text-lg font-bold">
+                  {booking.currency} {parseFloat(booking.total_price).toLocaleString()}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Link href={`/guides/${booking.guide.slug}`}>
+                  <Button variant="outline" size="sm">
+                    View Guide
+                  </Button>
+                </Link>
+                {(booking.status === "pending" || booking.status === "confirmed") && !isPast && (
+                  <Button variant="ghost" size="sm" onClick={onCancel} className="text-destructive hover:text-destructive">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cancel
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 function BookingCard({ booking, onCancel }: { booking: Booking; onCancel: () => void }) {
   switch (booking.type) {
     case "hotel":
@@ -636,10 +754,52 @@ export default function BookingsPage() {
   const { cancelBooking: cancelHotel, isCancelling: isCancellingHotel } = useCancelHotelBooking()
   const { cancelReservation: cancelRestaurant, isCancelling: isCancellingRestaurant } = useCancelRestaurantReservation()
   const { cancelBooking: cancelPackage, isCancelling: isCancellingPackage } = useCancelPackageBooking()
-  
+
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; booking: Booking | null }>({ open: false, booking: null })
   const [cancelReason, setCancelReason] = useState("")
   const [activeFilter, setActiveFilter] = useState<"all" | "hotel" | "restaurant" | "package" | "transport">("all")
+
+  // Guide bookings state
+  const [guideBookings, setGuideBookings] = useState<GuideBooking[]>([])
+  const [guideBookingsLoading, setGuideBookingsLoading] = useState(true)
+  const [guideCancelDialog, setGuideCancelDialog] = useState<{ open: boolean; booking: GuideBooking | null }>({ open: false, booking: null })
+  const [guideCancelReason, setGuideCancelReason] = useState("")
+  const [isCancellingGuide, setIsCancellingGuide] = useState(false)
+
+  useEffect(() => {
+    async function loadGuideBookings() {
+      setGuideBookingsLoading(true)
+      try {
+        const data = await getMyGuideBookings()
+        setGuideBookings(data)
+      } catch {
+        setGuideBookings([])
+      } finally {
+        setGuideBookingsLoading(false)
+      }
+    }
+    loadGuideBookings()
+  }, [])
+
+  const handleCancelGuideBooking = async () => {
+    if (!guideCancelDialog.booking) return
+    setIsCancellingGuide(true)
+    try {
+      await cancelGuideBooking(guideCancelDialog.booking.id, guideCancelReason || undefined)
+      setGuideBookings((prev) =>
+        prev.map((b) =>
+          b.id === guideCancelDialog.booking!.id ? { ...b, status: "cancelled" as const } : b
+        )
+      )
+      toast.success("Guide booking cancelled")
+      setGuideCancelDialog({ open: false, booking: null })
+      setGuideCancelReason("")
+    } catch {
+      toast.error("Failed to cancel booking. Please try again.")
+    } finally {
+      setIsCancellingGuide(false)
+    }
+  }
 
   const isCancelling = isCancellingHotel || isCancellingRestaurant || isCancellingPackage
 
@@ -777,6 +937,14 @@ export default function BookingsPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="past">Past</TabsTrigger>
+          <TabsTrigger value="guides" className="gap-2">
+            Guides
+            {guideBookings.length > 0 && (
+              <Badge variant="secondary" className="ml-1">
+                {guideBookings.length}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="upcoming" className="space-y-4">
@@ -810,9 +978,9 @@ export default function BookingsPage() {
         <TabsContent value="past" className="space-y-4">
           {pastBookings.length > 0 ? (
             pastBookings.map((booking: Booking) => (
-              <BookingCard 
-                key={booking.id} 
-                booking={booking} 
+              <BookingCard
+                key={booking.id}
+                booking={booking}
                 onCancel={() => {}}
               />
             ))
@@ -820,9 +988,36 @@ export default function BookingsPage() {
             <EmptyBookings type="past" />
           )}
         </TabsContent>
+
+        <TabsContent value="guides" className="space-y-4">
+          {guideBookingsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+          ) : guideBookings.length > 0 ? (
+            guideBookings.map((booking) => (
+              <GuideBookingCard
+                key={booking.id}
+                booking={booking}
+                onCancel={() => setGuideCancelDialog({ open: true, booking })}
+              />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed py-16 text-center">
+              <Compass className="mb-4 h-12 w-12 text-muted-foreground/50" />
+              <h3 className="mb-2 text-lg font-semibold">No guide bookings yet</h3>
+              <p className="mb-6 max-w-sm text-sm text-muted-foreground">
+                Book a local tour guide, driver, photographer, or interpreter for your Ethiopian adventure.
+              </p>
+              <Link href="/guides">
+                <Button>Browse Guides</Button>
+              </Link>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
-      {/* Cancel Booking Dialog */}
+      {/* Cancel Hotel/Restaurant/Package Booking Dialog */}
       <Dialog open={cancelDialog.open} onOpenChange={(open) => !open && setCancelDialog({ open: false, booking: null })}>
         <DialogContent>
           <DialogHeader>
@@ -845,6 +1040,42 @@ export default function BookingsPage() {
             </Button>
             <Button variant="destructive" onClick={handleCancelBooking} disabled={isCancelling}>
               {isCancelling ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cancelling...
+                </>
+              ) : (
+                "Cancel Booking"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Guide Booking Dialog */}
+      <Dialog open={guideCancelDialog.open} onOpenChange={(open) => !open && setGuideCancelDialog({ open: false, booking: null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Guide Booking</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel your booking with{" "}
+              <span className="font-medium">{guideCancelDialog.booking?.guide.title}</span>?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Reason for cancellation (optional)"
+              value={guideCancelReason}
+              onChange={(e) => setGuideCancelReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGuideCancelDialog({ open: false, booking: null })}>
+              Keep Booking
+            </Button>
+            <Button variant="destructive" onClick={handleCancelGuideBooking} disabled={isCancellingGuide}>
+              {isCancellingGuide ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Cancelling...
