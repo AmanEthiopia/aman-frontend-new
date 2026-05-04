@@ -237,6 +237,14 @@ export interface UserProfile {
   interests: string[] | null
   dietary_restrictions: string[] | null
   accessibility_needs: string[] | null
+  dark_mode: boolean
+  notif_email_bookings: boolean
+  notif_email_messages: boolean
+  notif_email_reviews: boolean
+  notif_email_payments: boolean
+  notif_email_marketing: boolean
+  notif_push_bookings: boolean
+  notif_push_messages: boolean
 }
 
 export interface UserRole {
@@ -247,10 +255,36 @@ export interface UserRole {
   is_premium: boolean
 }
 
+export interface ProviderProfileInfo {
+  business_name: string
+  business_type: string
+  registration_number: string | null
+  tax_id: string | null
+  business_address: string | null
+  website: string | null
+  support_email: string | null
+}
+
+export interface PayoutSettingsInfo {
+  bank_name: string | null
+  account_number: string | null
+  account_holder_name: string | null
+  payout_schedule: "weekly" | "biweekly" | "monthly"
+}
+
+export interface ProfileCompletionInfo {
+  percentage: number
+  is_complete: boolean
+  missing: string[]
+}
+
 export interface CompleteUserProfile {
   user: User
   profile: UserProfile
   role: UserRole
+  provider_profile: ProviderProfileInfo | null
+  payout_settings: PayoutSettingsInfo | null
+  profile_completion: ProfileCompletionInfo | null
 }
 
 export interface Provider {
