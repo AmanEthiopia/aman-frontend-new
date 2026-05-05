@@ -49,6 +49,7 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { getConversations } from "@/lib/api/messages"
 import { getMyBookings, getMyProperties } from "@/lib/api/provider"
+import { getUnreadCount } from "@/lib/api/notifications"
 import type { PropertyBase, PropertyCategory } from "@/lib/api/provider"
 
 interface NavItem {
@@ -225,6 +226,7 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
   const [myProperties, setMyProperties] = useState<PropertyBase[]>([])
   const [pendingBookings, setPendingBookings] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
+  const [unreadNotifs, setUnreadNotifs] = useState(0)
 
   // Fetch real counts for badges and property list
   useEffect(() => {
@@ -245,6 +247,12 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
         setUnreadMessages(total)
       } catch {
         setUnreadMessages(0)
+      }
+      try {
+        const count = await getUnreadCount()
+        setUnreadNotifs(count)
+      } catch {
+        setUnreadNotifs(0)
       }
       try {
         // Fetch real properties for the dropdown
@@ -366,7 +374,11 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
             <Link href="/provider/notifications">
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-destructive" />
+                {unreadNotifs > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                    {unreadNotifs > 99 ? "99+" : unreadNotifs}
+                  </span>
+                )}
               </Button>
             </Link>
             <DropdownMenu>

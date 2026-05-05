@@ -3,11 +3,11 @@
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shield, MapPin, Star, Heart, Clock } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useApp } from "@/lib/contexts/app-context"
+import { Shield, MapPin, Star, Clock } from "lucide-react"
 import { formatRating } from "@/lib/utils"
 import { SafeCardImage } from "@/components/ui/safe-image"
+import { WishlistButton } from "@/components/wishlist-button"
+import type { WishlistItemType } from "@/lib/api/wishlists"
 
 interface ListingCardProps {
   id: string
@@ -57,11 +57,11 @@ export function ListingCard({
   tags,
   safetyScore,
 }: ListingCardProps) {
-  const { toggleSavedItem, isItemSaved } = useApp()
   const priceInfo = priceRangeLabels[priceRange ?? ""] ?? DEFAULT_PRICE_INFO
-  // Use slug for URL if available, fallback to id
   const href = `/${type}s/${slug || id}`
-  const saved = isItemSaved(id)
+  // Map listing type to wishlist item type
+  const wishlistType: WishlistItemType =
+    type === "transport" ? "driver" : (type as WishlistItemType)
 
   return (
     <Card className="group h-full overflow-hidden transition-shadow hover:shadow-lg">
@@ -107,17 +107,7 @@ export function ListingCard({
           <Link href={href}>
             <h3 className="line-clamp-1 font-semibold text-foreground group-hover:text-primary">{name}</h3>
           </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={(e) => {
-              e.preventDefault()
-              toggleSavedItem(id)
-            }}
-          >
-            <Heart className={`h-4 w-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
-          </Button>
+          <WishlistButton itemType={wishlistType} itemId={id} className="h-8 w-8" />
         </div>
 
         <div className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">

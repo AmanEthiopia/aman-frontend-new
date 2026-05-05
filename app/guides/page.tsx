@@ -28,6 +28,7 @@ import {
 import { getCities, type City } from "@/lib/api/content"
 import { SafeCardImage } from "@/components/ui/safe-image"
 import { formatRating, toNumber } from "@/lib/utils"
+import { WishlistButton } from "@/components/wishlist-button"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -135,6 +136,11 @@ function GuideCard({ guide }: { guide: Guide }) {
                   </Badge>
                 )}
               </div>
+              <WishlistButton
+                itemType="guide"
+                itemId={guide.id}
+                className="absolute right-3 top-3 h-8 w-8 rounded-full bg-background/80 hover:bg-background"
+              />
               <div className="absolute bottom-3 right-3 rounded-full bg-background/95 px-3 py-1.5 text-sm font-bold shadow-md">
                 ${toNumber(guide.price).toFixed(0)}
                 <span className="text-xs font-normal text-muted-foreground">
