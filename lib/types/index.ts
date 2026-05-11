@@ -349,10 +349,16 @@ export interface Room {
   name: string
   description: string
   bed_type?: string
-  price_per_night: number
-  max_guests: number
+  bed_count?: number
+  price_per_night?: number
+  base_price?: string | number  // API returns "100.00" string
+  max_guests?: number
+  max_adults?: number
+  max_children?: number
+  room_size_sqm?: number
   amenities: string[]
-  images: RoomImage[]
+  images?: RoomImage[]
+  photos?: RoomImage[]
   is_available: boolean
   total_units?: number
   available_units?: number | null  // null = no dates; number = with dates; 0 = fully booked
@@ -361,9 +367,10 @@ export interface Room {
 
 export interface RoomImage {
   id: string
-  url: string
-  alt: string
-  is_primary: boolean
+  url?: string
+  photo_url?: string
+  alt?: string
+  is_primary?: boolean
 }
 
 export interface Booking {

@@ -311,7 +311,11 @@ function ProviderMessagesContent() {
     stopPollerRef.current = createMessagePoller(
       selectedConversation,
       (newMessages) => {
-        setMessages((prev) => [...prev, ...newMessages])
+        setMessages((prev) => {
+          const existing = new Set(prev.map((m) => m.id))
+          const fresh = newMessages.filter((m) => !existing.has(m.id))
+          return fresh.length > 0 ? [...prev, ...fresh] : prev
+        })
       },
       5000
     )

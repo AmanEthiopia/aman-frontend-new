@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profileData = await authAPI.getCurrentUser()
       setUserProfile(profileData)
 
-      router.push("/home")
+      router.push(profileData?.role?.is_provider ? "/provider" : "/home")
     } catch (error) {
       throw error
     } finally {

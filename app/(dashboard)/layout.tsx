@@ -3,7 +3,7 @@
 import type { ReactNode } from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Home, Calendar, Map, MessageSquare, Settings, Bell, Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getMediaUrl } from "@/lib/utils/media"
@@ -17,9 +17,17 @@ import { getUnreadCount } from "@/lib/api/notifications"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { userProfile, isAuthenticated } = useAuth()
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [unreadNotifs, setUnreadNotifs] = useState(0)
+
+  // Redirect providers away from traveler dashboard
+  useEffect(() => {
+    if (userProfile?.role?.is_provider) {
+      router.replace("/provider")
+    }
+  }, [userProfile, router])
 
   // Fetch unread message count
   useEffect(() => {

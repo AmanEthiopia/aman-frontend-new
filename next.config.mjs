@@ -10,6 +10,11 @@ const nextConfig = {
         hostname: "api.aman.yichalal.ai",
         pathname: "/media/**",
       },
+      {
+        protocol: "http",
+        hostname: "api.aman.yichalal.ai",
+        pathname: "/media/**",
+      },
     ],
   },
 }

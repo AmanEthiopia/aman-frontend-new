@@ -8,7 +8,6 @@ import {
   Calendar,
   MapPin,
   Clock,
-  MoreHorizontal,
   Filter,
   Building2,
   CheckCircle2,
@@ -46,7 +45,7 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { useAllBookings, useCancelHotelBooking, useCancelRestaurantReservation, useCancelPackageBooking } from "@/lib/hooks/use-bookings"
-import type { Booking, BookingStatus, HotelBooking, RestaurantReservation, PackageBooking, TransportBooking } from "@/lib/api/bookings"
+import type { Booking, BookingStatus, HotelBookingListItem, RestaurantReservationListItem, PackageBooking, TransportBooking } from "@/lib/api/bookings"
 import { getMyGuideBookings, cancelGuideBooking, type GuideBooking, SERVICE_TYPE_LABELS } from "@/lib/api/guides"
 import { toast } from "sonner"
 
@@ -130,17 +129,12 @@ function getBookingEndDate(booking: Booking): Date {
   }
 }
 
-function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCancel: () => void }) {
+function HotelBookingCard({ booking, onCancel }: { booking: HotelBookingListItem; onCancel: () => void }) {
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const checkIn = new Date(booking.check_in_date)
   const checkOut = new Date(booking.check_out_date)
   const isPast = checkOut < new Date()
-
-  // hotel object may not be populated by the backend — use safe access throughout
-  const hotelName = booking.hotel?.name ?? `Booking #${booking.booking_number}`
-  const hotelAddress = booking.hotel?.address
-  const hotelCover = booking.hotel?.cover_photo_url
 
   return (
     <Card className={isPast ? "opacity-75" : ""}>
@@ -148,8 +142,8 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCanc
         <div className="flex flex-col sm:flex-row">
           <div className="relative h-32 w-full sm:h-auto sm:w-40">
             <Image
-              src={getMediaUrl(hotelCover) || "/placeholder.svg?height=160&width=160"}
-              alt={hotelName}
+              src={getMediaUrl(booking.hotel_photo) || "/placeholder.svg?height=160&width=160"}
+              alt={booking.hotel_name}
               fill
               className="object-cover sm:rounded-l-lg"
             />
@@ -163,14 +157,11 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCanc
             <div>
               <div className="mb-2 flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold">{hotelName}</h3>
-                  {booking.hotel?.nickname && (
-                    <span className="text-sm text-muted-foreground">{booking.hotel.nickname}</span>
-                  )}
-                  {hotelAddress && (
+                  <h3 className="font-semibold">{booking.hotel_name}</h3>
+                  {booking.hotel_city && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <MapPin className="h-3 w-3" />
-                      {hotelAddress}
+                      {booking.hotel_city}
                     </div>
                   )}
                 </div>
@@ -206,19 +197,10 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCanc
                 </div>
               </div>
 
-              {(booking.rooms?.length ?? 0) > 0 && (
-                <div className="mt-2 text-sm text-muted-foreground space-y-1">
-                  {booking.rooms.map((room) => (
-                    <div key={room.id}>
-                      <span>{room.quantity}× {room.room_name}</span>
-                      {room.assigned_unit_numbers && room.assigned_unit_numbers.length > 0 && (
-                        <span className="ml-2 inline-flex flex-wrap gap-1">
-                          {room.assigned_unit_numbers.map((u) => (
-                            <span key={u} className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium">Room {u}</span>
-                          ))}
-                        </span>
-                      )}
-                    </div>
+              {(booking.room_summary?.length ?? 0) > 0 && (
+                <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
+                  {booking.room_summary.map((room, i) => (
+                    <div key={i}>{room.quantity}× {room.room_name} ({room.bed_type})</div>
                   ))}
                 </div>
               )}
@@ -237,36 +219,18 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCanc
                 <p className="text-lg font-bold">{booking.currency} {parseFloat(booking.total_price).toLocaleString()}</p>
               </div>
               <div className="flex gap-2">
-                {booking.status === "confirmed" && !isPast && (
+                <Link href={`/bookings/hotel/${booking.id}`}>
                   <Button variant="outline" size="sm">
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Contact Host
+                    <Building2 className="mr-2 h-4 w-4" />
+                    View Details
+                  </Button>
+                </Link>
+                {(booking.status === "pending" || booking.status === "confirmed") && !isPast && (
+                  <Button variant="ghost" size="sm" onClick={onCancel} className="text-destructive hover:text-destructive">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cancel
                   </Button>
                 )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Building2 className="mr-2 h-4 w-4" />
-                      View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Phone className="mr-2 h-4 w-4" />
-                      Call Property
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    {(booking.status === "pending" || booking.status === "confirmed") && !isPast && (
-                      <DropdownMenuItem className="text-destructive" onClick={onCancel}>
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Cancel Booking
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
             </div>
           </div>
@@ -276,15 +240,11 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBooking; onCanc
   )
 }
 
-function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantReservation; onCancel: () => void }) {
+function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantReservationListItem; onCancel: () => void }) {
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const reservationDate = new Date(booking.reservation_date)
   const isPast = reservationDate < new Date()
-
-  const restaurantName = booking.restaurant?.name ?? `Reservation #${booking.reservation_number}`
-  const restaurantAddress = booking.restaurant?.address
-  const restaurantCover = booking.restaurant?.cover_photo_url
 
   return (
     <Card className={isPast ? "opacity-75" : ""}>
@@ -292,8 +252,8 @@ function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantR
         <div className="flex flex-col sm:flex-row">
           <div className="relative h-32 w-full sm:h-auto sm:w-40">
             <Image
-              src={getMediaUrl(restaurantCover) || "/placeholder.svg?height=160&width=160"}
-              alt={restaurantName}
+              src={getMediaUrl(booking.restaurant_photo) || "/placeholder.svg?height=160&width=160"}
+              alt={booking.restaurant_name}
               fill
               className="object-cover sm:rounded-l-lg"
             />
@@ -307,14 +267,11 @@ function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantR
             <div>
               <div className="mb-2 flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold">{restaurantName}</h3>
-                  {booking.restaurant?.nickname && (
-                    <span className="text-sm text-muted-foreground">{booking.restaurant.nickname}</span>
-                  )}
-                  {restaurantAddress && (
+                  <h3 className="font-semibold">{booking.restaurant_name}</h3>
+                  {booking.restaurant_city && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <MapPin className="h-3 w-3" />
-                      {restaurantAddress}
+                      {booking.restaurant_city}
                     </div>
                   )}
                 </div>
@@ -349,24 +306,24 @@ function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantR
 
             <div className="mt-4 flex items-center justify-between border-t pt-4">
               <div>
-                {parseFloat(booking.total_price) > 0 ? (
+                {parseFloat(booking.total_price ?? "0") > 0 ? (
                   <>
                     <span className="text-sm text-muted-foreground">Deposit</span>
-                    <p className="text-lg font-bold">{booking.currency} {parseFloat(booking.total_price).toLocaleString()}</p>
+                    <p className="text-lg font-bold">{booking.currency} {parseFloat(booking.total_price!).toLocaleString()}</p>
                   </>
                 ) : (
                   <span className="text-sm text-muted-foreground">No deposit required</span>
                 )}
               </div>
               <div className="flex gap-2">
-                {booking.status === "confirmed" && !isPast && (
+                <Link href={`/bookings/restaurant/${booking.id}`}>
                   <Button variant="outline" size="sm">
-                    <Phone className="mr-2 h-4 w-4" />
-                    Call Restaurant
+                    <Utensils className="mr-2 h-4 w-4" />
+                    View Details
                   </Button>
-                )}
+                </Link>
                 {(booking.status === "pending" || booking.status === "confirmed") && !isPast && (
-                  <Button variant="ghost" size="sm" onClick={onCancel}>
+                  <Button variant="ghost" size="sm" onClick={onCancel} className="text-destructive hover:text-destructive">
                     <XCircle className="mr-2 h-4 w-4" />
                     Cancel
                   </Button>
@@ -422,10 +379,10 @@ function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; on
                     <StatusIcon className="h-3 w-3" />
                     {status.label}
                   </Badge>
-                  {booking.payment_required && (
-                    <Badge variant={booking.payment_status === "paid" ? "default" : "secondary"} className="gap-1">
+                  {(booking as any).payment_required && (
+                    <Badge variant={(booking as any).payment_status === "paid" ? "default" : "secondary"} className="gap-1">
                       <CreditCard className="h-3 w-3" />
-                      {booking.payment_status === "paid" ? "Paid" : "Payment Required"}
+                      {(booking as any).payment_status === "paid" ? "Paid" : "Payment Required"}
                     </Badge>
                   )}
                 </div>
@@ -695,13 +652,13 @@ function GuideBookingCard({ booking, onCancel }: { booking: GuideBooking; onCanc
 function BookingCard({ booking, onCancel }: { booking: Booking; onCancel: () => void }) {
   switch (booking.type) {
     case "hotel":
-      return <HotelBookingCard booking={booking} onCancel={onCancel} />
+      return <HotelBookingCard booking={booking as any} onCancel={onCancel} />
     case "restaurant":
-      return <RestaurantReservationCard booking={booking} onCancel={onCancel} />
+      return <RestaurantReservationCard booking={booking as any} onCancel={onCancel} />
     case "package":
-      return <PackageBookingCard booking={booking} onCancel={onCancel} />
+      return <PackageBookingCard booking={booking as any} onCancel={onCancel} />
     case "transport":
-      return <TransportBookingCard booking={booking} />
+      return <TransportBookingCard booking={booking as any} />
     default:
       return null
   }

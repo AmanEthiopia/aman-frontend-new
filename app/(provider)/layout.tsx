@@ -23,7 +23,6 @@ import {
   User,
   Menu,
   X,
-  Home,
   Package,
   CalendarDays,
 } from "lucide-react"
@@ -365,12 +364,6 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
 
           {/* Right Side */}
           <div className="flex items-center gap-2">
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="hidden gap-2 sm:flex">
-                <Home className="h-4 w-4" />
-                Back to AMAN
-              </Button>
-            </Link>
             <Link href="/provider/notifications">
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
@@ -417,13 +410,6 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
                   <Link href="/provider/properties">
                     <Building2 className="mr-2 h-4 w-4" />
                     My Properties
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/home">
-                    <Home className="mr-2 h-4 w-4" />
-                    Switch to Traveler
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

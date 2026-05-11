@@ -190,17 +190,6 @@ export function Header() {
                         Profile & Settings
                       </Link>
                     </DropdownMenuItem>
-                    {FEATURES.PROVIDER_PORTAL && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                          <Link href="/provider" className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4" />
-                            Switch to Provider
-                          </Link>
-                        </DropdownMenuItem>
-                      </>
-                    )}
                   </>
                 )}
                 {isProvider && FEATURES.PROVIDER_PORTAL && (
@@ -221,13 +210,6 @@ export function Header() {
                       <Link href="/provider/settings" className="flex items-center gap-2">
                         <User className="h-4 w-4" />
                         Profile Settings
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/home" className="flex items-center gap-2">
-                        <Compass className="h-4 w-4" />
-                        Switch to Traveler
                       </Link>
                     </DropdownMenuItem>
                   </>
@@ -340,9 +322,14 @@ export function Header() {
                     </>
                   )}
                   {isProvider && FEATURES.PROVIDER_PORTAL && (
-                    <Button variant="outline" asChild className="w-full bg-transparent">
-                      <Link href="/provider">Provider Dashboard</Link>
-                    </Button>
+                    <>
+                      <Button variant="outline" asChild className="w-full bg-transparent">
+                        <Link href="/provider">Provider Dashboard</Link>
+                      </Button>
+                      <Button variant="ghost" asChild className="w-full justify-start bg-transparent">
+                        <Link href="/provider/settings">Profile Settings</Link>
+                      </Button>
+                    </>
                   )}
                   <Button variant="outline" onClick={logout} className="w-full bg-transparent text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />

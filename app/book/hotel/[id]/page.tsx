@@ -459,16 +459,21 @@ export default function BookHotelPage() {
                               <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Users className="h-3.5 w-3.5" />
-                                  Up to {room.max_guests} guests
+                                  Up to {room.max_adults !== undefined ? room.max_adults + (room.max_children ?? 0) : (room.max_guests ?? 1)} guests
                                 </span>
-                                <span className="font-semibold text-foreground">
-                                  ${room.price_per_night}/night
-                                  {qty > 0 && totalNights > 0 && (
-                                    <span className="ml-1 font-normal text-muted-foreground">
-                                      = ${(room.price_per_night * qty * totalNights).toLocaleString()} total
+                                {(() => {
+                                  const p = room.base_price !== undefined ? parseFloat(String(room.base_price)) : (room.price_per_night ?? 0)
+                                  return (
+                                    <span className="font-semibold text-foreground">
+                                      ${p}/night
+                                      {qty > 0 && totalNights > 0 && (
+                                        <span className="ml-1 font-normal text-muted-foreground">
+                                          = ${(p * qty * totalNights).toLocaleString()} total
+                                        </span>
+                                      )}
                                     </span>
-                                  )}
-                                </span>
+                                  )
+                                })()}
                               </div>
 
                               {/* Availability boxes */}
@@ -707,7 +712,9 @@ export default function BookHotelPage() {
                               <div key={room_id} className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">{room.name} × {quantity}</span>
                                 {totalNights > 0 && (
-                                  <span className="font-medium">${(room.price_per_night * quantity * totalNights).toLocaleString()}</span>
+                                  <span className="font-medium">
+                                    ${((room.base_price !== undefined ? parseFloat(String(room.base_price)) : (room.price_per_night ?? 0)) * quantity * totalNights).toLocaleString()}
+                                  </span>
                                 )}
                               </div>
                             )

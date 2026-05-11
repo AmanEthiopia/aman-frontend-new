@@ -27,7 +27,10 @@ export interface HotelBookingRoom {
   room_id: string
   room_name: string
   bed_type: string
+  bed_count?: number
   quantity: number
+  room_size_sqm?: number
+  photo_url?: string
   price_per_night: string
   num_nights: number
   subtotal: string
@@ -40,12 +43,18 @@ export interface HotelBookingHotel {
   name: string
   nickname?: string
   address: string
+  city?: string
+  slug?: string
+  phone?: string
+  photo_url?: string
   check_in_time: string
   check_out_time: string
   star_rating?: number
+  average_rating?: number
   cover_photo_url?: string
 }
 
+// Full detail shape returned by GET /bookings/hotel/{id}/
 export interface HotelBooking {
   id: string
   booking_number: string
@@ -57,6 +66,45 @@ export interface HotelBooking {
   check_out_date: string
   total_nights: number
   rooms: HotelBookingRoom[]
+  num_adults: number
+  num_children: number
+  total_price: string
+  currency: string
+  guest_name: string
+  guest_email: string
+  guest_phone?: string
+  special_requests?: string
+  confirmed_at?: string | null
+  cancelled_at?: string | null
+  cancellation_reason?: string | null
+  created_at: string
+  source?: "online" | "manual"
+}
+
+// Flat summary of a room as returned by the list endpoint
+export interface HotelRoomSummary {
+  room_name: string
+  bed_type: string
+  quantity: number
+}
+
+// Flat shape returned by GET /bookings/hotel/mine/ and /bookings/provider/hotel/
+export interface HotelBookingListItem {
+  id: string
+  booking_number: string
+  status: BookingStatus
+  payment_required: boolean
+  payment_status: PaymentStatus
+  hotel_name: string
+  hotel_slug?: string
+  hotel_city?: string
+  hotel_photo?: string
+  hotel_star_rating?: number
+  hotel_average_rating?: number
+  check_in_date: string
+  check_out_date: string
+  total_nights: number
+  room_summary: HotelRoomSummary[]
   num_adults: number
   num_children: number
   total_price: string
@@ -94,9 +142,9 @@ export async function createHotelBooking(payload: CreateHotelBookingPayload): Pr
   return apiPost<HotelBookingResponse>("/bookings/hotel/", payload)
 }
 
-export async function getMyHotelBookings(status?: BookingStatus): Promise<HotelBooking[]> {
+export async function getMyHotelBookings(status?: BookingStatus): Promise<HotelBookingListItem[]> {
   const params = status ? `?status=${status}` : ""
-  const result = await apiGet<HotelBooking[] | { results: HotelBooking[] }>(`/bookings/hotel/mine/${params}`)
+  const result = await apiGet<HotelBookingListItem[] | { results: HotelBookingListItem[] }>(`/bookings/hotel/mine/${params}`)
   return Array.isArray(result) ? result : result?.results ?? []
 }
 
@@ -117,16 +165,47 @@ export interface RestaurantBookingRestaurant {
   name: string
   nickname?: string
   address: string
+  city?: string
+  slug?: string
+  phone?: string
+  photo_url?: string
   cuisine_type?: string
   cover_photo_url?: string
 }
 
+// Full detail shape returned by GET /bookings/restaurant/{id}/
 export interface RestaurantReservation {
   id: string
   reservation_number: string
   status: BookingStatus
   payment_status?: PaymentStatus
   restaurant: RestaurantBookingRestaurant
+  reservation_date: string
+  reservation_time: string
+  duration_minutes?: number
+  party_size: number
+  total_price?: string
+  currency?: string
+  guest_name: string
+  guest_email: string
+  guest_phone?: string
+  special_requests?: string
+  confirmed_at?: string | null
+  cancelled_at?: string | null
+  created_at: string
+}
+
+// Flat shape returned by GET /bookings/restaurant/mine/
+export interface RestaurantReservationListItem {
+  id: string
+  reservation_number: string
+  status: BookingStatus
+  payment_status?: PaymentStatus
+  restaurant_name: string
+  restaurant_slug?: string
+  restaurant_city?: string
+  restaurant_photo?: string
+  restaurant_cuisine_type?: string
   reservation_date: string
   reservation_time: string
   duration_minutes?: number
@@ -165,9 +244,9 @@ export async function createRestaurantReservation(
   return apiPost<RestaurantReservationResponse>("/bookings/restaurant/", payload)
 }
 
-export async function getMyRestaurantReservations(status?: BookingStatus): Promise<RestaurantReservation[]> {
+export async function getMyRestaurantReservations(status?: BookingStatus): Promise<RestaurantReservationListItem[]> {
   const params = status ? `?status=${status}` : ""
-  const result = await apiGet<RestaurantReservation[] | { results: RestaurantReservation[] }>(`/bookings/restaurant/mine/${params}`)
+  const result = await apiGet<RestaurantReservationListItem[] | { results: RestaurantReservationListItem[] }>(`/bookings/restaurant/mine/${params}`)
   return Array.isArray(result) ? result : result?.results ?? []
 }
 
@@ -305,12 +384,12 @@ export async function cancelDriverBooking(id: string, reason?: string): Promise<
 // ============================================================================
 
 // Hotel
-export async function getProviderHotelBookings(params?: { status?: BookingStatus; hotel_id?: string }): Promise<HotelBooking[]> {
+export async function getProviderHotelBookings(params?: { status?: BookingStatus; hotel_id?: string }): Promise<HotelBookingListItem[]> {
   const searchParams = new URLSearchParams()
   if (params?.status) searchParams.append("status", params.status)
   if (params?.hotel_id) searchParams.append("hotel_id", params.hotel_id)
   const query = searchParams.toString() ? `?${searchParams.toString()}` : ""
-  const result = await apiGet<HotelBooking[] | { results: HotelBooking[] }>(`/bookings/provider/hotel/${query}`)
+  const result = await apiGet<HotelBookingListItem[] | { results: HotelBookingListItem[] }>(`/bookings/provider/hotel/${query}`)
   return Array.isArray(result) ? result : result?.results ?? []
 }
 
@@ -352,13 +431,13 @@ export async function createManualHotelBooking(
 }
 
 // Restaurant
-export async function getProviderRestaurantReservations(params?: { status?: BookingStatus; restaurant_id?: string; date?: string }): Promise<RestaurantReservation[]> {
+export async function getProviderRestaurantReservations(params?: { status?: BookingStatus; restaurant_id?: string; date?: string }): Promise<RestaurantReservationListItem[]> {
   const searchParams = new URLSearchParams()
   if (params?.status) searchParams.append("status", params.status)
   if (params?.restaurant_id) searchParams.append("restaurant_id", params.restaurant_id)
   if (params?.date) searchParams.append("date", params.date)
   const query = searchParams.toString() ? `?${searchParams.toString()}` : ""
-  const result = await apiGet<RestaurantReservation[] | { results: RestaurantReservation[] }>(`/bookings/provider/restaurant/${query}`)
+  const result = await apiGet<RestaurantReservationListItem[] | { results: RestaurantReservationListItem[] }>(`/bookings/provider/restaurant/${query}`)
   return Array.isArray(result) ? result : result?.results ?? []
 }
 
@@ -520,21 +599,20 @@ export interface NormalizedBooking {
   guest_name: string
   guest_email: string
   guest_phone?: string
-  date_from: string           // check_in_date / reservation_date / start_date / trip_date
-  date_to?: string            // check_out_date (hotel only)
-  guests: number              // num_adults+children / party_size / num_passengers
+  date_from: string
+  date_to?: string
+  guests: number
   total_price: string
   status: BookingStatus
   special_requests?: string
   created_at: string
-  // Keep raw for detail modal
-  raw: HotelBooking | RestaurantReservation | PackageBooking | DriverBooking
+  raw: HotelBookingListItem | RestaurantReservationListItem | PackageBooking | DriverBooking
 }
 
-export function normalizeHotelBooking(b: HotelBooking): NormalizedBooking {
+export function normalizeHotelBooking(b: HotelBookingListItem): NormalizedBooking {
   return {
     id: b.id, booking_number: b.booking_number, service_type: "hotel",
-    property_name: b.hotel?.name ?? "Hotel",
+    property_name: b.hotel_name,
     guest_name: b.guest_name, guest_email: b.guest_email, guest_phone: b.guest_phone,
     date_from: b.check_in_date, date_to: b.check_out_date,
     guests: (b.num_adults ?? 0) + (b.num_children ?? 0),
@@ -543,10 +621,10 @@ export function normalizeHotelBooking(b: HotelBooking): NormalizedBooking {
   }
 }
 
-export function normalizeRestaurantReservation(r: RestaurantReservation): NormalizedBooking {
+export function normalizeRestaurantReservation(r: RestaurantReservationListItem): NormalizedBooking {
   return {
     id: r.id, booking_number: r.reservation_number, service_type: "restaurant",
-    property_name: r.restaurant?.name ?? "Restaurant",
+    property_name: r.restaurant_name,
     guest_name: r.guest_name, guest_email: r.guest_email, guest_phone: r.guest_phone,
     date_from: r.reservation_date,
     guests: r.party_size,
@@ -608,17 +686,16 @@ export type CreateTransportBookingPayload = CreateDriverBookingPayload
 export type TransportBookingResponse = { booking: DriverBooking; payment?: PaymentInfo }
 
 export interface AllBookingsResponse {
-  hotel: HotelBooking[]
-  restaurant: RestaurantReservation[]
+  hotel: HotelBookingListItem[]
+  restaurant: RestaurantReservationListItem[]
   package: PackageBooking[]
   driver: DriverBooking[]
-  transport: DriverBooking[] // alias for driver
+  transport: DriverBooking[]
 }
 
-// Discriminated union used by the traveler bookings page filter
 export type Booking =
-  | (HotelBooking & { type: "hotel" })
-  | (RestaurantReservation & { type: "restaurant" })
+  | (HotelBookingListItem & { type: "hotel" })
+  | (RestaurantReservationListItem & { type: "restaurant" })
   | (PackageBooking & { type: "package" })
   | (DriverBooking & { type: "transport" })
 
@@ -634,8 +711,8 @@ export async function getAllMyBookings(): Promise<AllBookingsResponse> {
   ])
   const drivers = driver.status === "fulfilled" ? driver.value : []
   return {
-    hotel: hotel.status === "fulfilled" ? hotel.value : [],
-    restaurant: restaurant.status === "fulfilled" ? restaurant.value : [],
+    hotel: hotel.status === "fulfilled" ? (hotel.value as HotelBookingListItem[]) : [],
+    restaurant: restaurant.status === "fulfilled" ? (restaurant.value as RestaurantReservationListItem[]) : [],
     package: pkg.status === "fulfilled" ? pkg.value : [],
     driver: drivers,
     transport: drivers,

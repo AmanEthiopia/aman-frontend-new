@@ -6,7 +6,9 @@ import * as bookingsAPI from "@/lib/api/bookings"
 import type {
   BookingStatus,
   HotelBooking,
+  HotelBookingListItem,
   RestaurantReservation,
+  RestaurantReservationListItem,
   PackageBooking,
   TransportBooking,
   Booking,
@@ -67,7 +69,7 @@ export function useAllBookings() {
  * Hook to get hotel bookings
  */
 export function useHotelBookings(status?: BookingStatus) {
-  const { data, error, isLoading, mutate } = useSWR<HotelBooking[]>(
+  const { data, error, isLoading, mutate } = useSWR<HotelBookingListItem[]>(
     ["user-hotel-bookings", status],
     async () => {
       try {
@@ -119,7 +121,7 @@ export function useHotelBooking(id: string | null) {
  * Hook to get restaurant reservations
  */
 export function useRestaurantReservations(status?: BookingStatus) {
-  const { data, error, isLoading, mutate } = useSWR<RestaurantReservation[]>(
+  const { data, error, isLoading, mutate } = useSWR<RestaurantReservationListItem[]>(
     ["user-restaurant-reservations", status],
     async () => {
       try {
@@ -434,7 +436,7 @@ export function useProviderEarnings(params?: { period?: "this_month" | "last_mon
  * Hook to get provider hotel bookings
  */
 export function useProviderHotelBookings(params?: { status?: BookingStatus; hotel_id?: string }) {
-  const { data, error, isLoading, mutate } = useSWR<HotelBooking[]>(
+  const { data, error, isLoading, mutate } = useSWR<HotelBookingListItem[]>(
     ["provider-hotel-bookings", params?.status, params?.hotel_id],
     async () => {
       try {
@@ -461,7 +463,7 @@ export function useProviderHotelBookings(params?: { status?: BookingStatus; hote
  * Hook to get provider restaurant reservations
  */
 export function useProviderRestaurantReservations(params?: { status?: BookingStatus; restaurant_id?: string; date?: string }) {
-  const { data, error, isLoading, mutate } = useSWR<RestaurantReservation[]>(
+  const { data, error, isLoading, mutate } = useSWR<RestaurantReservationListItem[]>(
     ["provider-restaurant-reservations", params?.status, params?.restaurant_id, params?.date],
     async () => {
       try {

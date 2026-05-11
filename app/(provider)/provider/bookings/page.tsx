@@ -64,10 +64,12 @@ import {
   confirmDriverBooking,
   rejectDriverBooking,
   createManualHotelBooking,
+  getHotelBookingById,
   type NormalizedBooking,
   type BookingStatus,
   type BookingServiceType,
   type HotelBooking,
+  type HotelBookingListItem,
   type BookingRoomAssignment,
 } from "@/lib/api/bookings"
 import { getMyHotels } from "@/lib/api/provider"
@@ -156,10 +158,9 @@ function BookingDetailModal({
   const [showRejectForm, setShowRejectForm] = useState(false)
   const [rooms, setRooms] = useState<Room[]>([])
   const [roomsLoading, setRoomsLoading] = useState(false)
-  // assignments: booking_room_id → selected unit_ids
+  const [fullHotelBooking, setFullHotelBooking] = useState<HotelBooking | null>(null)
+  const [fullBookingLoading, setFullBookingLoading] = useState(false)
   const [assignments, setAssignments] = useState<Record<string, string[]>>({})
-
-  const hotelBooking = booking?.service_type === "hotel" ? (booking.raw as HotelBooking) : null
 
   useEffect(() => {
     if (!open) {
@@ -167,19 +168,31 @@ function BookingDetailModal({
       setRejectReason("")
       setAssignments({})
       setRooms([])
+      setFullHotelBooking(null)
       return
     }
-    if (hotelBooking?.hotel?.id && hotelBooking.check_in_date && hotelBooking.check_out_date) {
-      setRoomsLoading(true)
-      getHotelRooms(hotelBooking.hotel.id, {
-        check_in: hotelBooking.check_in_date,
-        check_out: hotelBooking.check_out_date,
-      })
-        .then(setRooms)
-        .catch(() => setRooms([]))
-        .finally(() => setRoomsLoading(false))
+    if (booking?.service_type === "hotel") {
+      setFullBookingLoading(true)
+      getHotelBookingById(booking.id)
+        .then((detail) => {
+          setFullHotelBooking(detail)
+          if (detail.hotel?.id) {
+            setRoomsLoading(true)
+            getHotelRooms(detail.hotel.id, {
+              check_in: detail.check_in_date,
+              check_out: detail.check_out_date,
+            })
+              .then(setRooms)
+              .catch(() => setRooms([]))
+              .finally(() => setRoomsLoading(false))
+          }
+        })
+        .catch(() => setFullHotelBooking(null))
+        .finally(() => setFullBookingLoading(false))
     }
-  }, [open, hotelBooking?.hotel?.id, hotelBooking?.check_in_date, hotelBooking?.check_out_date])
+  }, [open, booking?.id, booking?.service_type])
+
+  const hotelBooking = fullHotelBooking
 
   if (!booking) return null
   const status = statusConfig[booking.status] ?? statusConfig.pending
@@ -227,9 +240,10 @@ function BookingDetailModal({
           {/* Status + Source badges */}
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant={status.variant}>{status.label}</Badge>
-            {hotelBooking?.source === "manual" && (
+            {(hotelBooking?.source ?? (booking.raw as any)?.source) === "manual" && (
               <Badge className="bg-amber-100 text-amber-800 border-amber-200">Walk-in</Badge>
             )}
+            {fullBookingLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           </div>
 
           {/* Guest */}
@@ -553,7 +567,13 @@ function WalkInBookingModal({
                   <div key={room.id} className={`flex items-center justify-between rounded-lg border p-3 ${qty > 0 ? "border-primary bg-primary/5" : ""}`}>
                     <div>
                       <p className="text-sm font-medium">{room.name}</p>
-                      <p className="text-xs text-muted-foreground">${room.price_per_night}/night · {room.max_guests} guests max</p>
+                      <p className="text-xs text-muted-foreground">
+                        ${(room.base_price !== undefined ? parseFloat(String(room.base_price)) : room.price_per_night) ?? 0}/night
+                        {" · "}
+                        {room.max_adults !== undefined
+                          ? `${room.max_adults} adults${room.max_children ? `, ${room.max_children} children` : ""}`
+                          : `${room.max_guests ?? 1} guests`} max
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button type="button" onClick={() => setRoomQty(room.id, -1)} disabled={qty === 0} className="flex h-7 w-7 items-center justify-center rounded-full border disabled:opacity-40 hover:bg-muted">
@@ -636,7 +656,7 @@ function BookingRow({
 }) {
   const status = statusConfig[booking.status] ?? statusConfig.pending
   const Icon = serviceIcons[booking.service_type]
-  const isManual = (booking.raw as HotelBooking).source === "manual"
+  const isManual = (booking.raw as any).source === "manual"
 
   return (
     <Card>
@@ -671,6 +691,23 @@ function BookingRow({
                   {booking.guests} {booking.guests === 1 ? "guest" : "guests"}
                 </span>
               </div>
+              {/* Room summary for hotel bookings */}
+              {booking.service_type === "hotel" && (() => {
+                const raw = booking.raw as HotelBookingListItem
+                const summary = raw?.room_summary
+                if (!summary?.length) return null
+                return (
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {summary.map((rs, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs font-normal">
+                        <BedDouble className="mr-1 h-3 w-3" />
+                        {rs.quantity > 1 ? `${rs.quantity}× ` : ""}{rs.room_name}
+                        {rs.bed_type ? ` (${rs.bed_type})` : ""}
+                      </Badge>
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
           </div>
 
