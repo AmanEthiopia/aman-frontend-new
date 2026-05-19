@@ -77,9 +77,9 @@ export default function BusinessPage() {
     return (
       <div className="container py-24 text-center">
         <Building2 className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-        <h1 className="text-2xl font-bold">Business Portal Coming Soon</h1>
+        <h1 className="text-2xl font-bold">Business Portal</h1>
         <p className="mt-2 text-muted-foreground">
-          Our corporate and diplomatic travel solutions are currently in development.
+          Corporate and diplomatic travel solutions. Contact us to get early access.
         </p>
         <Link href="/" className="mt-6 inline-block">
           <Button>Return Home</Button>

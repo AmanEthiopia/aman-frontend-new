@@ -236,12 +236,6 @@ function PlannerForm({ onGenerate }: { onGenerate: () => void }) {
         </p>
       </div>
 
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          This is a demo preview. Itineraries are simulated and will be AI-generated when the backend is connected.
-        </AlertDescription>
-      </Alert>
 
       <Card>
         <CardHeader>
@@ -651,9 +645,9 @@ export default function PlannerPage() {
           <Card className="max-w-md">
             <CardContent className="pt-6 text-center">
               <Sparkles className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-              <h2 className="text-xl font-semibold">AI Planner Coming Soon</h2>
+              <h2 className="text-xl font-semibold">AI Trip Planner</h2>
               <p className="mt-2 text-muted-foreground">
-                We're working on an AI-powered trip planner. Check back soon!
+                The AI trip planner is not available yet. Check back soon!
               </p>
               <Button asChild className="mt-4">
                 <Link href="/">Go Home</Link>
