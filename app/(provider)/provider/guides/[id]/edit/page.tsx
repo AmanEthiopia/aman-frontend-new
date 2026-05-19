@@ -194,9 +194,16 @@ export default function EditGuidePage() {
 
   const handleAddCity = async () => {
     if (!selectedCity) return
+    const cityObj = cities.find(c => c.id === selectedCity)
+    if (!cityObj) return
     try {
-      const cityEntry = await addGuideCity(guideId, { city: selectedCity })
-      setGuideCities([...guideCities, cityEntry])
+      const result = await addGuideCity(guideId, { city: selectedCity })
+      const newEntry: GuideCity = {
+        id: result.id,
+        city: { id: cityObj.id, name: cityObj.name, nickname: cityObj.nickname ?? undefined, slug: cityObj.slug },
+        order: guideCities.length,
+      }
+      setGuideCities([...guideCities, newEntry])
       setSelectedCity("")
       toast.success("City added successfully")
     } catch (error) {
@@ -271,7 +278,12 @@ export default function EditGuidePage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleTogglePublish}>
+          <Button
+            variant="outline"
+            onClick={handleTogglePublish}
+            disabled={!guide.is_published && photos.length === 0}
+            title={!guide.is_published && photos.length === 0 ? "Add at least one photo before publishing" : undefined}
+          >
             {guide.is_published ? (
               <>
                 <EyeOff className="mr-2 h-4 w-4" />

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { getMediaUrl } from "@/lib/utils/media"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -70,7 +71,7 @@ function TripCard({
       <div className="relative h-40 bg-gradient-to-br from-primary/20 to-primary/5">
         {trip.cover_photo ? (
           <img
-            src={trip.cover_photo}
+            src={getMediaUrl(trip.cover_photo)}
             alt={trip.title}
             className="h-full w-full object-cover"
           />

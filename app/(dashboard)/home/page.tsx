@@ -16,6 +16,9 @@ import {
   Shield,
   Loader2,
   AlertCircle,
+  Star,
+  Mountain,
+  Map,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -24,9 +27,11 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getAllMyBookings, flattenBookings } from "@/lib/api/bookings"
 import { getHotels } from "@/lib/api/hotels"
+import { getAttractions } from "@/lib/api/content"
 import { FEATURES } from "@/lib/config/features"
 import { useAuth } from "@/contexts/auth-context"
 import type { Booking, Hotel } from "@/lib/types"
+import type { Attraction } from "@/lib/api/content"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -72,13 +77,7 @@ function UpcomingTripCard({ booking, hotel }: { booking: Booking; hotel: Hotel }
     <Card className="overflow-hidden">
       <div className="relative h-32 bg-gradient-to-br from-primary/20 to-primary/5">
         <img
-          src={
-            getMediaUrl(hotel?.images?.[0]?.url) ||
-            "/placeholder.svg?height=128&width=400&query=ethiopian hotel" ||
-            "/placeholder.svg" ||
-            "/placeholder.svg" ||
-            "/placeholder.svg"
-          }
+          src={getMediaUrl(hotel?.images?.[0]?.url) || "/placeholder.svg"}
           alt={booking.hotel_name}
           className="h-full w-full object-cover"
         />
@@ -131,6 +130,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null)
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
   const [recentHotels, setRecentHotels] = useState<Hotel[]>([])
+  const [featuredAttractions, setFeaturedAttractions] = useState<Attraction[]>([])
 
   useEffect(() => {
     console.log("[v0] HomePage: Component mounted")
@@ -183,6 +183,13 @@ export default function HomePage() {
         setRecentHotels([])
       }
 
+      try {
+        const attractions = await getAttractions()
+        setFeaturedAttractions(attractions.slice(0, 4))
+      } catch {
+        setFeaturedAttractions([])
+      }
+
       console.log("[v0] HomePage: Data loaded successfully")
     } catch (err: any) {
       console.error("[v0] HomePage: Error loading data:", err)
@@ -197,6 +204,9 @@ export default function HomePage() {
     { icon: UtensilsCrossed, label: "Restaurants", href: "/restaurants", color: "bg-orange-500/10 text-orange-600" },
     { icon: Car, label: "Transport", href: "/transport", color: "bg-green-500/10 text-green-600" },
     { icon: Compass, label: "Experiences", href: "/experiences", color: "bg-purple-500/10 text-purple-600" },
+    { icon: Map, label: "Guides", href: "/guides", color: "bg-teal-500/10 text-teal-600" },
+    { icon: Mountain, label: "Attractions", href: "/attractions", color: "bg-amber-500/10 text-amber-600" },
+    { icon: MapPin, label: "Cities", href: "/cities", color: "bg-rose-500/10 text-rose-600" },
   ]
 
   if (!isAuthenticated) {
@@ -268,7 +278,7 @@ export default function HomePage() {
       {/* Quick Actions */}
       <section>
         <h2 className="mb-4 text-lg font-semibold">Discover Ethiopia</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-4 gap-3 sm:grid-cols-7">
           {quickActions.map((action) => {
             const Icon = action.icon
             return (
@@ -325,6 +335,87 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* Featured Attractions */}
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Top Attractions</h2>
+            <p className="text-sm text-muted-foreground">Iconic places to visit across Ethiopia</p>
+          </div>
+          <Link href="/attractions">
+            <Button variant="ghost" size="sm" className="gap-1">
+              View All
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+        {loading ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="animate-pulse overflow-hidden">
+                <div className="h-36 bg-muted" />
+                <CardContent className="space-y-2 py-3">
+                  <div className="h-4 w-3/4 rounded bg-muted" />
+                  <div className="h-3 w-1/2 rounded bg-muted" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : featuredAttractions.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredAttractions.map((attraction) => (
+              <Link key={attraction.id} href={`/attractions/${attraction.slug || attraction.id}`}>
+                <Card className="group cursor-pointer overflow-hidden transition-all hover:border-primary/50 hover:shadow-md">
+                  <div className="relative h-36 bg-gradient-to-br from-amber-100 to-amber-50">
+                    {attraction.image ? (
+                      <img
+                        src={getMediaUrl(attraction.image)}
+                        alt={attraction.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Mountain className="h-10 w-10 text-amber-400" />
+                      </div>
+                    )}
+                    {attraction.category && (
+                      <div className="absolute left-2 top-2 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-medium capitalize text-white">
+                        {attraction.category}
+                      </div>
+                    )}
+                  </div>
+                  <CardContent className="py-3">
+                    <h4 className="truncate font-medium">{attraction.name}</h4>
+                    <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                      <span className="truncate">{attraction.city || "Ethiopia"}</span>
+                      {attraction.rating && (
+                        <>
+                          <Star className="ml-auto h-3 w-3 flex-shrink-0 fill-amber-400 text-amber-400" />
+                          <span className="text-xs font-medium text-foreground">{attraction.rating}</span>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <Card className="border-dashed">
+            <CardContent className="py-8 text-center">
+              <Mountain className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Discover Ethiopia's iconic attractions</p>
+              <Link href="/attractions">
+                <Button variant="link" className="mt-2">
+                  Browse Attractions
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+      </section>
+
       {/* Safety & Trust Card */}
       <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
         <CardContent className="flex items-start gap-4 py-4">
@@ -362,19 +453,9 @@ export default function HomePage() {
                 <Card className="group cursor-pointer overflow-hidden transition-all hover:shadow-md">
                   <div className="relative h-24">
                     <img
-                      src={
-                        getMediaUrl(hotel.images?.[0]?.url) ||
-                        "/placeholder.svg?height=96&width=300&query=ethiopian hotel" ||
-                        "/placeholder.svg" ||
-                        "/placeholder.svg" ||
-                        "/placeholder.svg"
-                      }
+                      src={getMediaUrl(hotel.images?.[0]?.url) || "/placeholder.svg"}
                       alt={hotel.name}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                      onError={(e) => {
-                        console.error("[v0] HomePage: Image load error for hotel:", hotel.name)
-                        e.currentTarget.src = "/grand-hotel-exterior.png"
-                      }}
                     />
                   </div>
                   <CardContent className="py-3">

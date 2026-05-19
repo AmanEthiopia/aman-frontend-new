@@ -3,7 +3,8 @@
  * Handles CRUD operations for Hotels, Restaurants, Drivers, and Trips/Events
  */
 
-import { apiGet, apiPost, apiPatch, apiDelete, apiFetch } from "./client"
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiFetch, mediaUrl as _mediaUrl } from "./client"
+export { mediaUrl } from "./client"
 
 // ============================================================================
 // TYPES
@@ -14,14 +15,15 @@ export type PropertyCategory = "hotel" | "restaurant" | "driver" | "trip" | "tou
 export interface PropertyBase {
   id: string
   name: string
-  nickname?: string // Amharic alternative name
+  nickname?: string
   description: string
   category: PropertyCategory
   city_id: string
   city_name?: string
   address: string
   is_verified: boolean
-  is_active: boolean
+  is_active: boolean      // normalized from is_published on load
+  is_published?: boolean  // raw API field — same as is_active
   created_at: string
   updated_at: string
   cover_photo_url?: string
@@ -32,11 +34,47 @@ export interface PropertyBase {
 
 export interface PropertyPhoto {
   id: string
-  url: string
+  url?: string         // may be missing; use photo_url ?? url with mediaUrl()
+  photo_url?: string   // API field name
+  photo_type?: string
   caption?: string
-  category: string
+  category?: string
   is_primary: boolean
-  order: number
+  display_order?: number
+  order?: number
+}
+
+const mediaUrl = _mediaUrl
+
+// Normalizes a raw API property object: maps is_published → is_active,
+// and resolves photo_url → url so existing display code keeps working.
+function normalizeProp<T extends Record<string, any>>(raw: T): T {
+  const photos = (raw.photos ?? []).map((p: any) => ({
+    ...p,
+    url: mediaUrl(p.photo_url ?? p.url),
+  }))
+  const rooms = (raw.rooms ?? []).map((r: any) => ({
+    ...r,
+    photos: (r.photos ?? []).map((p: any) => ({
+      ...p,
+      url: mediaUrl(p.photo_url ?? p.url),
+    })),
+  }))
+  return {
+    ...raw,
+    is_active: raw.is_published ?? raw.is_active ?? false,
+    cover_photo_url: mediaUrl(raw.cover_photo_url) ?? raw.cover_photo_url,
+    photos,
+    ...(raw.rooms !== undefined ? { rooms } : {}),
+  }
+}
+
+// Amenity as returned by GET /hotels/provider/<id>/ — objects, not strings
+export interface HotelAmenity {
+  id: string
+  amenity_type: string
+  is_free?: boolean
+  description?: string
 }
 
 // Hotel Types
@@ -45,11 +83,16 @@ export interface ProviderHotel extends PropertyBase {
   star_rating: 1 | 2 | 3 | 4 | 5
   check_in_time: string
   check_out_time: string
-  amenities?: string[]
+  amenities?: HotelAmenity[] | string[]
   policies?: HotelPolicies
   rooms?: ProviderRoom[]
   total_rooms?: number
   available_rooms?: number
+}
+
+// Helper: extract display string from either amenity shape
+export function amenityLabel(a: HotelAmenity | string): string {
+  return typeof a === "string" ? a : a.amenity_type
 }
 
 export interface HotelPolicies {
@@ -61,17 +104,27 @@ export interface HotelPolicies {
 
 export interface ProviderRoom {
   id: string
-  hotel_id: string
+  hotel_id?: string
+  hotel?: string // API returns hotel UUID as "hotel"
   name: string
   description: string
-  room_type: "standard" | "deluxe" | "suite" | "executive" | "family"
-  price_per_night: number
-  max_guests: number
+  room_type?: "standard" | "deluxe" | "suite" | "executive" | "family"
+  // API response uses base_price / max_adults / total_units; frontend form uses the aliases below
+  base_price?: number | string
+  price_per_night?: number  // alias for base_price in CreateRoomPayload
+  max_adults?: number
+  max_children?: number
+  max_guests?: number       // alias for max_adults in CreateRoomPayload
   bed_type: string
-  amenities: string[]
+  bed_count?: number
+  room_size_sqm?: number | null
+  currency?: string
+  weekend_price?: number | null
+  amenities: HotelAmenity[] | string[]
   photos: PropertyPhoto[]
   is_available: boolean
-  quantity: number
+  total_units?: number
+  quantity?: number         // alias for total_units in CreateRoomPayload
 }
 
 export interface CreateHotelPayload {
@@ -377,8 +430,11 @@ export async function getMyProperties(params: {
 
   const queryString = queryParams.toString()
   const endpoint = queryString ? `/provider/properties/?${queryString}` : "/provider/properties/"
-  
-  return apiGet<PaginatedResponse<PropertyBase>>(endpoint)
+
+  const result = await apiGet<any>(endpoint)
+  // Normalize each item: is_published → is_active, photo_url → url
+  const items: PropertyBase[] = (Array.isArray(result) ? result : result?.results ?? []).map(normalizeProp)
+  return Array.isArray(result) ? (items as any) : { ...result, results: items }
 }
 
 /**
@@ -396,7 +452,7 @@ export async function getProviderStats(): Promise<ProviderStats> {
  * Create a new hotel
  */
 export async function createHotel(payload: CreateHotelPayload): Promise<ProviderHotel> {
-  return apiPost<ProviderHotel>("/hotels/", payload)
+  return apiPost<ProviderHotel>("/hotels/provider/", payload)
 }
 
 /**
@@ -416,8 +472,8 @@ export async function getMyHotels(params: {
   })
 
   const queryString = queryParams.toString()
-  const endpoint = queryString ? `/provider/hotels/?${queryString}` : "/provider/hotels/"
-  
+  const endpoint = queryString ? `/hotels/provider/?${queryString}` : "/hotels/provider/"
+
   return apiGet<PaginatedResponse<ProviderHotel>>(endpoint)
 }
 
@@ -425,42 +481,64 @@ export async function getMyHotels(params: {
  * Get a specific hotel by ID
  */
 export async function getMyHotel(hotelId: string): Promise<ProviderHotel> {
-  return apiGet<ProviderHotel>(`/provider/hotels/${hotelId}/`)
+  const data = await apiGet<any>(`/hotels/provider/${hotelId}/`)
+  return normalizeProp(data) as ProviderHotel
 }
 
 /**
  * Update a hotel
  */
 export async function updateHotel(hotelId: string, payload: Partial<CreateHotelPayload>): Promise<ProviderHotel> {
-  return apiPatch<ProviderHotel>(`/hotels/${hotelId}/`, payload)
+  return apiPatch<ProviderHotel>(`/hotels/provider/${hotelId}/`, payload)
 }
 
 /**
  * Delete a hotel
  */
 export async function deleteHotel(hotelId: string): Promise<void> {
-  return apiDelete(`/hotels/${hotelId}/`)
+  return apiDelete(`/hotels/provider/${hotelId}/`)
+}
+
+/**
+ * Publish a hotel
+ */
+export async function publishHotel(hotelId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
+  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/hotels/provider/${hotelId}/publish/`)
+}
+
+/**
+ * Unpublish a hotel
+ */
+export async function unpublishHotel(hotelId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
+  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/hotels/provider/${hotelId}/unpublish/`)
+}
+
+/**
+ * Get a single room by ID
+ */
+export async function getMyRoom(hotelId: string, roomId: string): Promise<ProviderRoom> {
+  return apiGet<ProviderRoom>(`/hotels/provider/${hotelId}/rooms/${roomId}/`)
 }
 
 /**
  * Create a room for a hotel
  */
 export async function createRoom(hotelId: string, payload: CreateRoomPayload): Promise<ProviderRoom> {
-  return apiPost<ProviderRoom>(`/hotels/${hotelId}/rooms/`, payload)
+  return apiPost<ProviderRoom>(`/hotels/provider/${hotelId}/rooms/`, payload)
 }
 
 /**
  * Update a room
  */
 export async function updateRoom(hotelId: string, roomId: string, payload: Partial<CreateRoomPayload>): Promise<ProviderRoom> {
-  return apiPatch<ProviderRoom>(`/hotels/${hotelId}/rooms/${roomId}/`, payload)
+  return apiPatch<ProviderRoom>(`/hotels/provider/${hotelId}/rooms/${roomId}/`, payload)
 }
 
 /**
  * Delete a room
  */
 export async function deleteRoom(hotelId: string, roomId: string): Promise<void> {
-  return apiDelete(`/hotels/${hotelId}/rooms/${roomId}/`)
+  return apiDelete(`/hotels/provider/${hotelId}/rooms/${roomId}/`)
 }
 
 // ============================================================================
@@ -471,7 +549,7 @@ export async function deleteRoom(hotelId: string, roomId: string): Promise<void>
  * Create a new restaurant
  */
 export async function createRestaurant(payload: CreateRestaurantPayload): Promise<ProviderRestaurant> {
-  return apiPost<ProviderRestaurant>("/restaurants/", payload)
+  return apiPost<ProviderRestaurant>("/restaurants/provider/", payload)
 }
 
 /**
@@ -491,23 +569,38 @@ export async function getMyRestaurants(params: {
   })
 
   const queryString = queryParams.toString()
-  const endpoint = queryString ? `/provider/restaurants/?${queryString}` : "/provider/restaurants/"
-  
+  const endpoint = queryString ? `/restaurants/provider/?${queryString}` : "/restaurants/provider/"
+
   return apiGet<PaginatedResponse<ProviderRestaurant>>(endpoint)
+}
+
+/**
+ * Get a specific restaurant by ID
+ */
+export async function getMyRestaurant(restaurantId: string): Promise<ProviderRestaurant> {
+  const data = await apiGet<any>(`/restaurants/provider/${restaurantId}/`)
+  return normalizeProp(data) as ProviderRestaurant
 }
 
 /**
  * Update a restaurant
  */
 export async function updateRestaurant(restaurantId: string, payload: Partial<CreateRestaurantPayload>): Promise<ProviderRestaurant> {
-  return apiPatch<ProviderRestaurant>(`/restaurants/${restaurantId}/`, payload)
+  return apiPatch<ProviderRestaurant>(`/restaurants/provider/${restaurantId}/`, payload)
 }
 
 /**
  * Delete a restaurant
  */
 export async function deleteRestaurant(restaurantId: string): Promise<void> {
-  return apiDelete(`/restaurants/${restaurantId}/`)
+  return apiDelete(`/restaurants/provider/${restaurantId}/`)
+}
+
+/**
+ * Publish a restaurant
+ */
+export async function publishRestaurant(restaurantId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
+  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/restaurants/provider/${restaurantId}/publish/`)
 }
 
 // ============================================================================
@@ -544,6 +637,14 @@ export async function getMyDrivers(params: {
 }
 
 /**
+ * Get a specific driver by ID
+ */
+export async function getMyDriver(driverId: string): Promise<ProviderDriver> {
+  const data = await apiGet<any>(`/drivers/${driverId}/`)
+  return normalizeProp(data) as ProviderDriver
+}
+
+/**
  * Update a driver listing
  */
 export async function updateDriver(driverId: string, payload: Partial<CreateDriverPayload>): Promise<ProviderDriver> {
@@ -555,6 +656,13 @@ export async function updateDriver(driverId: string, payload: Partial<CreateDriv
  */
 export async function deleteDriver(driverId: string): Promise<void> {
   return apiDelete(`/drivers/${driverId}/`)
+}
+
+/**
+ * Toggle publish state of a driver listing
+ */
+export async function toggleDriverPublish(driverId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
+  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/drivers/${driverId}/publish/`)
 }
 
 // ============================================================================
@@ -589,6 +697,21 @@ export async function getMyTrips(params: {
   const endpoint = queryString ? `/provider/trips/?${queryString}` : "/provider/trips/"
   
   return apiGet<PaginatedResponse<ProviderTrip>>(endpoint)
+}
+
+/**
+ * Get a single trip by ID
+ */
+export async function getMyTrip(tripId: string): Promise<ProviderTrip> {
+  const data = await apiGet<any>(`/trips/${tripId}/`)
+  return normalizeProp(data) as ProviderTrip
+}
+
+/**
+ * Toggle publish / unpublish a trip
+ */
+export async function toggleTripPublish(tripId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
+  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/trips/${tripId}/publish/`, {})
 }
 
 /**
@@ -762,8 +885,8 @@ export interface EarningsData {
  * Get provider dashboard stats
  */
 export async function getProviderDashboardData(): Promise<ProviderDashboardData> {
-  const response = await apiGet<{ data: ProviderDashboardData }>("/bookings/provider/dashboard/")
-  return response.data
+  // apiFetch already unwraps envelope.data — no extra .data needed
+  return apiGet<ProviderDashboardData>("/bookings/provider/dashboard/")
 }
 
 /**
@@ -778,12 +901,11 @@ export async function getProviderCalendar(params: {
   if (params.year) queryParams.append("year", params.year.toString())
   if (params.month) queryParams.append("month", params.month.toString())
   if (params.hotel_id) queryParams.append("hotel_id", params.hotel_id)
-  
+
   const queryString = queryParams.toString()
   const endpoint = queryString ? `/bookings/provider/calendar/?${queryString}` : "/bookings/provider/calendar/"
-  
-  const response = await apiGet<{ data: CalendarData }>(endpoint)
-  return response.data
+
+  return apiGet<CalendarData>(endpoint)
 }
 
 /**
@@ -796,12 +918,11 @@ export async function getProviderEarnings(params: {
   const queryParams = new URLSearchParams()
   if (params.period) queryParams.append("period", params.period)
   if (params.hotel_id) queryParams.append("hotel_id", params.hotel_id)
-  
+
   const queryString = queryParams.toString()
   const endpoint = queryString ? `/bookings/provider/earnings/?${queryString}` : "/bookings/provider/earnings/"
-  
-  const response = await apiGet<{ data: EarningsData }>(endpoint)
-  return response.data
+
+  return apiGet<EarningsData>(endpoint)
 }
 
 /**
@@ -844,8 +965,9 @@ export async function getProviderHotelBookings(params: {
   const queryString = queryParams.toString()
   const endpoint = queryString ? `/bookings/provider/hotel/?${queryString}` : "/bookings/provider/hotel/"
   
-  const response = await apiGet<{ data: ProviderBooking[] }>(endpoint)
-  return response.data || []
+  // apiFetch unwraps envelope.data — returns the array directly
+  const result = await apiGet<ProviderBooking[]>(endpoint)
+  return Array.isArray(result) ? result : []
 }
 
 /**
@@ -860,44 +982,40 @@ export async function getProviderRestaurantReservations(params: {
   if (params.status) queryParams.append("status", params.status)
   if (params.restaurant_id) queryParams.append("restaurant_id", params.restaurant_id)
   if (params.date) queryParams.append("date", params.date)
-  
+
   const queryString = queryParams.toString()
   const endpoint = queryString ? `/bookings/provider/restaurant/?${queryString}` : "/bookings/provider/restaurant/"
-  
-  const response = await apiGet<{ data: ProviderBooking[] }>(endpoint)
-  return response.data || []
+
+  const result = await apiGet<ProviderBooking[]>(endpoint)
+  return Array.isArray(result) ? result : []
 }
 
 /**
  * Confirm a hotel booking (new API)
  */
 export async function confirmHotelBooking(bookingId: string): Promise<ProviderBooking> {
-  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/hotel/${bookingId}/confirm/`)
-  return response.data
+  return apiPost<ProviderBooking>(`/bookings/provider/hotel/${bookingId}/confirm/`)
 }
 
 /**
  * Reject a hotel booking (new API)
  */
 export async function rejectHotelBooking(bookingId: string, reason?: string): Promise<ProviderBooking> {
-  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/hotel/${bookingId}/reject/`, { reason })
-  return response.data
+  return apiPost<ProviderBooking>(`/bookings/provider/hotel/${bookingId}/reject/`, { reason })
 }
 
 /**
  * Confirm a restaurant reservation (new API)
  */
 export async function confirmRestaurantReservation(reservationId: string): Promise<ProviderBooking> {
-  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/restaurant/${reservationId}/confirm/`)
-  return response.data
+  return apiPost<ProviderBooking>(`/bookings/provider/restaurant/${reservationId}/confirm/`)
 }
 
 /**
  * Reject a restaurant reservation (new API)
  */
 export async function rejectRestaurantReservation(reservationId: string, reason?: string): Promise<ProviderBooking> {
-  const response = await apiPost<{ data: ProviderBooking }>(`/bookings/provider/restaurant/${reservationId}/reject/`, { reason })
-  return response.data
+  return apiPost<ProviderBooking>(`/bookings/provider/restaurant/${reservationId}/reject/`, { reason })
 }
 
 /**
@@ -950,7 +1068,13 @@ export async function uploadPropertyPhoto(
   if (caption) formData.append("caption", caption)
   if (category) formData.append("category", category)
 
-  return apiFetch<PropertyPhoto>(`/${propertyType}s/${propertyId}/photos/`, {
+  // Hotels and restaurants use /provider/ prefix; drivers and trips use root
+  const providerTypes = new Set(["hotel", "restaurant"])
+  const basePath = providerTypes.has(propertyType)
+    ? `/${propertyType}s/provider/${propertyId}/photos/`
+    : `/${propertyType}s/${propertyId}/photos/`
+
+  return apiFetch<PropertyPhoto>(basePath, {
     method: "POST",
     body: formData,
     headers: {}, // Let browser set Content-Type for FormData
@@ -965,18 +1089,226 @@ export async function deletePropertyPhoto(
   propertyId: string,
   photoId: string
 ): Promise<void> {
-  return apiDelete(`/${propertyType}s/${propertyId}/photos/${photoId}/`)
+  const providerTypes = new Set(["hotel", "restaurant"])
+  const basePath = providerTypes.has(propertyType)
+    ? `/${propertyType}s/provider/${propertyId}/photos/${photoId}/`
+    : `/${propertyType}s/${propertyId}/photos/${photoId}/`
+  return apiDelete(basePath)
 }
 
 /**
- * Set a photo as primary
+ * Set a photo as primary (generic — use type-specific helpers below instead)
  */
 export async function setPhotoAsPrimary(
   propertyType: PropertyCategory,
   propertyId: string,
   photoId: string
 ): Promise<PropertyPhoto> {
-  return apiPost<PropertyPhoto>(`/${propertyType}s/${propertyId}/photos/${photoId}/set-primary/`)
+  const prefix = propertyType === "hotel" || propertyType === "restaurant"
+    ? `/${propertyType}s/provider`
+    : `/${propertyType}s`
+  return apiPost<PropertyPhoto>(`${prefix}/${propertyId}/photos/${photoId}/set-primary/`)
+}
+
+// ============================================================================
+// HOTEL-SPECIFIC PHOTO APIs
+// ============================================================================
+
+export async function getHotelPhotos(hotelId: string): Promise<PropertyPhoto[]> {
+  const r = await apiGet<PropertyPhoto[] | { results: PropertyPhoto[] }>(`/hotels/provider/${hotelId}/photos/`)
+  const raw = Array.isArray(r) ? r : r?.results ?? []
+  return raw.map((p: any) => ({ ...p, url: mediaUrl(p.photo_url ?? p.url) }))
+}
+
+export async function uploadHotelPhoto(
+  hotelId: string,
+  file: File,
+  photoType: string,
+  isPrimary = false,
+  displayOrder?: number
+): Promise<PropertyPhoto> {
+  const fd = new FormData()
+  fd.append("photo", file)
+  fd.append("photo_type", photoType)
+  if (isPrimary) fd.append("is_primary", "true")
+  if (displayOrder !== undefined) fd.append("display_order", String(displayOrder))
+  const p = await apiFetch<any>(`/hotels/provider/${hotelId}/photos/`, { method: "POST", body: fd })
+  return { ...p, url: mediaUrl(p.photo_url ?? p.url) }
+}
+
+export async function deleteHotelPhoto(hotelId: string, photoId: string): Promise<void> {
+  return apiDelete(`/hotels/provider/${hotelId}/photos/${photoId}/`)
+}
+
+export async function setHotelPhotoPrimary(hotelId: string, photoId: string): Promise<PropertyPhoto> {
+  return apiPost<PropertyPhoto>(`/hotels/provider/${hotelId}/photos/${photoId}/set-primary/`)
+}
+
+export async function reorderHotelPhotos(
+  hotelId: string,
+  photoOrders: { id: string; display_order: number }[]
+): Promise<void> {
+  return apiPut(`/hotels/provider/${hotelId}/photos/reorder/`, { photos: photoOrders })
+}
+
+// ============================================================================
+// ROOM-SPECIFIC PHOTO APIs
+// ============================================================================
+
+export async function getRoomPhotos(hotelId: string, roomId: string): Promise<PropertyPhoto[]> {
+  const r = await apiGet<PropertyPhoto[] | { results: PropertyPhoto[] }>(
+    `/hotels/provider/${hotelId}/rooms/${roomId}/photos/`
+  )
+  const raw = Array.isArray(r) ? r : r?.results ?? []
+  return raw.map((p: any) => ({ ...p, url: mediaUrl(p.photo_url ?? p.url) }))
+}
+
+export async function uploadRoomPhoto(hotelId: string, roomId: string, file: File): Promise<PropertyPhoto> {
+  const fd = new FormData()
+  fd.append("photo", file)
+  const p = await apiFetch<any>(`/hotels/provider/${hotelId}/rooms/${roomId}/photos/`, {
+    method: "POST",
+    body: fd,
+  })
+  return { ...p, url: mediaUrl(p.photo_url ?? p.url) }
+}
+
+export async function deleteRoomPhoto(hotelId: string, roomId: string, photoId: string): Promise<void> {
+  return apiDelete(`/hotels/provider/${hotelId}/rooms/${roomId}/photos/${photoId}/`)
+}
+
+// ============================================================================
+// RESTAURANT-SPECIFIC PHOTO APIs
+// ============================================================================
+
+export async function getRestaurantPhotos(restaurantId: string): Promise<PropertyPhoto[]> {
+  const r = await apiGet<PropertyPhoto[] | { results: PropertyPhoto[] }>(
+    `/restaurants/provider/${restaurantId}/photos/`
+  )
+  const raw = Array.isArray(r) ? r : r?.results ?? []
+  return raw.map((p: any) => ({ ...p, url: mediaUrl(p.photo_url ?? p.url) }))
+}
+
+export async function uploadRestaurantPhoto(
+  restaurantId: string,
+  file: File,
+  photoType: string,
+  isPrimary = false
+): Promise<PropertyPhoto> {
+  const fd = new FormData()
+  fd.append("photo", file)
+  fd.append("photo_type", photoType)
+  if (isPrimary) fd.append("is_primary", "true")
+  const p = await apiFetch<any>(`/restaurants/provider/${restaurantId}/photos/`, { method: "POST", body: fd })
+  return { ...p, url: mediaUrl(p.photo_url ?? p.url) }
+}
+
+export async function deleteRestaurantPhoto(restaurantId: string, photoId: string): Promise<void> {
+  return apiDelete(`/restaurants/provider/${restaurantId}/photos/${photoId}/`)
+}
+
+export async function setRestaurantPhotoPrimary(restaurantId: string, photoId: string): Promise<PropertyPhoto> {
+  return apiPost<PropertyPhoto>(`/restaurants/provider/${restaurantId}/photos/${photoId}/set-primary/`)
+}
+
+export async function reorderRestaurantPhotos(
+  restaurantId: string,
+  photoOrders: { id: string; display_order: number }[]
+): Promise<void> {
+  return apiPut(`/restaurants/provider/${restaurantId}/photos/reorder/`, { photos: photoOrders })
+}
+
+// ============================================================================
+// RESTAURANT MENU ITEMS
+// ============================================================================
+
+export interface MenuItem {
+  id: string
+  name: string
+  category?: string
+  description?: string
+  price: number | string
+  currency: string
+  photo_url?: string
+  is_available: boolean
+  is_popular: boolean
+  dietary_tags?: string[]
+  display_order?: number
+  created_at?: string
+}
+
+export interface CreateMenuItemPayload {
+  name: string
+  category?: string
+  description?: string
+  price: number
+  currency?: string
+  is_available?: boolean
+  is_popular?: boolean
+  dietary_tags?: string[]
+  display_order?: number
+}
+
+export async function getMenuItems(restaurantId: string): Promise<MenuItem[]> {
+  const r = await apiGet<MenuItem[] | { results: MenuItem[] }>(
+    `/restaurants/provider/${restaurantId}/menu/items/`
+  )
+  return Array.isArray(r) ? r : r?.results ?? []
+}
+
+export async function getMenuCategories(restaurantId: string): Promise<string[]> {
+  const r = await apiGet<string[] | { results: string[] }>(
+    `/restaurants/provider/${restaurantId}/menu/categories/`
+  )
+  return Array.isArray(r) ? r : r?.results ?? []
+}
+
+export async function createMenuItem(restaurantId: string, payload: CreateMenuItemPayload): Promise<MenuItem> {
+  return apiPost<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/`, payload)
+}
+
+export async function createMenuItemWithPhoto(restaurantId: string, payload: CreateMenuItemPayload & { photo?: File }): Promise<MenuItem> {
+  const fd = new FormData()
+  Object.entries(payload).forEach(([k, v]) => {
+    if (v === undefined || v === null) return
+    if (k === "photo" && v instanceof File) {
+      fd.append("photo_url", v)
+    } else if (k === "dietary_tags" && Array.isArray(v)) {
+      v.forEach((tag) => fd.append("dietary_tags", tag))
+    } else {
+      fd.append(k, String(v))
+    }
+  })
+  return apiFetch<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/`, { method: "POST", body: fd })
+}
+
+export async function updateMenuItem(
+  restaurantId: string,
+  itemId: string,
+  payload: Partial<CreateMenuItemPayload>
+): Promise<MenuItem> {
+  return apiPatch<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/${itemId}/`, payload)
+}
+
+export async function uploadMenuItemPhoto(restaurantId: string, itemId: string, file: File): Promise<MenuItem> {
+  const fd = new FormData()
+  fd.append("photo", file)
+  return apiFetch<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/${itemId}/photo/`, { method: "POST", body: fd })
+}
+
+export async function reorderMenuItems(
+  restaurantId: string,
+  items: { id: string; display_order: number }[]
+): Promise<void> {
+  return apiPost(`/restaurants/provider/${restaurantId}/menu/items/reorder/`, { items })
+}
+
+export async function deleteMenuItem(restaurantId: string, itemId: string): Promise<void> {
+  return apiDelete(`/restaurants/provider/${restaurantId}/menu/items/${itemId}/`)
+}
+
+export async function toggleMenuItemAvailability(restaurantId: string, itemId: string): Promise<MenuItem> {
+  return apiPost<MenuItem>(`/restaurants/provider/${restaurantId}/menu/items/${itemId}/toggle-availability/`)
 }
 
 // ============================================================================

@@ -1,6 +1,36 @@
 import { apiFetch, apiGet } from "./client"
 import type { Restaurant } from "@/lib/types"
 
+// ============================================================================
+// Public Menu Types
+// ============================================================================
+
+export interface PublicMenuItem {
+  id: string
+  category: string
+  name: string
+  description?: string
+  price: string
+  currency: string
+  photo_url?: string
+  is_available: boolean
+  is_popular: boolean
+  dietary_tags?: string[]
+  display_order: number
+}
+
+export interface MenuCategory {
+  category: string
+  items: PublicMenuItem[]
+}
+
+export interface RestaurantMenu {
+  restaurant_slug: string
+  categories: MenuCategory[]
+}
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.aman.yichalal.ai/api/v1"
+
 export interface RestaurantFilters {
   city?: string // Uses slug
   cuisine?: string
@@ -52,25 +82,36 @@ export async function getRestaurantsPaginated(filters: RestaurantFilters = {}): 
   }
 
   const queryString = params.toString()
-  const endpoint = queryString ? `/restaurants/?${queryString}` : "/restaurants/"
-  
+  const url = `${API_BASE_URL}/restaurants/${queryString ? `?${queryString}` : ""}`
+
   try {
-    const response = await apiFetch<PaginatedRestaurants | Restaurant[]>(endpoint)
-    
-    // Handle both paginated and array responses
-    if (Array.isArray(response)) {
+    const res = await fetch(url, { method: "GET", headers: { "Content-Type": "application/json" } })
+    if (!res.ok) return { count: 0, next: null, previous: null, results: [] }
+    const raw = await res.json()
+
+    // { success: true, data: [...], meta: { pagination: {...} } }
+    if (raw.meta?.pagination) {
+      const p = raw.meta.pagination
       return {
-        count: response.length,
-        next: null,
-        previous: null,
-        results: response,
+        count: p.count ?? 0,
+        next: p.next || null,
+        previous: p.previous || null,
+        results: raw.data || raw.results || [],
       }
     }
-    if (response && "results" in response) {
-      return response
+
+    // Envelope without meta
+    if (raw.success !== undefined && raw.data) {
+      const arr = Array.isArray(raw.data) ? raw.data : raw.data.results || []
+      return { count: arr.length, next: null, previous: null, results: arr }
     }
+
+    // Direct paginated response
+    if (raw.results) return raw as PaginatedRestaurants
+    if (Array.isArray(raw)) return { count: raw.length, next: null, previous: null, results: raw }
+
     return { count: 0, next: null, previous: null, results: [] }
-  } catch (error) {
+  } catch {
     return { count: 0, next: null, previous: null, results: [] }
   }
 }
@@ -87,4 +128,12 @@ export async function getRestaurantById(idOrSlug: string): Promise<Restaurant> {
  */
 export async function getFeaturedRestaurants(): Promise<Restaurant[]> {
   return getRestaurants({ page_size: 6 })
+}
+
+/**
+ * Get restaurant menu grouped by category
+ */
+export async function getRestaurantMenu(slug: string, showUnavailable = false): Promise<RestaurantMenu> {
+  const params = showUnavailable ? "?show_unavailable=true" : ""
+  return apiFetch<RestaurantMenu>(`/restaurants/${slug}/menu/${params}`)
 }

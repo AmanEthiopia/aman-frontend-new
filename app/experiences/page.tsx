@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
@@ -8,6 +8,7 @@ import { ListingCard } from "@/components/shared/listing-card"
 import { DiscoveryFilters } from "@/components/shared/discovery-filters"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { getExperiences, type Package } from "@/lib/api/experiences"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
 
@@ -51,7 +52,7 @@ function ExperiencesLoading() {
   )
 }
 
-export default function ExperiencesPage() {
+function ExperiencesContent() {
   const searchParams = useSearchParams()
   const [experiences, setExperiences] = useState<Package[]>([])
   const [loading, setLoading] = useState(true)
@@ -122,7 +123,7 @@ export default function ExperiencesPage() {
                         slug={pkg.slug}
                         type="experience"
                         name={pkg.title}
-                        imageUrl={pkg.primary_photo?.photo_url || pkg.photos?.[0]?.photo_url || "/tour-experience.jpg"}
+                        imageUrl={getMediaUrl(pkg.primary_photo?.photo_url || pkg.photos?.[0]?.photo_url) || "/tour-experience.jpg"}
                         location={pkg.cities?.map(c => c.city.name).join(" → ") || ""}
                         city={pkg.cities?.[0]?.city.name || ""}
                         description={pkg.short_description || pkg.description || ""}
@@ -133,8 +134,14 @@ export default function ExperiencesPage() {
                         isFeatured={false}
                         tags={[
                           CATEGORY_LABELS[pkg.category] || pkg.category,
-                          `${pkg.duration_days} days`
-                        ].filter(Boolean)}
+                          `${pkg.duration_days} days`,
+                          pkg.next_departure
+                            ? `Next: ${new Date(pkg.next_departure.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                            : null,
+                          pkg.next_departure && pkg.next_departure.available_seats <= 3
+                            ? `${pkg.next_departure.available_seats} seats left`
+                            : null,
+                        ].filter(Boolean) as string[]}
                       />
                     ))}
                   </div>
@@ -147,5 +154,13 @@ export default function ExperiencesPage() {
       <Footer />
       <FloatingAIAssistant />
     </div>
+  )
+}
+
+export default function ExperiencesPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen flex-col"><main className="flex-1 py-8"><div className="container mx-auto px-4"><ExperiencesLoading /></div></main></div>}>
+      <ExperiencesContent />
+    </Suspense>
   )
 }

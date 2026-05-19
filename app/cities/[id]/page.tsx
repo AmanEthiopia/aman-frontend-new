@@ -134,10 +134,9 @@ export default function CityDetailPage() {
         {/* Hero */}
         <section className="relative h-[400px] overflow-hidden">
           <img 
-            src={getMediaUrl(city.cover_photo_url) || "/vibrant-city-skyline.png"} 
-            alt={city.name} 
+            src={getMediaUrl(city.cover_photo_url) || "/placeholder.svg"}
+            alt={city.name}
             className="h-full w-full object-cover"
-            onError={(e) => { e.currentTarget.src = "/vibrant-city-skyline.png" }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/40 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-8">
@@ -242,10 +241,9 @@ export default function CityDetailPage() {
                       >
                         <div className="aspect-[4/3] overflow-hidden">
                           <img
-                            src={getMediaUrl(attraction.photo_url) || "/vibrant-city-skyline.png"}
+                            src={getMediaUrl(attraction.photo_url) || "/placeholder.svg"}
                             alt={attraction.name}
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            onError={(e) => { e.currentTarget.src = "/vibrant-city-skyline.png" }}
                           />
                         </div>
                         <div className="p-4">

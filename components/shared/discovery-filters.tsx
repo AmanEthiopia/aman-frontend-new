@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -24,6 +24,7 @@ export function DiscoveryFilters({ basePath, additionalFilters }: DiscoveryFilte
   const searchParams = useSearchParams()
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [cities, setCities] = useState<City[]>([])
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Fetch real cities from API
   useEffect(() => {
@@ -75,10 +76,10 @@ export function DiscoveryFilters({ basePath, additionalFilters }: DiscoveryFilte
             defaultValue={currentSearch}
             onChange={(e) => {
               const value = e.target.value
-              const timeout = setTimeout(() => {
+              if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+              searchTimeoutRef.current = setTimeout(() => {
                 updateFilter("search", value)
               }, 300)
-              return () => clearTimeout(timeout)
             }}
           />
         </div>
@@ -191,10 +192,10 @@ export function DiscoveryFilters({ basePath, additionalFilters }: DiscoveryFilte
             defaultValue={currentSearch}
             onChange={(e) => {
               const value = e.target.value
-              const timeout = setTimeout(() => {
+              if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+              searchTimeoutRef.current = setTimeout(() => {
                 updateFilter("search", value)
               }, 300)
-              return () => clearTimeout(timeout)
             }}
           />
         </div>

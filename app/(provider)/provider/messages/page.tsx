@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import {
   Search,
@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Textarea } from "@/components/ui/textarea"
 import {
   DropdownMenu,
@@ -75,7 +76,7 @@ function ConversationItem({
   
   const TypeIcon = TYPE_ICONS[conversation.related_to_type] || MessageSquare
   const participantName = conversation.other_participant?.name || "Unknown"
-  const participantAvatar = conversation.other_participant?.avatar_url
+  const participantAvatar = getMediaUrl(conversation.other_participant?.avatar_url)
   const unreadCount = conversation.unread_count || 0
   const lastMessageText = conversation.last_message?.text || ""
   const lastMessageAt = conversation.last_message_at || ""
@@ -145,7 +146,7 @@ function MessageBubble({
   
   const senderId = message.sender?.id || ""
   const senderName = message.sender?.name || "Unknown"
-  const senderAvatar = message.sender?.avatar_url
+  const senderAvatar = getMediaUrl(message.sender?.avatar_url)
   const isOwn = senderId === currentUserId
   const isSystem = message.is_system_message
 
@@ -232,10 +233,10 @@ function EmptyConversation() {
   )
 }
 
-export default function ProviderMessagesPage() {
+function ProviderMessagesContent() {
   const searchParams = useSearchParams()
-  const { user } = useAuth()
-  const currentUserId = user?.id || ""
+  const { userProfile } = useAuth()
+  const currentUserId = userProfile?.user?.id || ""
 
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -258,11 +259,11 @@ export default function ProviderMessagesPage() {
       try {
         setLoading(true)
         const { data } = await getConversations()
-        setConversations(data)
-        
-        // Auto-select first conversation if none selected
-        if (!selectedConversation && data.length > 0) {
-          setSelectedConversation(data[0].id)
+        const convList = data ?? []
+        setConversations(convList)
+
+        if (!selectedConversation && convList.length > 0) {
+          setSelectedConversation(convList[0].id)
         }
       } catch (err: any) {
         setError(err.message || "Failed to load conversations")
@@ -280,8 +281,8 @@ export default function ProviderMessagesPage() {
     async function loadMessages() {
       try {
         setMessagesLoading(true)
-        const { data } = await getMessages(selectedConversation!)
-        setMessages(data)
+        const { data: msgData } = await getMessages(selectedConversation!)
+        setMessages(msgData ?? [])
 
         // Mark as read
         await markConversationRead(selectedConversation!).catch(() => {})
@@ -310,7 +311,11 @@ export default function ProviderMessagesPage() {
     stopPollerRef.current = createMessagePoller(
       selectedConversation,
       (newMessages) => {
-        setMessages((prev) => [...prev, ...newMessages])
+        setMessages((prev) => {
+          const existing = new Set(prev.map((m) => m.id))
+          const fresh = newMessages.filter((m) => !existing.has(m.id))
+          return fresh.length > 0 ? [...prev, ...fresh] : prev
+        })
       },
       5000
     )
@@ -465,7 +470,7 @@ export default function ProviderMessagesPage() {
               <CardHeader className="flex flex-row items-center justify-between border-b p-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarImage src={activeConversation.other_participant.avatar_url} />
+                    <AvatarImage src={getMediaUrl(activeConversation.other_participant.avatar_url)} />
                     <AvatarFallback>
                       {activeConversation.other_participant.name.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
@@ -585,5 +590,13 @@ export default function ProviderMessagesPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function ProviderMessagesPage() {
+  return (
+    <Suspense fallback={<div className="flex h-[calc(100vh-12rem)] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
+      <ProviderMessagesContent />
+    </Suspense>
   )
 }

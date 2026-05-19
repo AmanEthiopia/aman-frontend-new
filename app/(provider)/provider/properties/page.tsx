@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { formatRating } from "@/lib/utils"
+import { getMediaUrl } from "@/lib/utils/media"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   Building2,
   UtensilsCrossed,
@@ -104,7 +105,7 @@ function PropertyCard({
       <div className="relative aspect-[16/10]">
         {property.cover_photo_url ? (
           <img
-            src={property.cover_photo_url}
+            src={getMediaUrl(property.cover_photo_url)}
             alt={property.name}
             className="h-full w-full object-cover"
           />
@@ -118,10 +119,15 @@ function PropertyCard({
             <Icon className="mr-1 h-3 w-3" />
             {config.label}
           </Badge>
-          {property.is_verified && (
+          {property.is_verified ? (
             <Badge className="bg-green-100 text-green-700 border-0 dark:bg-green-950 dark:text-green-400">
               <CheckCircle2 className="mr-1 h-3 w-3" />
               Verified
+            </Badge>
+          ) : (
+            <Badge className="bg-yellow-100 text-yellow-800 border-0 dark:bg-yellow-900/30 dark:text-yellow-300">
+              <XCircle className="mr-1 h-3 w-3" />
+              Unverified
             </Badge>
           )}
         </div>
@@ -208,12 +214,16 @@ function AddPropertyCard({ type }: { type: PropertyCategory }) {
   )
 }
 
-export default function ProviderPropertiesPage() {
+function ProviderPropertiesContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [properties, setProperties] = useState<PropertyBase[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState<"all" | PropertyCategory>("all")
+  const [activeTab, setActiveTab] = useState<"all" | PropertyCategory>(() => {
+    const tab = searchParams.get("tab") as PropertyCategory | null
+    return tab && ["hotel", "restaurant", "driver", "trip"].includes(tab) ? tab : "all"
+  })
   const [deleteProperty, setDeleteProperty] = useState<PropertyBase | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -230,7 +240,8 @@ export default function ProviderPropertiesPage() {
       }
       
       const response = await providerAPI.getMyProperties(params)
-      setProperties(response.results)
+      // API returns data as a direct array (not PaginatedResponse.results)
+      setProperties(Array.isArray(response) ? response : (response?.results ?? []))
     } catch (error) {
       console.error("[v0] Failed to load properties:", error)
       // For demo, use empty array - in production this would show an error
@@ -314,18 +325,20 @@ export default function ProviderPropertiesPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            {(Object.keys(propertyTypeConfig) as PropertyCategory[]).map((type) => {
-              const config = propertyTypeConfig[type]
-              const Icon = config.icon
-              return (
-                <DropdownMenuItem key={type} asChild>
-                  <Link href={`/provider/properties/new?type=${type}`} className="flex items-center">
-                    <Icon className={`mr-2 h-4 w-4 ${config.color}`} />
-                    {config.label}
-                  </Link>
-                </DropdownMenuItem>
-              )
-            })}
+            {(Object.keys(propertyTypeConfig) as PropertyCategory[])
+              .filter((type) => type !== "trip")
+              .map((type) => {
+                const config = propertyTypeConfig[type]
+                const Icon = config.icon
+                return (
+                  <DropdownMenuItem key={type} asChild>
+                    <Link href={`/provider/properties/new?type=${type}`} className="flex items-center">
+                      <Icon className={`mr-2 h-4 w-4 ${config.color}`} />
+                      {config.label}
+                    </Link>
+                  </DropdownMenuItem>
+                )
+              })}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -464,5 +477,13 @@ export default function ProviderPropertiesPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  )
+}
+
+export default function ProviderPropertiesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+      <ProviderPropertiesContent />
+    </Suspense>
   )
 }

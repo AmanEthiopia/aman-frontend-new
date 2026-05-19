@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Star, Loader2, AlertCircle, User, ThumbsUp, MessageSquare } from "lucide-react"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -21,6 +22,7 @@ import {
 import {
   getReviews,
   submitReview,
+  extractReviewError,
   formatReviewDate,
   type Review,
   type ReviewableType,
@@ -125,7 +127,7 @@ function ReviewCard({ review }: { review: Review }) {
       <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={review.author?.avatar_url} />
+            <AvatarImage src={getMediaUrl(review.author?.avatar_url) || undefined} />
             <AvatarFallback>{initials || "AN"}</AvatarFallback>
           </Avatar>
           <div>
@@ -220,7 +222,7 @@ function WriteReviewDialog({
       setComment("")
       onSuccess()
     } catch (err: any) {
-      setError(err.message || "Failed to submit review")
+      setError(extractReviewError(err))
     } finally {
       setSubmitting(false)
     }
@@ -324,21 +326,13 @@ export function ReviewsSection({
           page 
         })
         
-        // Safely access pagination data with defaults
-        const pagination = response?.meta?.pagination || { 
-          current_page: 1, 
-          total_pages: 1, 
-          count: 0 
-        }
-        
         if (page === 1) {
-          setPinnedReviews(response?.pinned || [])
-          setReviews(response?.data || [])
+          setPinnedReviews(response.pinned)
+          setReviews(response.results)
         } else {
-          setReviews((prev) => [...prev, ...(response?.data || [])])
+          setReviews((prev) => [...prev, ...response.results])
         }
-        
-        setHasMore(pagination.current_page < pagination.total_pages)
+        setHasMore(response.hasMore)
       } catch (err: any) {
         console.error("[v0] Error loading reviews:", err)
         setError(err.message || "Failed to load reviews")

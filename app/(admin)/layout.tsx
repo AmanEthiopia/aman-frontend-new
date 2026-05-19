@@ -25,6 +25,7 @@ import {
   MapPin,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -152,7 +153,7 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2 px-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={userProfile?.profile?.profile_photo} />
+                    <AvatarImage src={getMediaUrl(userProfile?.profile?.profile_photo)} />
                     <AvatarFallback className="bg-destructive text-destructive-foreground">
                       {userProfile?.user?.first_name?.[0] || "A"}
                       {userProfile?.user?.last_name?.[0] || "D"}

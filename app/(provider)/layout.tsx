@@ -23,10 +23,11 @@ import {
   User,
   Menu,
   X,
-  Home,
   Package,
+  CalendarDays,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -46,7 +47,9 @@ import {
 } from "@/components/ui/collapsible"
 import { useAuth } from "@/contexts/auth-context"
 import { getConversations } from "@/lib/api/messages"
-import { getMyBookings } from "@/lib/api/provider"
+import { getMyBookings, getMyProperties } from "@/lib/api/provider"
+import { getUnreadCount } from "@/lib/api/notifications"
+import type { PropertyBase, PropertyCategory } from "@/lib/api/provider"
 
 interface NavItem {
   href: string
@@ -68,7 +71,6 @@ function getSidebarItems(pendingBookings: number, unreadMessages: number): NavIt
         { href: "/provider/properties/new?type=hotel", label: "Add Hotel", icon: Building2 },
         { href: "/provider/properties/new?type=restaurant", label: "Add Restaurant", icon: UtensilsCrossed },
         { href: "/provider/properties/new?type=driver", label: "Add Driver", icon: Car },
-        { href: "/provider/properties/new?type=trip", label: "Add Trip/Event", icon: Map },
       ],
     },
     {
@@ -88,6 +90,8 @@ function getSidebarItems(pendingBookings: number, unreadMessages: number): NavIt
       children: [
         { href: "/provider/packages", label: "All Packages", icon: Package },
         { href: "/provider/packages/new", label: "Create Package", icon: Plus },
+        { href: "/provider/properties?tab=trip", label: "My Trips/Events", icon: CalendarDays },
+        { href: "/provider/properties/new?type=trip", label: "Add Trip/Event", icon: Map },
       ],
     },
     { href: "/provider/bookings", label: "Bookings", icon: Calendar, badge: pendingBookings > 0 ? pendingBookings : undefined },
@@ -217,11 +221,13 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
   const { userProfile, logout, isAuthenticated, isAuthReady } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [selectedProperty, setSelectedProperty] = useState("Sheraton Addis Hotel")
+  const [selectedProperty, setSelectedProperty] = useState("All Properties")
+  const [myProperties, setMyProperties] = useState<PropertyBase[]>([])
   const [pendingBookings, setPendingBookings] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
+  const [unreadNotifs, setUnreadNotifs] = useState(0)
 
-  // Fetch real counts for badges
+  // Fetch real counts for badges and property list
   useEffect(() => {
     async function fetchCounts() {
       if (!isAuthenticated) return
@@ -235,13 +241,25 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
       try {
         // Fetch unread messages count
         const conversationsResponse = await getConversations()
-        const conversations = conversationsResponse?.results || conversationsResponse || []
-        const total = Array.isArray(conversations)
-          ? conversations.reduce((sum: number, c: any) => sum + (c?.unread_count || 0), 0)
-          : 0
+        const conversations = conversationsResponse?.data ?? []
+        const total = conversations.reduce((sum: number, c: any) => sum + (c?.unread_count || 0), 0)
         setUnreadMessages(total)
       } catch {
         setUnreadMessages(0)
+      }
+      try {
+        const count = await getUnreadCount()
+        setUnreadNotifs(count)
+      } catch {
+        setUnreadNotifs(0)
+      }
+      try {
+        // Fetch real properties for the dropdown
+        const propertiesResponse = await getMyProperties()
+        const list = Array.isArray(propertiesResponse) ? propertiesResponse : (propertiesResponse?.results ?? [])
+        setMyProperties(list)
+      } catch {
+        setMyProperties([])
       }
     }
     fetchCounts()
@@ -252,14 +270,7 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
 
   const sidebarItems = getSidebarItems(pendingBookings, unreadMessages)
 
-  // Mock properties for dropdown - in production, this would come from API
-  const mockProperties = [
-    { id: "1", name: "Sheraton Addis Hotel", type: "hotel" as const },
-    { id: "2", name: "Lalibela Lodge", type: "hotel" as const },
-    { id: "3", name: "Yod Abyssinia", type: "restaurant" as const },
-  ]
-
-  const propertyTypeIcons = {
+  const propertyTypeIcons: Record<string, typeof Building2> = {
     hotel: Building2,
     restaurant: UtensilsCrossed,
     driver: Car,
@@ -315,23 +326,30 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
                 <DropdownMenuContent align="start" className="w-64">
                   <DropdownMenuLabel>Your Properties</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {mockProperties.map((property) => {
-                    const Icon = propertyTypeIcons[property.type]
-                    return (
-                      <DropdownMenuItem
-                        key={property.id}
-                        onClick={() => setSelectedProperty(property.name)}
-                      >
-                        <Icon className="mr-2 h-4 w-4" />
-                        {property.name}
-                        {property.name === selectedProperty && (
-                          <Badge className="ml-auto" variant="secondary">
-                            Active
-                          </Badge>
-                        )}
-                      </DropdownMenuItem>
-                    )
-                  })}
+                  {myProperties.length === 0 ? (
+                    <DropdownMenuItem disabled>No properties yet</DropdownMenuItem>
+                  ) : (
+                    myProperties.map((property) => {
+                      const Icon = propertyTypeIcons[property.category] || Building2
+                      return (
+                        <DropdownMenuItem
+                          key={property.id}
+                          onClick={() => {
+                            setSelectedProperty(property.name)
+                            router.push(`/provider/properties/${property.category}s/${property.id}`)
+                          }}
+                        >
+                          <Icon className="mr-2 h-4 w-4" />
+                          {property.name}
+                          {property.name === selectedProperty && (
+                            <Badge className="ml-auto" variant="secondary">
+                              Active
+                            </Badge>
+                          )}
+                        </DropdownMenuItem>
+                      )
+                    })
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/provider/properties/new" className="text-primary">
@@ -346,23 +364,21 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
 
           {/* Right Side */}
           <div className="flex items-center gap-2">
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="hidden gap-2 sm:flex">
-                <Home className="h-4 w-4" />
-                Back to AMAN
-              </Button>
-            </Link>
             <Link href="/provider/notifications">
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-destructive" />
+                {unreadNotifs > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                    {unreadNotifs > 99 ? "99+" : unreadNotifs}
+                  </span>
+                )}
               </Button>
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2 px-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={userProfile?.profile?.profile_photo || "/diverse-business-owner.png"} />
+                    <AvatarImage src={getMediaUrl(userProfile?.profile?.profile_photo) || undefined} />
                     <AvatarFallback>
                       {userProfile?.user?.first_name?.[0] || "P"}
                       {userProfile?.user?.last_name?.[0] || "O"}
@@ -394,13 +410,6 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
                   <Link href="/provider/properties">
                     <Building2 className="mr-2 h-4 w-4" />
                     My Properties
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/home">
-                    <Home className="mr-2 h-4 w-4" />
-                    Switch to Traveler
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

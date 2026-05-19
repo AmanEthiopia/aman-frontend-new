@@ -108,7 +108,7 @@ export default function ProviderGuideBookingsPage() {
     if (!selectedBooking) return
     setProcessing(selectedBooking.id)
     try {
-      await rejectGuideBooking(selectedBooking.id, rejectReason || undefined)
+      await rejectGuideBooking(selectedBooking.id, rejectReason || "")
       setBookings(bookings.map(b => 
         b.id === selectedBooking.id ? { ...b, status: "rejected" } : b
       ))

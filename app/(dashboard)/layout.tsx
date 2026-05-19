@@ -3,39 +3,53 @@
 import type { ReactNode } from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Home, Calendar, Map, MessageSquare, Settings, Bell } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Home, Calendar, Map, MessageSquare, Settings, Bell, Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useAuth } from "@/contexts/auth-context"
 import { getConversations } from "@/lib/api/messages"
+import { getUnreadCount } from "@/lib/api/notifications"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { userProfile, isAuthenticated } = useAuth()
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadMessages, setUnreadMessages] = useState(0)
+  const [unreadNotifs, setUnreadNotifs] = useState(0)
+
+  // Redirect providers away from traveler dashboard
+  useEffect(() => {
+    if (userProfile?.role?.is_provider) {
+      router.replace("/provider")
+    }
+  }, [userProfile, router])
 
   // Fetch unread message count
   useEffect(() => {
-    async function fetchUnreadCount() {
+    async function fetchCounts() {
       if (!isAuthenticated) return
       try {
         const response = await getConversations()
-        const conversations = response?.results || response || []
-        const total = Array.isArray(conversations)
-          ? conversations.reduce((sum, c) => sum + (c?.unread_count || 0), 0)
-          : 0
-        setUnreadCount(total)
+        const conversations = response?.data ?? []
+        const total = conversations.reduce((sum, c) => sum + (c?.unread_count || 0), 0)
+        setUnreadMessages(total)
       } catch {
-        setUnreadCount(0)
+        setUnreadMessages(0)
+      }
+      try {
+        const count = await getUnreadCount()
+        setUnreadNotifs(count)
+      } catch {
+        setUnreadNotifs(0)
       }
     }
-    fetchUnreadCount()
-    // Poll for new messages every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000)
+    fetchCounts()
+    const interval = setInterval(fetchCounts, 30000)
     return () => clearInterval(interval)
   }, [isAuthenticated])
 
@@ -43,7 +57,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     { href: "/home", label: "Home", icon: Home },
     { href: "/bookings", label: "Bookings", icon: Calendar },
     { href: "/itinerary", label: "Itinerary", icon: Map },
-    { href: "/messages", label: "Messages", icon: MessageSquare, badge: unreadCount },
+    { href: "/messages", label: "Messages", icon: MessageSquare, badge: unreadMessages },
+    { href: "/wishlist", label: "Wishlist", icon: Heart },
   ]
 
   return (
@@ -52,7 +67,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Top Navigation Bar */}
         <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/home" className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                 <span className="text-sm font-bold text-primary-foreground">A</span>
               </div>
@@ -84,10 +99,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </nav>
 
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-destructive" />
-              </Button>
+              <Link href="/notifications">
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  {unreadNotifs > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                      {unreadNotifs > 99 ? "99+" : unreadNotifs}
+                    </span>
+                  )}
+                </Button>
+              </Link>
               <Link href="/settings">
                 <Button variant="ghost" size="icon">
                   <Settings className="h-5 w-5" />
@@ -95,7 +116,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </Link>
               <Link href="/settings">
                 <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-transparent transition-all hover:ring-primary/20">
-                  <AvatarImage src="/traveler-avatar.jpg" />
+                  <AvatarImage src={getMediaUrl(userProfile?.profile?.profile_photo) || undefined} />
                   <AvatarFallback>{userProfile?.user?.first_name?.charAt(0) || "U"}</AvatarFallback>
                 </Avatar>
               </Link>

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
+import { useState, useEffect, use, useRef } from "react"
+import { getMediaUrl } from "@/lib/utils/media"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -19,12 +20,22 @@ import {
   Loader2,
   MoreHorizontal,
   Eye,
+  EyeOff,
   CheckCircle2,
   XCircle,
   Camera,
   Bed,
   DollarSign,
+  AlertCircle,
+  Upload,
+  X,
+  ImagePlus,
+  ChevronUp,
+  ChevronDown,
+  Hash,
 } from "lucide-react"
+import { getRoomUnits, createRoomUnit, updateRoomUnit, deleteRoomUnit } from "@/lib/api/hotels"
+import type { RoomUnit } from "@/lib/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -68,8 +79,11 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import * as providerAPI from "@/lib/api/provider"
-import type { ProviderHotel, ProviderRoom, CreateRoomPayload } from "@/lib/api/provider"
+import type { ProviderHotel, ProviderRoom, CreateRoomPayload, PropertyPhoto } from "@/lib/api/provider"
+import { amenityLabel } from "@/lib/api/provider"
 import { formatRating } from "@/lib/utils"
+
+const HOTEL_PHOTO_TYPES = ["exterior", "lobby", "room", "bathroom", "facilities", "dining", "other"]
 
 // Room amenities
 const ROOM_AMENITIES = [
@@ -85,99 +99,466 @@ const ROOM_AMENITIES = [
   "Coffee Maker",
 ]
 
-// Mock hotel data for demo
-const mockHotel: ProviderHotel = {
-  id: "1",
-  name: "Sheraton Addis Hotel",
-  nickname: "ሸራተን አዲስ",
-  description: "A luxury 5-star hotel in the heart of Addis Ababa, offering world-class amenities, stunning city views, and exceptional service. Perfect for business travelers and tourists alike.",
-  category: "hotel",
-  city_id: "1",
-  city_name: "Addis Ababa",
-  address: "Taitu Street, Addis Ababa",
-  is_verified: true,
-  is_active: true,
-  created_at: "2024-01-01T00:00:00Z",
-  updated_at: "2024-12-01T00:00:00Z",
-  cover_photo_url: "/placeholder.svg?height=400&width=800",
-  rating: 4.8,
-  review_count: 256,
-  star_rating: 5,
-  check_in_time: "14:00",
-  check_out_time: "12:00",
-  amenities: [
-    "Free WiFi",
-    "Swimming Pool",
-    "Spa",
-    "Gym/Fitness Center",
-    "Restaurant",
-    "Bar",
-    "Room Service",
-    "Parking",
-    "Airport Shuttle",
-    "Business Center",
-    "Conference Room",
-  ],
-  total_rooms: 24,
-  available_rooms: 18,
-  rooms: [
-    {
-      id: "r1",
-      hotel_id: "1",
-      name: "Standard Room",
-      description: "Comfortable room with modern amenities",
-      room_type: "standard",
-      price_per_night: 120,
-      max_guests: 2,
-      bed_type: "Queen",
-      amenities: ["Air Conditioning", "WiFi", "TV", "Mini Bar"],
-      photos: [],
-      is_available: true,
-      quantity: 10,
-    },
-    {
-      id: "r2",
-      hotel_id: "1",
-      name: "Deluxe Room",
-      description: "Spacious room with city views",
-      room_type: "deluxe",
-      price_per_night: 180,
-      max_guests: 2,
-      bed_type: "King",
-      amenities: ["Air Conditioning", "WiFi", "TV", "Mini Bar", "City View", "Work Desk"],
-      photos: [],
-      is_available: true,
-      quantity: 8,
-    },
-    {
-      id: "r3",
-      hotel_id: "1",
-      name: "Executive Suite",
-      description: "Luxurious suite with separate living area",
-      room_type: "suite",
-      price_per_night: 320,
-      max_guests: 3,
-      bed_type: "King",
-      amenities: ["Air Conditioning", "WiFi", "TV", "Mini Bar", "City View", "Work Desk", "Balcony", "Room Service"],
-      photos: [],
-      is_available: true,
-      quantity: 4,
-    },
-    {
-      id: "r4",
-      hotel_id: "1",
-      name: "Family Room",
-      description: "Perfect for families with children",
-      room_type: "family",
-      price_per_night: 250,
-      max_guests: 4,
-      bed_type: "2 Double Beds",
-      amenities: ["Air Conditioning", "WiFi", "TV", "Mini Bar", "Safe"],
-      photos: [],
-      is_available: true,
-      quantity: 2,
-    },
-  ],
+
+function RoomUnitsSection({ hotelId, roomId }: { hotelId: string; roomId: string }) {
+  const [units, setUnits] = useState<RoomUnit[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const [isAdding, setIsAdding] = useState(false)
+  const [newUnitNumber, setNewUnitNumber] = useState("")
+  const [newUnitLabel, setNewUnitLabel] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+
+  async function loadUnits() {
+    setIsLoading(true)
+    try {
+      const data = await getRoomUnits(hotelId, roomId)
+      setUnits(data)
+    } catch {
+      toast.error("Failed to load room units")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function handleToggle() {
+    if (!isOpen) loadUnits()
+    setIsOpen((v) => !v)
+  }
+
+  async function handleAdd() {
+    if (!newUnitNumber.trim()) return
+    setIsSaving(true)
+    try {
+      const unit = await createRoomUnit(hotelId, roomId, {
+        unit_number: newUnitNumber.trim(),
+        label: newUnitLabel.trim() || undefined,
+        is_active: true,
+      })
+      setUnits((p) => [...p, unit])
+      setNewUnitNumber("")
+      setNewUnitLabel("")
+      setIsAdding(false)
+      toast.success("Room unit added")
+    } catch {
+      toast.error("Failed to add room unit")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function handleToggleActive(unit: RoomUnit) {
+    try {
+      const updated = await updateRoomUnit(hotelId, roomId, unit.id, { is_active: !unit.is_active })
+      setUnits((p) => p.map((u) => (u.id === unit.id ? updated : u)))
+    } catch {
+      toast.error("Failed to update unit")
+    }
+  }
+
+  async function handleDelete(unitId: string) {
+    try {
+      await deleteRoomUnit(hotelId, roomId, unitId)
+      setUnits((p) => p.filter((u) => u.id !== unitId))
+      toast.success("Unit removed")
+    } catch {
+      toast.error("Failed to delete unit")
+    }
+  }
+
+  return (
+    <div className="mt-3 border-t pt-3">
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        <Hash className="h-4 w-4" />
+        Room Units {units.length > 0 ? `(${units.length})` : ""}
+        <span className="ml-1 text-xs">{isOpen ? "▲" : "▼"}</span>
+      </button>
+
+      {isOpen && (
+        <div className="mt-3 space-y-3">
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : (
+            <>
+              {units.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {units.map((unit) => (
+                    <div
+                      key={unit.id}
+                      className={`group flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
+                        unit.is_active ? "border-border bg-background" : "border-border/50 bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      <span className="font-medium">{unit.label || unit.unit_number}</span>
+                      {unit.label && <span className="text-muted-foreground">#{unit.unit_number}</span>}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleActive(unit)}
+                        title={unit.is_active ? "Mark inactive" : "Mark active"}
+                        className="ml-0.5 text-muted-foreground hover:text-foreground"
+                      >
+                        {unit.is_active ? (
+                          <CheckCircle2 className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <XCircle className="h-3 w-3" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(unit.id)}
+                        className="ml-0.5 hidden text-muted-foreground hover:text-destructive group-hover:inline"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No room units added. Add physical room numbers to enable unit-level availability tracking.</p>
+              )}
+
+              {isAdding ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Input
+                    placeholder="Room # (e.g. 101)"
+                    value={newUnitNumber}
+                    onChange={(e) => setNewUnitNumber(e.target.value)}
+                    className="h-8 w-28 text-sm"
+                  />
+                  <Input
+                    placeholder="Label (optional)"
+                    value={newUnitLabel}
+                    onChange={(e) => setNewUnitLabel(e.target.value)}
+                    className="h-8 w-36 text-sm"
+                  />
+                  <Button type="button" size="sm" onClick={handleAdd} disabled={isSaving || !newUnitNumber.trim()}>
+                    {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setIsAdding(false)}>Cancel</Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAdding(true)}
+                >
+                  <Plus className="mr-1.5 h-3 w-3" />
+                  Add Unit
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RoomPhotosSection({ hotelId, roomId }: { hotelId: string; roomId: string }) {
+  const [photos, setPhotos] = useState<PropertyPhoto[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function loadPhotos() {
+    setIsLoading(true)
+    try {
+      const data = await providerAPI.getRoomPhotos(hotelId, roomId)
+      setPhotos(data)
+    } catch {
+      toast.error("Failed to load room photos")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function handleToggle() {
+    if (!isOpen) loadPhotos()
+    setIsOpen((v) => !v)
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { toast.error("Max file size is 5 MB"); return }
+    if (photos.length >= 5) { toast.error("Maximum 5 photos per room"); return }
+    setIsUploading(true)
+    try {
+      const photo = await providerAPI.uploadRoomPhoto(hotelId, roomId, file)
+      setPhotos((p) => [...p, photo])
+      toast.success("Photo uploaded")
+    } catch {
+      toast.error("Failed to upload photo")
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
+  async function handleDelete(photoId: string) {
+    try {
+      await providerAPI.deleteRoomPhoto(hotelId, roomId, photoId)
+      setPhotos((p) => p.filter((x) => x.id !== photoId))
+      toast.success("Photo deleted")
+    } catch {
+      toast.error("Failed to delete photo")
+    }
+  }
+
+  return (
+    <div className="mt-4 border-t pt-4">
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        <Camera className="h-4 w-4" />
+        Room Photos {photos.length > 0 ? `(${photos.length})` : ""}
+        <span className="ml-1 text-xs">{isOpen ? "▲" : "▼"}</span>
+      </button>
+
+      {isOpen && (
+        <div className="mt-3 space-y-3">
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          ) : photos.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+              {photos.map((photo) => (
+                <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
+                  <img src={getMediaUrl(photo.url) || "/placeholder.svg"} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(photo.id)}
+                    className="absolute right-1 top-1 hidden rounded-full bg-black/60 p-1 text-white group-hover:flex"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No photos yet · Best: JPEG, square 1:1, 800×800</p>
+          )}
+
+          {photos.length < 5 && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleUpload}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {isUploading ? (
+                  <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Uploading...</>
+                ) : (
+                  <><ImagePlus className="mr-2 h-3 w-3" />Add Photo</>
+                )}
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HotelPhotosSection({ hotelId }: { hotelId: string }) {
+  const [photos, setPhotos] = useState<PropertyPhoto[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
+  const [photoType, setPhotoType] = useState("exterior")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    loadPhotos()
+  }, [hotelId])
+
+  async function loadPhotos() {
+    setIsLoading(true)
+    try {
+      const data = await providerAPI.getHotelPhotos(hotelId)
+      setPhotos(data)
+    } catch {
+      setPhotos([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { toast.error("Max file size is 5 MB"); return }
+    if (photos.length >= 5) { toast.error("Maximum 5 photos allowed"); return }
+    setIsUploading(true)
+    try {
+      const photo = await providerAPI.uploadHotelPhoto(hotelId, file, photoType)
+      setPhotos((p) => [...p, photo])
+      toast.success("Photo uploaded")
+    } catch {
+      toast.error("Failed to upload photo")
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
+  async function handleDelete(photoId: string) {
+    try {
+      await providerAPI.deleteHotelPhoto(hotelId, photoId)
+      setPhotos((p) => p.filter((x) => x.id !== photoId))
+      toast.success("Photo deleted")
+    } catch {
+      toast.error("Failed to delete photo")
+    }
+  }
+
+  async function handleSetPrimary(photoId: string) {
+    try {
+      await providerAPI.setHotelPhotoPrimary(hotelId, photoId)
+      await loadPhotos()
+      toast.success("Cover photo updated")
+    } catch {
+      toast.error("Failed to set primary photo")
+    }
+  }
+
+  async function handleReorder(index: number, direction: "up" | "down") {
+    const newPhotos = [...photos]
+    const swapIndex = direction === "up" ? index - 1 : index + 1
+    if (swapIndex < 0 || swapIndex >= newPhotos.length) return
+    ;[newPhotos[index], newPhotos[swapIndex]] = [newPhotos[swapIndex], newPhotos[index]]
+    setPhotos(newPhotos)
+    try {
+      await providerAPI.reorderHotelPhotos(
+        hotelId,
+        newPhotos.map((p, i) => ({ id: p.id, display_order: i + 1 }))
+      )
+    } catch {
+      toast.error("Failed to reorder photos")
+      await loadPhotos()
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Camera className="h-5 w-5" />
+            Hotel Photos
+          </CardTitle>
+          <CardDescription>{photos.length}/5 photos · JPEG, 16:9 landscape · Max 5 MB</CardDescription>
+        </div>
+        {photos.length < 5 && (
+          <div className="flex items-center gap-2">
+            <Select value={photoType} onValueChange={setPhotoType}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {HOTEL_PHOTO_TYPES.map((t) => (
+                  <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploading ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading...</>
+              ) : (
+                <><Upload className="mr-2 h-4 w-4" />Upload</>
+              )}
+            </Button>
+          </div>
+        )}
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : photos.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {photos.map((photo, index) => (
+              <div key={photo.id} className="group relative aspect-video overflow-hidden rounded-lg bg-muted">
+                <img src={getMediaUrl(photo.url) || "/placeholder.svg"} alt="" className="h-full w-full object-cover" />
+                {photo.is_primary && (
+                  <div className="absolute left-1 top-1 rounded bg-yellow-400 px-1.5 py-0.5 text-[10px] font-bold text-yellow-900">
+                    Cover
+                  </div>
+                )}
+                <div className="absolute inset-x-0 bottom-0 hidden flex-col gap-1 bg-black/50 p-2 group-hover:flex">
+                  {!photo.is_primary && (
+                    <button
+                      type="button"
+                      onClick={() => handleSetPrimary(photo.id)}
+                      className="flex items-center gap-1 text-xs text-yellow-300 hover:text-yellow-100"
+                    >
+                      <Star className="h-3 w-3" />Set as Cover
+                    </button>
+                  )}
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleReorder(index, "up")}
+                      disabled={index === 0}
+                      className="flex items-center gap-1 text-xs text-white/80 hover:text-white disabled:opacity-30"
+                    >
+                      <ChevronUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleReorder(index, "down")}
+                      disabled={index === photos.length - 1}
+                      className="flex items-center gap-1 text-xs text-white/80 hover:text-white disabled:opacity-30"
+                    >
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(photo.id)}
+                    className="flex items-center gap-1 text-xs text-red-300 hover:text-red-100"
+                  >
+                    <Trash2 className="h-3 w-3" />Delete
+                  </button>
+                </div>
+                <div className="absolute right-1 top-1 hidden rounded bg-black/60 px-1.5 py-0.5 text-[10px] capitalize text-white group-hover:block">
+                  {photo.photo_type ?? photo.category}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-12">
+            <Camera className="mb-3 h-10 w-10 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No photos yet. Upload up to 5 photos.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Best: JPEG, 1920×1080, landscape 16:9</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
 }
 
 function AddRoomModal({
@@ -386,10 +767,12 @@ function AddRoomModal({
 
 function RoomCard({
   room,
+  hotelId,
   onEdit,
   onDelete,
 }: {
   room: ProviderRoom
+  hotelId: string
   onEdit: () => void
   onDelete: () => void
 }) {
@@ -412,7 +795,7 @@ function RoomCard({
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="font-semibold">{room.name}</h4>
-                <Badge variant="outline">{roomTypeLabels[room.room_type]}</Badge>
+                {room.room_type && <Badge variant="outline">{roomTypeLabels[room.room_type]}</Badge>}
                 {!room.is_available && (
                   <Badge variant="secondary">Unavailable</Badge>
                 )}
@@ -421,23 +804,26 @@ function RoomCard({
               <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
                 <span className="flex items-center gap-1">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  Up to {room.max_guests} guests
+                  Up to {room.max_adults ?? room.max_guests} guests
                 </span>
                 <span className="flex items-center gap-1">
                   <Bed className="h-4 w-4 text-muted-foreground" />
                   {room.bed_type}
                 </span>
                 <span className="font-medium text-primary">
-                  ${room.price_per_night}/night
+                  ${room.base_price ?? room.price_per_night}/night
                 </span>
               </div>
               {room.amenities.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {room.amenities.slice(0, 4).map((amenity) => (
-                    <Badge key={amenity} variant="secondary" className="text-xs">
-                      {amenity}
-                    </Badge>
-                  ))}
+                  {room.amenities.slice(0, 4).map((amenity, i) => {
+                    const label = amenityLabel(amenity)
+                    return (
+                      <Badge key={`${label}-${i}`} variant="secondary" className="text-xs">
+                        {label}
+                      </Badge>
+                    )
+                  })}
                   {room.amenities.length > 4 && (
                     <Badge variant="secondary" className="text-xs">
                       +{room.amenities.length - 4} more
@@ -449,7 +835,7 @@ function RoomCard({
           </div>
           <div className="flex items-center gap-2">
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">{room.quantity} rooms</p>
+              <p className="text-sm text-muted-foreground">{room.total_units ?? room.quantity} rooms</p>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -471,6 +857,8 @@ function RoomCard({
             </DropdownMenu>
           </div>
         </div>
+        <RoomUnitsSection hotelId={hotelId} roomId={room.id} />
+        <RoomPhotosSection hotelId={hotelId} roomId={room.id} />
       </CardContent>
     </Card>
   )
@@ -484,6 +872,7 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
   const [showAddRoom, setShowAddRoom] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
 
   useEffect(() => {
     loadHotel()
@@ -496,8 +885,7 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
       setHotel(data)
     } catch (error) {
       console.error("[v0] Failed to load hotel:", error)
-      // Use mock data for demo
-      setHotel(mockHotel)
+      toast.error("Failed to load hotel data")
     } finally {
       setIsLoading(false)
     }
@@ -515,6 +903,20 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
     } finally {
       setIsDeleting(false)
       setShowDeleteDialog(false)
+    }
+  }
+
+  const handleTogglePublish = async () => {
+    if (!hotel) return
+    setIsPublishing(true)
+    try {
+      const result = await providerAPI.publishHotel(resolvedParams.id)
+      setHotel((prev) => prev ? { ...prev, is_active: result.is_published, is_verified: result.is_verified } : prev)
+      toast.success(result.is_published ? "Hotel published" : "Hotel unpublished")
+    } catch (error) {
+      toast.error("Failed to update publish status")
+    } finally {
+      setIsPublishing(false)
     }
   }
 
@@ -559,14 +961,22 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
             </Button>
           </Link>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold">{hotel.name}</h1>
-              {hotel.is_verified && (
+              {hotel.is_verified ? (
                 <Badge className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400">
                   <CheckCircle2 className="mr-1 h-3 w-3" />
                   Verified
                 </Badge>
+              ) : (
+                <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                  <AlertCircle className="mr-1 h-3 w-3" />
+                  Unverified
+                </Badge>
               )}
+              <Badge variant={hotel.is_active ? "default" : "secondary"}>
+                {hotel.is_active ? "Published" : "Unpublished"}
+              </Badge>
             </div>
             {hotel.nickname && (
               <p className="text-muted-foreground">{hotel.nickname}</p>
@@ -574,6 +984,16 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleTogglePublish} disabled={isPublishing}>
+            {isPublishing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : hotel.is_active ? (
+              <EyeOff className="mr-2 h-4 w-4" />
+            ) : (
+              <Eye className="mr-2 h-4 w-4" />
+            )}
+            {hotel.is_active ? "Unpublish" : "Publish"}
+          </Button>
           <Link href={`/provider/properties/hotels/${hotel.id}/edit`}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />
@@ -594,7 +1014,7 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
             <div className="relative aspect-[16/9]">
               {hotel.cover_photo_url ? (
                 <img
-                  src={hotel.cover_photo_url}
+                  src={getMediaUrl(hotel.cover_photo_url)}
                   alt={hotel.name}
                   className="h-full w-full object-cover"
                 />
@@ -691,11 +1111,14 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {hotel.amenities?.map((amenity) => (
-                  <Badge key={amenity} variant="secondary">
-                    {amenity}
-                  </Badge>
-                ))}
+                {hotel.amenities?.map((amenity, i) => {
+                  const label = amenityLabel(amenity)
+                  return (
+                    <Badge key={`${label}-${i}`} variant="secondary">
+                      {label}
+                    </Badge>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
@@ -720,6 +1143,7 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
               <RoomCard
                 key={room.id}
                 room={room}
+                hotelId={hotel.id}
                 onEdit={() => router.push(`/provider/properties/hotels/${hotel.id}/rooms/${room.id}/edit`)}
                 onDelete={() => handleDeleteRoom(room.id)}
               />
@@ -737,6 +1161,9 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </CardContent>
       </Card>
+
+      {/* Hotel Photos */}
+      <HotelPhotosSection hotelId={hotel.id} />
 
       {/* Add Room Modal */}
       <AddRoomModal

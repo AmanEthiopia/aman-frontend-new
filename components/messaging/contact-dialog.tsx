@@ -42,7 +42,7 @@ export function ContactDialog({
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
   const { toast } = useToast()
-  const { user, isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth()
   const router = useRouter()
 
   const handleSend = async () => {

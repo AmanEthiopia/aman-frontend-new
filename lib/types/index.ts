@@ -14,6 +14,7 @@ export interface City {
 export interface Hotel {
   id: string
   name: string
+  provider_id?: string
   cityId: string
   city?: City
   description: string
@@ -49,31 +50,44 @@ export interface HotelImage {
 export interface Restaurant {
   id: string
   name: string
-  cityId: string
-  city?: City
-  description: string
-  address: string
-  area: string
-  cuisineTypes: string[]
-  priceRange: "budget" | "mid-range" | "luxury"
-  priceMin: number
-  priceMax: number
-  amenities: string[]
-  isVerified: boolean
-  isFeatured: boolean
-  contactPhone: string
-  images: RestaurantImage[]
-  rating: number
-  reviewCount: number
-  openingHours: string
-  safetyScore: number
+  slug: string
+  provider_id?: string
+  description?: string
+  address?: string
+  area?: string
+  city_name?: string
+  city?: { id: string; name: string; slug: string }
+  cuisine_types?: string[]
+  price_range?: string
+  price_min?: number
+  price_max?: number
+  average_rating?: string | number
+  review_count?: number
+  cover_photo?: string
+  cover_photo_url?: string
+  is_verified?: boolean
+  is_featured?: boolean
+  is_active?: boolean
+  accepts_reservations?: boolean
+  has_wifi?: boolean
+  has_parking?: boolean
+  delivery_available?: boolean
+  has_dine_in?: boolean
+  has_takeaway?: boolean
+  seating_capacity?: number
+  opening_hours?: Record<string, string>
+  phone?: string
+  email?: string
+  website?: string
+  photos?: RestaurantImage[]
 }
 
 export interface RestaurantImage {
   id: string
-  url: string
-  alt: string
-  isPrimary: boolean
+  url?: string
+  photo_url?: string
+  alt?: string
+  is_primary?: boolean
 }
 
 export interface Transport {
@@ -223,6 +237,14 @@ export interface UserProfile {
   interests: string[] | null
   dietary_restrictions: string[] | null
   accessibility_needs: string[] | null
+  dark_mode: boolean
+  notif_email_bookings: boolean
+  notif_email_messages: boolean
+  notif_email_reviews: boolean
+  notif_email_payments: boolean
+  notif_email_marketing: boolean
+  notif_push_bookings: boolean
+  notif_push_messages: boolean
 }
 
 export interface UserRole {
@@ -233,10 +255,36 @@ export interface UserRole {
   is_premium: boolean
 }
 
+export interface ProviderProfileInfo {
+  business_name: string
+  business_type: string
+  registration_number: string | null
+  tax_id: string | null
+  business_address: string | null
+  website: string | null
+  support_email: string | null
+}
+
+export interface PayoutSettingsInfo {
+  bank_name: string | null
+  account_number: string | null
+  account_holder_name: string | null
+  payout_schedule: "weekly" | "biweekly" | "monthly"
+}
+
+export interface ProfileCompletionInfo {
+  percentage: number
+  is_complete: boolean
+  missing: string[]
+}
+
 export interface CompleteUserProfile {
   user: User
   profile: UserProfile
   role: UserRole
+  provider_profile: ProviderProfileInfo | null
+  payout_settings: PayoutSettingsInfo | null
+  profile_completion: ProfileCompletionInfo | null
 }
 
 export interface Provider {
@@ -288,23 +336,41 @@ export interface TrustRecommendation {
   disputeFreeDays: number
 }
 
+export interface RoomUnit {
+  id: string
+  unit_number: string
+  label?: string
+  is_active: boolean
+}
+
 export interface Room {
   id: string
   hotel_id: string
   name: string
   description: string
-  price_per_night: number
-  max_guests: number
+  bed_type?: string
+  bed_count?: number
+  price_per_night?: number
+  base_price?: string | number  // API returns "100.00" string
+  max_guests?: number
+  max_adults?: number
+  max_children?: number
+  room_size_sqm?: number
   amenities: string[]
-  images: RoomImage[]
+  images?: RoomImage[]
+  photos?: RoomImage[]
   is_available: boolean
+  total_units?: number
+  available_units?: number | null  // null = no dates; number = with dates; 0 = fully booked
+  units?: RoomUnit[]
 }
 
 export interface RoomImage {
   id: string
-  url: string
-  alt: string
-  is_primary: boolean
+  url?: string
+  photo_url?: string
+  alt?: string
+  is_primary?: boolean
 }
 
 export interface Booking {
@@ -381,7 +447,7 @@ export type {
 export type {
   Conversation,
   Message,
-  ContextType,
+  RelatedToType,
 } from "@/lib/api/messages"
 
 // Re-export verification types

@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, X, Grid3X3 } from "lucide-react"
 import type { HotelImage } from "@/lib/types"
+import { getMediaUrl } from "@/lib/utils/media"
 
 interface HotelGalleryProps {
   images: HotelImage[]
@@ -53,7 +54,7 @@ export function HotelGallery({ images, hotelName }: HotelGalleryProps) {
           className="relative col-span-2 row-span-2 overflow-hidden rounded-l-xl focus:outline-none focus:ring-2 focus:ring-primary md:rounded-xl"
         >
           <img
-            src={primaryImage.image_url || "/placeholder.svg"}
+            src={getMediaUrl(primaryImage.image_url) || "/placeholder.svg"}
             alt={primaryImage.alt_text || hotelName}
             className="h-full w-full object-cover transition-transform hover:scale-105"
           />
@@ -70,7 +71,7 @@ export function HotelGallery({ images, hotelName }: HotelGalleryProps) {
             className="relative hidden aspect-[4/3] overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary md:block"
           >
             <img
-              src={image.image_url || "/placeholder.svg"}
+              src={getMediaUrl(image.image_url) || "/placeholder.svg"}
               alt={image.alt_text || `${hotelName} - ${index + 2}`}
               className="h-full w-full object-cover transition-transform hover:scale-105"
             />
@@ -106,7 +107,7 @@ export function HotelGallery({ images, hotelName }: HotelGalleryProps) {
 
             <div className="relative aspect-[4/3]">
               <img
-                src={displayImages[currentIndex].image_url || "/placeholder.svg"}
+                src={getMediaUrl(displayImages[currentIndex].image_url) || "/placeholder.svg"}
                 alt={displayImages[currentIndex].alt_text || `${hotelName} - ${currentIndex + 1}`}
                 className="h-full w-full object-contain"
               />

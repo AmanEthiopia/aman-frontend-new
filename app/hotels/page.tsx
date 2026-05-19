@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
@@ -8,11 +8,12 @@ import { ListingCard } from "@/components/shared/listing-card"
 import { DiscoveryFilters } from "@/components/shared/discovery-filters"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { searchHotels } from "@/lib/api/hotels"
+import { mediaUrl } from "@/lib/api/client"
 import { APIError } from "@/lib/api/client"
-import type { Hotel } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { AlertCircle, Loader2 } from "lucide-react"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
 
 function HotelsLoading() {
@@ -33,43 +34,87 @@ function HotelsLoading() {
   )
 }
 
-export default function HotelsPage() {
+function HotelsContent() {
   const searchParams = useSearchParams()
-  const [hotels, setHotels] = useState<Hotel[]>([])
+
+  const city = searchParams.get("city") || ""
+  const search = searchParams.get("search") || ""
+  const priceMin = searchParams.get("priceMin") || ""
+  const priceMax = searchParams.get("priceMax") || ""
+  const verified = searchParams.get("verified") || ""
+
+  const [hotels, setHotels] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [totalCount, setTotalCount] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [page, setPage] = useState(1)
+  const prevFilterRef = useRef([city, search, priceMin, priceMax, verified].join("|"))
 
   useEffect(() => {
-    async function loadHotels() {
-      setLoading(true)
+    const filterStr = [city, search, priceMin, priceMax, verified].join("|")
+    const filtersChanged = filterStr !== prevFilterRef.current
+    prevFilterRef.current = filterStr
+
+    const isFirstPage = filtersChanged || page === 1
+    let cancelled = false
+
+    async function load() {
+      if (isFirstPage) {
+        setLoading(true)
+        if (filtersChanged) setHotels([])
+      } else {
+        setLoadingMore(true)
+      }
       setError(null)
 
       try {
         const params = {
-          city: searchParams.get("city") || undefined,
-          price_min: searchParams.get("priceMin") ? Number(searchParams.get("priceMin")) : undefined,
-          price_max: searchParams.get("priceMax") ? Number(searchParams.get("priceMax")) : undefined,
-          verified: searchParams.get("verified") === "true" ? true : undefined,
-          search: searchParams.get("search") || undefined,
-          guests: searchParams.get("guests") ? Number(searchParams.get("guests")) : undefined,
+          city: city || undefined,
+          search: search || undefined,
+          price_min: priceMin ? Number(priceMin) : undefined,
+          price_max: priceMax ? Number(priceMax) : undefined,
+          verified: verified === "true" ? true : undefined,
+          page: filtersChanged ? 1 : page,
+          page_size: 20,
         }
 
         const response = await searchHotels(params)
-        setHotels(response.results || [])
+
+        if (!cancelled) {
+          const results = response.results || []
+          if (isFirstPage) {
+            setHotels(results)
+          } else {
+            setHotels((prev) => [...prev, ...results])
+          }
+          setTotalCount(response.count)
+          setHasMore(!!response.next)
+          if (filtersChanged) setPage(1)
+        }
       } catch (err) {
-        console.error("[v0] Failed to load hotels:", err)
-        if (err instanceof APIError) {
-          setError(err.message)
-        } else {
-          setError("Failed to load hotels. Please try again.")
+        if (!cancelled) {
+          if (err instanceof APIError) {
+            setError(err.message)
+          } else {
+            setError("Failed to load hotels. Please try again.")
+          }
         }
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+          setLoadingMore(false)
+        }
       }
     }
 
-    loadHotels()
-  }, [searchParams])
+    load()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [city, search, priceMin, priceMax, verified, page])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -86,7 +131,6 @@ export default function HotelsPage() {
           <div className="container mx-auto px-4">
             <DiscoveryFilters basePath="/hotels" />
 
-            {/* Live city stats — only visible when a city filter is active */}
             <CityStatsBar
               citySlug={searchParams.get("city")}
               activeStat="hotels"
@@ -111,7 +155,9 @@ export default function HotelsPage() {
               ) : (
                 <>
                   <p className="mb-6 text-muted-foreground">
-                    Showing {hotels.length} hotel{hotels.length !== 1 ? "s" : ""}
+                    {hotels.length < totalCount
+                      ? `Showing ${hotels.length} of ${totalCount} hotel${totalCount !== 1 ? "s" : ""}`
+                      : `${totalCount} hotel${totalCount !== 1 ? "s" : ""} found`}
                   </p>
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {hotels.map((hotel: any) => (
@@ -121,21 +167,55 @@ export default function HotelsPage() {
                         slug={hotel.slug}
                         type="hotel"
                         name={hotel.name}
-                        imageUrl={hotel.cover_photo || hotel.images?.[0]?.url || "/grand-hotel-exterior.png"}
+                        imageUrl={
+                          mediaUrl(hotel.cover_photo) ||
+                          mediaUrl(hotel.images?.[0]?.url) ||
+                          mediaUrl(hotel.images?.[0]?.photo_url) ||
+                          "/placeholder.svg"
+                        }
                         location={hotel.area || hotel.address || ""}
                         city={hotel.city_name || hotel.city?.name || ""}
                         description={hotel.description || hotel.short_description || ""}
-                        priceRange={hotel.priceRange}
-                        priceDisplay={hotel.min_price ? `From $${hotel.min_price} / night` : hotel.priceMin ? `$${hotel.priceMin} - $${hotel.priceMax} / night` : "Contact for price"}
+                        priceRange={hotel.price_range || hotel.priceRange}
+                        priceDisplay={
+                          hotel.min_price
+                            ? `From $${hotel.min_price} / night`
+                            : hotel.priceMin
+                              ? `$${hotel.priceMin} - $${hotel.priceMax} / night`
+                              : "Contact for price"
+                        }
                         rating={hotel.average_rating ? parseFloat(hotel.average_rating) : hotel.rating || 0}
                         reviewCount={hotel.review_count || hotel.reviewCount || 0}
-                        isVerified={hotel.is_verified ?? hotel.isVerified ?? true}
+                        isVerified={hotel.is_verified ?? hotel.isVerified ?? false}
                         isFeatured={hotel.is_featured ?? hotel.isFeatured ?? false}
-                        tags={hotel.amenities?.slice(0, 4) || [hotel.category, `${hotel.star_rating || 0} Star`].filter(Boolean)}
+                        tags={
+                          hotel.amenities?.slice(0, 4) ||
+                          [hotel.category, hotel.star_rating ? `${hotel.star_rating} Star` : null].filter(Boolean)
+                        }
                         safetyScore={hotel.safetyScore}
                       />
                     ))}
                   </div>
+
+                  {hasMore && (
+                    <div className="mt-10 flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        disabled={loadingMore}
+                        onClick={() => setPage((p) => p + 1)}
+                      >
+                        {loadingMore ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          "Load More Hotels"
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -145,5 +225,13 @@ export default function HotelsPage() {
       <Footer />
       <FloatingAIAssistant />
     </div>
+  )
+}
+
+export default function HotelsPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen flex-col"><main className="flex-1 py-8"><div className="container mx-auto px-4"><HotelsLoading /></div></main></div>}>
+      <HotelsContent />
+    </Suspense>
   )
 }

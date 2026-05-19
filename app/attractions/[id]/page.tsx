@@ -14,6 +14,7 @@ import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getAttractionBySlug, getAttractions } from "@/lib/api/content"
 import { APIError } from "@/lib/api/client"
+import { getMediaUrl } from "@/lib/utils/media"
 import type { Attraction } from "@/lib/types"
 import {
   MapPin,
@@ -22,7 +23,6 @@ import {
   Globe,
   ArrowLeft,
   Heart,
-  Share2,
   AlertCircle,
   Clock,
   DollarSign,
@@ -151,9 +151,6 @@ export default function AttractionDetailPage() {
               >
                 <Heart className={`h-4 w-4 ${isSaved ? "fill-current text-red-500" : ""}`} />
               </Button>
-<Button variant="outline" size="icon">
-<Share2 className="h-4 w-4" />
-</Button>
 <AddToItineraryButton
   itemType="attraction"
   itemId={attraction.id}
@@ -169,7 +166,7 @@ export default function AttractionDetailPage() {
               {/* Hero Image */}
               <div className="mb-8 overflow-hidden rounded-xl">
                 <img
-                  src={attraction.image || "/placeholder.svg?height=400&width=800&query=attraction"}
+                  src={getMediaUrl(attraction.image) || "/placeholder.svg?height=400&width=800&query=attraction"}
                   alt={attraction.name}
                   className="h-96 w-full object-cover"
                 />

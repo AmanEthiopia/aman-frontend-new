@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { getMediaUrl } from "@/lib/utils/media"
 import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -34,7 +35,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  getReviews,
+  getProviderReviews,
   replyToReview,
   updateReviewReply,
   deleteReviewReply,
@@ -88,7 +89,7 @@ function ReviewCard({
       <CardContent className="pt-6">
         <div className="flex items-start gap-4">
           <Avatar>
-            <AvatarImage src={review.author.avatar_url} />
+            <AvatarImage src={getMediaUrl(review.author.avatar_url)} />
             <AvatarFallback>
               {isAdminReview ? (
                 <Shield className="h-5 w-5 text-green-600" />
@@ -223,12 +224,12 @@ export default function ProviderReviewsPage() {
 
       try {
         setReviewsLoading(true)
-        const response = await getReviews({
+        const response = await getProviderReviews({
           type: property.type,
           id: property.id,
         })
-        setPinnedReviews(response.pinned)
-        setReviews(response.data)
+        setPinnedReviews([])  // provider endpoint has no pinned
+        setReviews(response.results)
       } catch (error) {
         console.error("Failed to load reviews:", error)
       } finally {

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Shield, MapPin, Wifi, Car, Utensils } from "lucide-react"
 import type { Hotel, City } from "@/lib/types"
 import { SafeCardImage } from "@/components/ui/safe-image"
+import { getMediaUrl } from "@/lib/utils/media"
 
 interface HotelCardProps {
   hotel: Hotel & { city?: City }
@@ -30,7 +31,7 @@ export function HotelCard({ hotel }: HotelCardProps) {
     <Link href={`/hotels/${hotel.id}`}>
       <Card className="group h-full overflow-hidden transition-shadow hover:shadow-lg">
         <SafeCardImage
-          src={hotel.images?.[0]?.image_url || "/placeholder.svg?height=300&width=400&query=hotel room interior"}
+          src={getMediaUrl(hotel.images?.[0]?.image_url) || "/placeholder.svg?height=300&width=400&query=hotel room interior"}
           alt={hotel.name}
           aspectRatio="aspect-[4/3]"
           enableHoverZoom={true}

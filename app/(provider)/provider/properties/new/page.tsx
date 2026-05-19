@@ -2554,6 +2554,18 @@ function AddPropertyContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Sync state when URL search params change (e.g. sidebar nav changes ?type=hotel → ?type=restaurant)
+  useEffect(() => {
+    const type = searchParams.get("type") as PropertyCategory | null
+    if (type) {
+      setPropertyType(type)
+      setStep(2)
+    } else {
+      setPropertyType(null)
+      setStep(1)
+    }
+  }, [searchParams])
+
   useEffect(() => {
     loadCities()
   }, [])
@@ -2770,3 +2782,4 @@ export default function AddPropertyPage() {
     </Suspense>
   )
 }
+

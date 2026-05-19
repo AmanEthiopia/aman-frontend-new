@@ -5,7 +5,14 @@
 
 import { getAuthCookie, setAuthCookie, clearAuthCookies, getRefreshCookie } from "@/lib/utils/cookies"
 
-const API_BASE_URL = "https://api.aman.yichalal.ai/api/v1"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.aman.yichalal.ai/api/v1"
+const MEDIA_HOST = API_BASE_URL.replace(/\/api\/v1\/?$/, "")
+
+export function mediaUrl(path?: string | null): string | undefined {
+  if (!path) return undefined
+  if (path.startsWith("http")) return path
+  return `${MEDIA_HOST}${path}`
+}
 
 export class APIError extends Error {
   constructor(

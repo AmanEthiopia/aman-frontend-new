@@ -3,22 +3,22 @@
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shield, MapPin, Star, Heart } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useApp } from "@/lib/contexts/app-context"
+import { Shield, MapPin, Star, Clock } from "lucide-react"
 import { formatRating } from "@/lib/utils"
 import { SafeCardImage } from "@/components/ui/safe-image"
+import { WishlistButton } from "@/components/wishlist-button"
+import type { WishlistItemType } from "@/lib/api/wishlists"
 
 interface ListingCardProps {
   id: string
-  slug?: string // Use slug for URL if available
+  slug?: string
   type: "hotel" | "restaurant" | "transport" | "experience"
   name: string
   imageUrl: string
   location: string
   city: string
   description: string
-  priceRange?: "budget" | "mid-range" | "luxury"
+  priceRange?: string // accepts any API value: budget, mid_range, fine_dining, upscale, etc.
   priceDisplay: string
   rating: number
   reviewCount: number
@@ -31,8 +31,13 @@ interface ListingCardProps {
 const priceRangeLabels: Record<string, { label: string; color: string }> = {
   budget: { label: "Budget", color: "bg-green-100 text-green-800" },
   "mid-range": { label: "Mid-Range", color: "bg-blue-100 text-blue-800" },
+  mid_range: { label: "Mid-Range", color: "bg-blue-100 text-blue-800" },
+  moderate: { label: "Moderate", color: "bg-blue-100 text-blue-800" },
+  upscale: { label: "Upscale", color: "bg-purple-100 text-purple-800" },
+  fine_dining: { label: "Fine Dining", color: "bg-amber-100 text-amber-800" },
   luxury: { label: "Luxury", color: "bg-amber-100 text-amber-800" },
 }
+const DEFAULT_PRICE_INFO = { label: "—", color: "bg-muted text-muted-foreground" }
 
 export function ListingCard({
   id,
@@ -52,11 +57,11 @@ export function ListingCard({
   tags,
   safetyScore,
 }: ListingCardProps) {
-  const { toggleSavedItem, isItemSaved } = useApp()
-  const priceInfo = priceRange ? priceRangeLabels[priceRange] : priceRangeLabels["mid-range"]
-  // Use slug for URL if available, fallback to id
+  const priceInfo = priceRangeLabels[priceRange ?? ""] ?? DEFAULT_PRICE_INFO
   const href = `/${type}s/${slug || id}`
-  const saved = isItemSaved(id)
+  // Map listing type to wishlist item type
+  const wishlistType: WishlistItemType =
+    type === "transport" ? "driver" : (type as WishlistItemType)
 
   return (
     <Card className="group h-full overflow-hidden transition-shadow hover:shadow-lg">
@@ -70,10 +75,15 @@ export function ListingCard({
             <>
               {/* Badges */}
               <div className="absolute left-3 top-3 flex gap-2">
-                {isVerified && (
+                {isVerified ? (
                   <Badge className="flex items-center gap-1 bg-primary text-primary-foreground">
                     <Shield className="h-3 w-3" />
                     Verified
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="flex items-center gap-1 border-muted-foreground/30 bg-background/80 text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    Unverified
                   </Badge>
                 )}
                 {isFeatured && <Badge variant="secondary">Featured</Badge>}
@@ -97,17 +107,7 @@ export function ListingCard({
           <Link href={href}>
             <h3 className="line-clamp-1 font-semibold text-foreground group-hover:text-primary">{name}</h3>
           </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={(e) => {
-              e.preventDefault()
-              toggleSavedItem(id)
-            }}
-          >
-            <Heart className={`h-4 w-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
-          </Button>
+          <WishlistButton itemType={wishlistType} itemId={id} className="h-8 w-8" />
         </div>
 
         <div className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">
