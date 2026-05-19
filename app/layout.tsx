@@ -4,6 +4,7 @@ import { Inter, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { AppProvider } from "@/lib/contexts/app-context"
 import { AuthProvider } from "@/contexts/auth-context"
+import { TestBanner } from "@/components/ui/test-banner"
 
 const inter = Inter({ subsets: ["latin"] })
 const geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -29,7 +30,6 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
   },
-  generator: "v0.app",
 }
 
 export const viewport: Viewport = {
@@ -48,9 +48,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans antialiased`}>
+      <body className="font-sans antialiased">
         <AppProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <TestBanner />
+            {children}
+          </AuthProvider>
         </AppProvider>
       </body>
     </html>
