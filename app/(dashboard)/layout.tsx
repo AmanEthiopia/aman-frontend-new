@@ -14,6 +14,7 @@ import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useAuth } from "@/contexts/auth-context"
 import { getConversations } from "@/lib/api/messages"
 import { getUnreadCount } from "@/lib/api/notifications"
+import { AmanMark, AmanWordmark } from "@/components/brand/aman-logo"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -67,11 +68,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Top Navigation Bar */}
         <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
-            <Link href="/home" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <span className="text-sm font-bold text-primary-foreground">A</span>
-              </div>
-              <span className="text-xl font-bold">AMAN</span>
+            <Link href="/home" className="flex items-center gap-2" aria-label="AMAN home">
+              <AmanMark size={32} variant="stacked" className="rounded-md" />
+              <AmanWordmark height={22} className="hidden sm:block" />
             </Link>
 
             <nav className="hidden items-center gap-1 md:flex">

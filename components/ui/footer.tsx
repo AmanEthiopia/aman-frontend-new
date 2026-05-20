@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Shield, Phone, AlertTriangle, Briefcase, Info } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { AmanWordmark } from "@/components/brand/aman-logo"
 
 export function Footer() {
   return (
@@ -21,14 +22,9 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
           {/* Brand */}
           <div className="flex flex-col gap-4 lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <span className="text-lg font-bold text-primary-foreground">A</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-bold leading-none">AMAN</span>
-                <span className="text-xs text-muted-foreground">አማን</span>
-              </div>
+            <Link href="/" className="inline-flex w-fit items-center gap-3 py-2" aria-label="AMAN home">
+              <AmanWordmark height={40} />
+              <span className="font-serif text-xl text-muted-foreground">አማን</span>
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">
               Your trusted platform for verified hotels, restaurants, transport, and experiences across Ethiopia.

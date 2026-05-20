@@ -30,6 +30,13 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
   },
+  icons: {
+    icon: [
+      { url: "/brand/aman-logo-square.jpeg", type: "image/jpeg" },
+    ],
+    shortcut: "/brand/aman-logo-square.jpeg",
+    apple: "/brand/aman-logo-square.jpeg",
+  },
 }
 
 export const viewport: Viewport = {
