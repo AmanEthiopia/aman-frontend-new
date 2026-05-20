@@ -258,7 +258,7 @@ export function ChatInterface() {
           </Button>
         </form>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          Demo mode - responses are simulated. Real AI coming soon.
+          AMAN AI may make mistakes. Verify key details before booking.
         </p>
       </div>
     </div>

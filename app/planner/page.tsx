@@ -411,7 +411,7 @@ function GeneratingState({ progress }: { progress: number }) {
       </div>
       <h2 className="mb-2 text-2xl font-bold">Creating Your Perfect Trip</h2>
       <p className="mb-2 text-muted-foreground">{steps[currentStep]}</p>
-      <p className="mb-8 text-xs text-muted-foreground">(Simulated for demo)</p>
+      <p className="mb-8 text-xs text-muted-foreground">Matching verified hotels, transport, and experiences to your trip.</p>
       <div className="w-full max-w-md">
         <Progress value={progress} className="h-2" />
         <p className="mt-2 text-sm text-muted-foreground">{progress}% complete</p>
