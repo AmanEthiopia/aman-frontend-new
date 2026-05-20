@@ -128,7 +128,7 @@ export function FloatingAIAssistant() {
                 <AmanZigzag size={36} strokeWidth={5} title="AMAN AI" />
               </div>
               <h4 className="mb-1 font-medium">How can I help?</h4>
-              <p className="mb-4 text-xs text-muted-foreground">Preview: Responses are simulated for demo</p>
+              <p className="mb-4 text-xs text-muted-foreground">Ask about hotels, restaurants, transport, or trip ideas in Ethiopia.</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {suggestedQueries.map((query) => (
                   <button
@@ -199,7 +199,7 @@ export function FloatingAIAssistant() {
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </form>
-          <p className="mt-2 text-center text-[10px] text-muted-foreground">AI responses simulated for MVP demo</p>
+          <p className="mt-2 text-center text-[10px] text-muted-foreground">AMAN AI may make mistakes. Verify key details before booking.</p>
         </div>
       </CardContent>
     </Card>

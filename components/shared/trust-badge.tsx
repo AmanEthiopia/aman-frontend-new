@@ -24,7 +24,7 @@ export function TrustBadge({ lastVerified, foreignTravelerCount, disputeFreeDays
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p className="text-xs">Simulated verification for demo</p>
+            <p className="text-xs">Verified by the AMAN trust team.</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -44,7 +44,7 @@ export function TrustBadge({ lastVerified, foreignTravelerCount, disputeFreeDays
               <Info className="h-3 w-3 text-muted-foreground" />
             </TooltipTrigger>
             <TooltipContent>
-              <p className="text-xs">Demo data - trust metrics simulated</p>
+              <p className="text-xs">Signals based on AMAN verification, traveler activity, and pricing checks.</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
