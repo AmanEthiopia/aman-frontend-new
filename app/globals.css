@@ -127,3 +127,48 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ----------------------------------------------------------------------
+   AMAN Brand — AI zigzag draw + pulse animation
+   Used by <AmanZigzagLoader /> for AI Planner & AI Assistant loading
+   states. The path draws itself in, then gently pulses.
+---------------------------------------------------------------------- */
+@keyframes aman-zigzag-draw {
+  0% {
+    stroke-dasharray: 220;
+    stroke-dashoffset: 220;
+    opacity: 0.4;
+  }
+  60% {
+    stroke-dasharray: 220;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.55;
+  }
+  100% {
+    stroke-dasharray: 220;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.aman-zigzag-draw path {
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  animation: aman-zigzag-draw 1.6s ease-in-out infinite;
+}
+
+/* Glass-morphism for the global header. Falls back gracefully when the
+   browser doesn't support backdrop-filter. */
+.aman-glass {
+  background-color: color-mix(in oklab, var(--background) 55%, transparent);
+  backdrop-filter: saturate(160%) blur(12px);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  transition: background-color 250ms ease, border-color 250ms ease, box-shadow 250ms ease;
+}
+.aman-glass[data-scrolled="true"] {
+  background-color: var(--background);
+  box-shadow: 0 1px 0 0 var(--border);
+}

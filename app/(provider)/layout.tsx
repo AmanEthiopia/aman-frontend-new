@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getMediaUrl } from "@/lib/utils/media"
+import { AmanMark, AmanWordmark } from "@/components/brand/aman-logo"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -293,22 +294,18 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
                 <div className="flex h-16 items-center border-b px-4">
-                  <Link href="/" className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                      <span className="text-sm font-bold text-primary-foreground">A</span>
-                    </div>
-                    <span className="text-xl font-bold">AMAN</span>
+                  <Link href="/" className="flex items-center gap-2" aria-label="AMAN home">
+                    <AmanMark size={32} variant="stacked" className="rounded-md" />
+                    <AmanWordmark height={22} />
                   </Link>
                 </div>
                 <SidebarNav items={sidebarItems} onItemClick={() => setMobileMenuOpen(false)} />
               </SheetContent>
             </Sheet>
 
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <span className="text-sm font-bold text-primary-foreground">A</span>
-              </div>
-              <span className="hidden text-xl font-bold sm:inline">AMAN</span>
+            <Link href="/" className="flex items-center gap-2" aria-label="AMAN home">
+              <AmanMark size={32} variant="stacked" className="rounded-md" />
+              <AmanWordmark height={22} className="hidden sm:block" />
               <Badge variant="secondary" className="ml-2">
                 Provider
               </Badge>

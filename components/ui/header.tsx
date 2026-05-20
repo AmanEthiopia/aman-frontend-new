@@ -29,13 +29,22 @@ import {
   Map,
   MapPin,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useApp } from "@/lib/contexts/app-context"
 import { FEATURES } from "@/lib/config/features"
+import { AmanLockup } from "@/components/brand/aman-logo"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
   const { userProfile, isAuthenticated, logout } = useAuth()
   const { language, setLanguage, currency, setCurrency } = useApp()
   const userName = [userProfile?.user?.first_name, userProfile?.user?.last_name].filter(Boolean).join(" ") || "User"
@@ -51,21 +60,20 @@ export function Header() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header
+      data-scrolled={isScrolled}
+      className="aman-glass sticky top-0 z-50 w-full border-b border-border/40"
+    >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href={isAuthenticated ? (isProvider ? "/provider" : "/home") : "/"} className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <span className="text-lg font-bold text-primary-foreground">A</span>
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg font-bold leading-none text-foreground">AMAN</span>
-              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
-                MVP
-              </Badge>
-            </div>
-            <span className="text-xs text-muted-foreground">አማን</span>
-          </div>
+        <Link
+          href={isAuthenticated ? (isProvider ? "/provider" : "/home") : "/"}
+          className="flex items-center gap-2"
+          aria-label="AMAN home"
+        >
+          <AmanLockup size="md" />
+          <Badge variant="outline" className="hidden h-4 px-1 py-0 text-[9px] sm:inline-flex">
+            MVP
+          </Badge>
         </Link>
 
         {/* Desktop Navigation */}
