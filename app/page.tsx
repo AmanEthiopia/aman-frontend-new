@@ -7,7 +7,6 @@ import { CitiesSection } from "@/components/landing/cities-section"
 import { HowItWorksSection } from "@/components/landing/how-it-works-section"
 import { AIPreviewSection } from "@/components/landing/ai-preview-section"
 import { TestimonialsSection } from "@/components/landing/testimonials-section"
-import { ConciergeSection } from "@/components/landing/concierge-section"
 import { CTASection } from "@/components/landing/cta-section"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 
@@ -23,7 +22,6 @@ export default function HomePage() {
         <HowItWorksSection />
         <AIPreviewSection />
         <TestimonialsSection />
-        <ConciergeSection />
         <CTASection />
       </main>
       <Footer />

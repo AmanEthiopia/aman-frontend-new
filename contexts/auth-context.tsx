@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import * as authAPI from "@/lib/api/auth"
-import { getAuthCookie, setAuthCookie, clearAuthCookies } from "@/lib/utils/cookies"
+import { getAuthCookie, setAuthCookie, clearAuthCookies, setRoleCookie, clearRoleCookie } from "@/lib/utils/cookies"
 import type { CompleteUserProfile } from "@/lib/types"
 
 interface AuthContextType {
@@ -53,7 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Try to get user profile - the API client will automatically refresh the token if needed
       const profileData = await authAPI.getCurrentUser()
       setUserProfile(profileData)
-      
+      setRoleCookie(profileData?.role?.is_provider ? "provider" : "traveler")
+
       // Update token in case it was refreshed
       const newToken = getAuthCookie()
       if (newToken) {
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profileData = await authAPI.getCurrentUser()
       setUserProfile(profileData)
 
+      setRoleCookie(profileData?.role?.is_provider ? "provider" : "traveler")
       router.push(profileData?.role?.is_provider ? "/provider" : "/home")
     } catch (error) {
       throw error
@@ -107,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Redirect based on user role
       const isProvider = profileData?.role?.is_provider
+      setRoleCookie(isProvider ? "provider" : "traveler")
       router.push(isProvider ? "/provider" : "/home")
     } catch (error) {
       throw error
@@ -128,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Redirect based on user role
       const isProvider = profileData?.role?.is_provider || role === "provider"
+      setRoleCookie(isProvider ? "provider" : "traveler")
       router.push(isProvider ? "/provider" : "/home")
     } catch (error) {
       throw error
@@ -150,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function logout() {
     authAPI.logoutAPI()
     clearAuthCookies()
+    clearRoleCookie()
     setToken(null)
     setUserProfile(null)
     router.push("/")

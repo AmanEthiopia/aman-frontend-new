@@ -67,3 +67,15 @@ export function clearAuthCookies(): void {
   document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0`
   document.cookie = `${REFRESH_TOKEN_COOKIE}=; path=/; max-age=0`
 }
+
+const ROLE_COOKIE = "aman_role"
+
+export function setRoleCookie(role: "provider" | "traveler"): void {
+  if (typeof document === "undefined") return
+  document.cookie = `${ROLE_COOKIE}=${role}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`
+}
+
+export function clearRoleCookie(): void {
+  if (typeof document === "undefined") return
+  document.cookie = `${ROLE_COOKIE}=; path=/; max-age=0; SameSite=Lax`
+}

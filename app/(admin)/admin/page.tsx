@@ -59,35 +59,7 @@ const statsCards = [
   },
 ]
 
-const recentDisputes = [
-  {
-    id: "1",
-    traveler: { name: "John Smith", avatar: "/placeholder.svg?height=40&width=40&query=man" },
-    provider: { name: "Sheraton Addis Hotel", type: "hotel" },
-    reason: "Booking cancellation refund",
-    status: "pending",
-    priority: "high",
-    createdAt: "2 hours ago",
-  },
-  {
-    id: "2",
-    traveler: { name: "Emma Wilson", avatar: "/placeholder.svg?height=40&width=40&query=woman" },
-    provider: { name: "Yod Abyssinia", type: "restaurant" },
-    reason: "Service quality complaint",
-    status: "investigating",
-    priority: "medium",
-    createdAt: "5 hours ago",
-  },
-  {
-    id: "3",
-    traveler: { name: "Michael Brown", avatar: "/placeholder.svg?height=40&width=40&query=person" },
-    provider: { name: "Lalibela Tours", type: "experience" },
-    reason: "Tour guide no-show",
-    status: "resolved",
-    priority: "high",
-    createdAt: "1 day ago",
-  },
-]
+const recentDisputes: any[] = []
 
 const pendingVerifications = [
   {
