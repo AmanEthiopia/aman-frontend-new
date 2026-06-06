@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { X, Send, Loader2, Sparkles, User, Minimize2 } from "lucide-react"
+import { X, Send, Loader2, User, Minimize2 } from "lucide-react"
 import { useApp } from "@/lib/contexts/app-context"
 import { sendAIQuery } from "@/lib/api/mock-api"
 import { FEATURES } from "@/lib/config/features"
+import { AmanZigzag, AmanZigzagLoader } from "@/components/brand/aman-logo"
 
 interface Message {
   role: "user" | "assistant"
@@ -74,8 +75,9 @@ export function FloatingAIAssistant() {
         onClick={() => setIsAIAssistantOpen(true)}
         className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg"
         size="icon"
+        aria-label="Open AMAN AI Assistant"
       >
-        <Sparkles className="h-6 w-6" />
+        <AmanZigzag size={20} strokeWidth={6} title="AMAN AI" />
         <span className="sr-only">Open AI Assistant</span>
       </Button>
     )
@@ -87,7 +89,7 @@ export function FloatingAIAssistant() {
         onClick={() => setIsMinimized(false)}
         className="fixed bottom-6 right-6 z-50 gap-2 rounded-full px-4 shadow-lg"
       >
-        <Sparkles className="h-4 w-4" />
+        <AmanZigzag size={14} strokeWidth={6} title="AMAN AI" />
         AI Assistant
       </Button>
     )
@@ -97,8 +99,8 @@ export function FloatingAIAssistant() {
     <Card className="fixed bottom-6 right-6 z-50 flex h-[500px] w-[380px] flex-col shadow-2xl sm:w-[420px]">
       <CardHeader className="flex flex-row items-center justify-between border-b p-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
-            <Sparkles className="h-4 w-4 text-primary-foreground" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <AmanZigzag size={14} strokeWidth={6} title="AMAN AI" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -125,9 +127,11 @@ export function FloatingAIAssistant() {
         <div className="flex-1 overflow-y-auto p-4">
           {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
-              <Sparkles className="mb-3 h-10 w-10 text-primary/50" />
+              <div className="mb-3 text-primary/70">
+                <AmanZigzag size={36} strokeWidth={5} title="AMAN AI" />
+              </div>
               <h4 className="mb-1 font-medium">How can I help?</h4>
-              <p className="mb-4 text-xs text-muted-foreground">Preview: Responses are simulated for demo</p>
+              <p className="mb-4 text-xs text-muted-foreground">Ask about hotels, restaurants, transport, or trip ideas in Ethiopia.</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {suggestedQueries.map((query) => (
                   <button
@@ -145,8 +149,8 @@ export function FloatingAIAssistant() {
               {messages.map((message, index) => (
                 <div key={index} className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                   {message.role === "assistant" && (
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary">
-                      <Sparkles className="h-3 w-3 text-primary-foreground" />
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      <AmanZigzag size={10} strokeWidth={6} title="AMAN AI" />
                     </div>
                   )}
                   <div
@@ -165,11 +169,11 @@ export function FloatingAIAssistant() {
               ))}
               {isLoading && (
                 <div className="flex gap-2">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary">
-                    <Sparkles className="h-3 w-3 text-primary-foreground" />
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <AmanZigzag size={10} strokeWidth={6} title="AMAN AI" />
                   </div>
                   <div className="rounded-2xl bg-muted px-3 py-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <AmanZigzagLoader size={18} label="AMAN AI is thinking" />
                   </div>
                 </div>
               )}
@@ -198,7 +202,7 @@ export function FloatingAIAssistant() {
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </form>
-          <p className="mt-2 text-center text-[10px] text-muted-foreground">AI responses simulated for MVP demo</p>
+          <p className="mt-2 text-center text-[10px] text-muted-foreground">AMAN AI may make mistakes. Verify key details before booking.</p>
         </div>
       </CardContent>
     </Card>

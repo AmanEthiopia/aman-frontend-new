@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Send, Loader2, Sparkles, User, MapPin, Shield } from "lucide-react"
+import { Send, Loader2, User, MapPin, Shield } from "lucide-react"
 import Link from "next/link"
 import type { Hotel } from "@/lib/types/index"
 import { mockHotels } from "@/lib/mock-data/hotels"
+import { AmanZigzag, AmanZigzagLoader } from "@/components/brand/aman-logo"
 
 interface Message {
   role: "user" | "assistant"
@@ -126,8 +127,8 @@ export function ChatInterface() {
     <div className="flex h-[600px] flex-col rounded-xl border border-border bg-card shadow-lg">
       {/* Chat Header */}
       <div className="flex items-center gap-3 border-b border-border p-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-          <Sparkles className="h-5 w-5 text-primary-foreground" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <AmanZigzag size={18} strokeWidth={5} title="AMAN AI" />
         </div>
         <div className="flex-1">
           <h3 className="font-semibold">AMAN AI Assistant</h3>
@@ -142,8 +143,8 @@ export function ChatInterface() {
       <div className="flex-1 overflow-y-auto p-4">
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Sparkles className="h-8 w-8 text-primary" />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <AmanZigzag size={28} strokeWidth={5} title="AMAN AI" />
             </div>
             <h3 className="mb-2 text-lg font-semibold">How can I help you today?</h3>
             <p className="mb-6 max-w-md text-sm text-muted-foreground">
@@ -167,8 +168,8 @@ export function ChatInterface() {
             {messages.map((message, index) => (
               <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                 {message.role === "assistant" && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary">
-                    <Sparkles className="h-4 w-4 text-primary-foreground" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <AmanZigzag size={14} strokeWidth={5} title="AMAN AI" />
                   </div>
                 )}
                 <div
@@ -222,11 +223,11 @@ export function ChatInterface() {
             ))}
             {isLoading && (
               <div className="flex gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary">
-                  <Sparkles className="h-4 w-4 text-primary-foreground" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                  <AmanZigzag size={14} strokeWidth={5} title="AMAN AI" />
                 </div>
                 <div className="rounded-2xl bg-muted px-4 py-2">
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <AmanZigzagLoader size={22} label="AMAN AI is planning your trip" />
                 </div>
               </div>
             )}
@@ -257,7 +258,7 @@ export function ChatInterface() {
           </Button>
         </form>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          Demo mode - responses are simulated. Real AI coming soon.
+          AMAN AI may make mistakes. Verify key details before booking.
         </p>
       </div>
     </div>
