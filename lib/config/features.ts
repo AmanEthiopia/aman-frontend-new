@@ -1,5 +1,5 @@
 export const FEATURES = {
-  AI_CONCIERGE: true,
+  AI_CONCIERGE: false,
   AI_PLANNER: true,
 
   PAYMENTS: false,

@@ -88,10 +88,7 @@ export function Footer() {
               <Link href="/help" className="text-sm text-muted-foreground hover:text-foreground">
                 Help Center
               </Link>
-              <Link href="/concierge" className="text-sm text-muted-foreground hover:text-foreground">
-                Concierge Services
-              </Link>
-              <Link
+<Link
                 href="/business"
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
               >

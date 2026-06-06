@@ -1,323 +1,146 @@
 "use client"
 
-import { useState } from "react"
-import { ChevronLeft, ChevronRight, Plus, X, Clock, Users, DollarSign } from "lucide-react"
+import { useState, useEffect } from "react"
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { getAllProviderBookings, type NormalizedBooking } from "@/lib/api/bookings"
 
-interface CalendarBooking {
-  id: string
-  guestName: string
-  roomType: string
-  checkIn: string
-  checkOut: string
-  status: "confirmed" | "pending"
+function dateStr(y: number, m: number, d: number) {
+  return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`
 }
 
-// Mock bookings for calendar
-const mockCalendarBookings: CalendarBooking[] = [
-  {
-    id: "1",
-    guestName: "Sarah Johnson",
-    roomType: "Deluxe Suite",
-    checkIn: "2025-01-15",
-    checkOut: "2025-01-18",
-    status: "confirmed",
-  },
-  {
-    id: "2",
-    guestName: "Michael Chen",
-    roomType: "Family Room",
-    checkIn: "2025-01-18",
-    checkOut: "2025-01-21",
-    status: "pending",
-  },
-  {
-    id: "3",
-    guestName: "Emma Williams",
-    roomType: "Standard",
-    checkIn: "2025-01-20",
-    checkOut: "2025-01-22",
-    status: "confirmed",
-  },
-  {
-    id: "4",
-    guestName: "David Brown",
-    roomType: "Executive",
-    checkIn: "2025-01-22",
-    checkOut: "2025-01-26",
-    status: "confirmed",
-  },
-]
-
-const roomTypes = ["Deluxe Suite", "Family Room", "Standard Room", "Executive Suite"]
-
 export default function ProviderCalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 0, 1)) // January 2025
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set())
+  const [currentDate, setCurrentDate] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
+  const [bookings, setBookings] = useState<NormalizedBooking[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getAllProviderBookings()
+      .then((all) => setBookings(all))
+      .catch(() => setBookings([]))
+      .finally(() => setLoading(false))
+  }, [])
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
-
   const firstDay = new Date(year, month, 1)
-  const lastDay = new Date(year, month + 1, 0)
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
   const startPadding = firstDay.getDay()
-  const daysInMonth = lastDay.getDate()
 
   const days = Array.from({ length: 42 }, (_, i) => {
-    const dayOffset = i - startPadding + 1
-    if (dayOffset < 1 || dayOffset > daysInMonth) return null
-    return dayOffset
+    const d = i - startPadding + 1
+    return d >= 1 && d <= daysInMonth ? d : null
   })
 
+  const getBookingsForDay = (day: number) => {
+    const ds = dateStr(year, month, day)
+    return bookings.filter((b) => {
+      if (!b.date_from) return false
+      const from = b.date_from.slice(0, 10)
+      const to = b.date_to ? b.date_to.slice(0, 10) : from
+      return ds >= from && ds <= to
+    })
+  }
+
   const monthName = currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })
-
-  const getBookingsForDate = (day: number) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-    return mockCalendarBookings.filter((b) => {
-      const checkIn = new Date(b.checkIn)
-      const checkOut = new Date(b.checkOut)
-      const current = new Date(dateStr)
-      return current >= checkIn && current < checkOut
-    })
-  }
-
-  const isDateBlocked = (day: number) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-    return blockedDates.has(dateStr)
-  }
-
-  const toggleBlockDate = (day: number) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-    setBlockedDates((prev) => {
-      const next = new Set(prev)
-      if (next.has(dateStr)) {
-        next.delete(dateStr)
-      } else {
-        next.add(dateStr)
-      }
-      return next
-    })
-  }
-
-  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1))
-  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1))
-
-  // Get bookings for selected date
-  const selectedDateBookings = selectedDate
-    ? mockCalendarBookings.filter((b) => {
-        const checkIn = new Date(b.checkIn)
-        const checkOut = new Date(b.checkOut)
-        const current = new Date(selectedDate)
-        return current >= checkIn && current < checkOut
-      })
-    : []
+  const today = new Date()
+  const todayStr = dateStr(today.getFullYear(), today.getMonth(), today.getDate())
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Calendar</h1>
-          <p className="text-muted-foreground">Manage availability and view bookings</p>
-        </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Block Dates
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold">Calendar</h1>
+        <p className="text-muted-foreground">View your booking schedule</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Calendar Grid */}
-        <Card className="lg:col-span-2">
+      {loading ? (
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle>{monthName}</CardTitle>
-            <div className="flex gap-1">
-              <Button variant="ghost" size="icon" onClick={prevMonth}>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={nextMonth}>
+              <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(year, month + 1, 1))}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            {/* Day Headers */}
-            <div className="mb-2 grid grid-cols-7 text-center text-sm font-medium text-muted-foreground">
+            {/* Weekday headers */}
+            <div className="mb-2 grid grid-cols-7 text-center">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-                <div key={d} className="py-2">
-                  {d}
-                </div>
+                <div key={d} className="py-2 text-xs font-medium text-muted-foreground">{d}</div>
               ))}
             </div>
 
-            {/* Calendar Grid */}
+            {/* Days grid */}
             <div className="grid grid-cols-7 gap-1">
-              {days.map((day, index) => {
-                if (!day) {
-                  return <div key={index} className="aspect-square" />
-                }
-
-                const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-                const bookings = getBookingsForDate(day)
-                const isBlocked = isDateBlocked(day)
-                const isSelected = selectedDate === dateStr
-                const isToday = new Date().toDateString() === new Date(year, month, day).toDateString()
+              {days.map((day, i) => {
+                if (!day) return <div key={i} />
+                const ds = dateStr(year, month, day)
+                const isToday = ds === todayStr
+                const dayBookings = getBookingsForDay(day)
 
                 return (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedDate(dateStr)}
+                  <div
+                    key={i}
                     className={cn(
-                      "relative aspect-square rounded-lg border p-1 text-left transition-all hover:border-primary",
-                      isSelected && "border-primary ring-2 ring-primary/20",
-                      isBlocked && "bg-red-50 dark:bg-red-950/20",
-                      isToday && "bg-primary/5",
+                      "min-h-[72px] rounded-lg border p-1.5 text-xs",
+                      isToday ? "border-primary bg-primary/5" : "border-border"
                     )}
                   >
-                    <span className={cn("text-sm font-medium", isToday && "text-primary", isBlocked && "text-red-600")}>
+                    <span className={cn(
+                      "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium",
+                      isToday ? "bg-primary text-primary-foreground" : "text-foreground"
+                    )}>
                       {day}
                     </span>
-                    {bookings.length > 0 && (
-                      <div className="absolute bottom-1 left-1 right-1">
-                        <div className="flex flex-wrap gap-0.5">
-                          {bookings.slice(0, 2).map((b, i) => (
-                            <div
-                              key={i}
-                              className={cn(
-                                "h-1.5 flex-1 rounded-full",
-                                b.status === "confirmed" ? "bg-green-500" : "bg-yellow-500",
-                              )}
-                            />
-                          ))}
+                    <div className="mt-1 space-y-0.5">
+                      {dayBookings.slice(0, 2).map((b) => (
+                        <div
+                          key={b.id}
+                          className={cn(
+                            "truncate rounded px-1 py-0.5 text-[10px] font-medium",
+                            b.status === "confirmed" ? "bg-green-100 text-green-800" :
+                            b.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                            "bg-muted text-muted-foreground"
+                          )}
+                          title={`${b.guest_name} — ${b.property_name}`}
+                        >
+                          {b.guest_name?.split(" ")[0]}
                         </div>
-                        {bookings.length > 2 && (
-                          <span className="text-[10px] text-muted-foreground">+{bookings.length - 2}</span>
-                        )}
-                      </div>
-                    )}
-                    {isBlocked && (
-                      <div className="absolute right-1 top-1">
-                        <X className="h-3 w-3 text-red-500" />
-                      </div>
-                    )}
-                  </button>
+                      ))}
+                      {dayBookings.length > 2 && (
+                        <div className="px-1 text-[10px] text-muted-foreground">+{dayBookings.length - 2} more</div>
+                      )}
+                    </div>
+                  </div>
                 )
               })}
             </div>
 
             {/* Legend */}
-            <div className="mt-4 flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-green-500" />
-                <span className="text-muted-foreground">Confirmed</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-yellow-500" />
-                <span className="text-muted-foreground">Pending</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded bg-red-100 dark:bg-red-950">
-                  <X className="h-3 w-3 text-red-500" />
-                </div>
-                <span className="text-muted-foreground">Blocked</span>
-              </div>
+            <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-green-100 border border-green-300" />Confirmed</span>
+              <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-yellow-100 border border-yellow-300" />Pending</span>
             </div>
           </CardContent>
         </Card>
+      )}
 
-        {/* Side Panel */}
-        <div className="space-y-4">
-          {/* Selected Date Details */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">
-                {selectedDate
-                  ? new Date(selectedDate).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                    })
-                  : "Select a date"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedDate ? (
-                selectedDateBookings.length > 0 ? (
-                  <div className="space-y-3">
-                    {selectedDateBookings.map((booking) => (
-                      <div key={booking.id} className="rounded-lg border p-3">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-medium">{booking.guestName}</p>
-                            <p className="text-sm text-muted-foreground">{booking.roomType}</p>
-                          </div>
-                          <Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>
-                            {booking.status}
-                          </Badge>
-                        </div>
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          {new Date(booking.checkIn).toLocaleDateString()} -{" "}
-                          {new Date(booking.checkOut).toLocaleDateString()}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-4 text-center">
-                    <p className="text-sm text-muted-foreground">No bookings for this date</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 bg-transparent"
-                      onClick={() => {
-                        const day = new Date(selectedDate).getDate()
-                        toggleBlockDate(day)
-                      }}
-                    >
-                      {isDateBlocked(new Date(selectedDate).getDate()) ? "Unblock Date" : "Block Date"}
-                    </Button>
-                  </div>
-                )
-              ) : (
-                <p className="py-4 text-center text-sm text-muted-foreground">Click on a date to view bookings</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">This Month</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  Total Nights
-                </span>
-                <span className="font-semibold">18</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  Total Guests
-                </span>
-                <span className="font-semibold">24</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <DollarSign className="h-4 w-4" />
-                  Revenue
-                </span>
-                <span className="font-semibold">$4,280</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      {!loading && bookings.length === 0 && (
+        <p className="text-center text-muted-foreground py-8">No bookings yet. Confirmed bookings will appear here.</p>
+      )}
     </div>
   )
 }

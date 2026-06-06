@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,56 +57,50 @@ export function Header() {
             <span className="text-lg font-bold text-primary-foreground">A</span>
           </div>
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg font-bold leading-none text-foreground">AMAN</span>
-              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
-                MVP
-              </Badge>
-            </div>
+            <span className="text-lg font-bold leading-none text-foreground">AMAN</span>
             <span className="text-xs text-muted-foreground">አማን</span>
           </div>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 lg:flex">
-          {/* Discover Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-1">
-                Discover
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48">
-              {discoverLinks.map((link) => (
-                <DropdownMenuItem key={link.href} asChild>
-                  <Link href={link.href} className="flex items-center gap-2">
-                    <link.icon className="h-4 w-4" />
-                    {link.label}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+        {!isProvider && (
+          <nav className="hidden items-center gap-1 lg:flex">
+            {/* Discover Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-1">
+                  Discover
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                {discoverLinks.map((link) => (
+                  <DropdownMenuItem key={link.href} asChild>
+                    <Link href={link.href} className="flex items-center gap-2">
+                      <link.icon className="h-4 w-4" />
+                      {link.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <Link href="/cities">
-            <Button variant="ghost">Cities</Button>
-          </Link>
-          {FEATURES.AI_PLANNER && (
-            <Link href="/planner">
-              <Button variant="ghost" className="flex items-center gap-1">
-                <Sparkles className="h-4 w-4" />
-                AI Planner
-                <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0">
-                  Preview
-                </Badge>
-              </Button>
+            <Link href="/cities">
+              <Button variant="ghost">Cities</Button>
             </Link>
-          )}
-          <Link href="/about">
-            <Button variant="ghost">About</Button>
-          </Link>
-        </nav>
+            {FEATURES.AI_PLANNER && (
+              <Link href="/planner">
+                <Button variant="ghost" className="flex items-center gap-1">
+                  <Sparkles className="h-4 w-4" />
+                  AI Planner
+                </Button>
+              </Link>
+            )}
+            <Link href="/about">
+              <Button variant="ghost">About</Button>
+            </Link>
+          </nav>
+        )}
 
         {/* Right Side Actions */}
         <div className="hidden items-center gap-2 lg:flex">
@@ -246,47 +239,48 @@ export function Header() {
       {isMenuOpen && (
         <div className="border-t border-border lg:hidden">
           <nav className="container mx-auto flex flex-col gap-1 px-4 py-4">
-            <p className="mb-2 text-xs font-medium text-muted-foreground uppercase">Discover</p>
-            {discoverLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <link.icon className="h-4 w-4" />
-                {link.label}
-              </Link>
-            ))}
-            <div className="my-2 border-t border-border" />
-            <Link
-              href="/cities"
-              className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Cities
-            </Link>
-            {FEATURES.AI_PLANNER && (
-              <Link
-                href="/planner"
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Sparkles className="h-4 w-4" />
-                AI Travel Planner
-                <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0">
-                  Preview
-                </Badge>
-              </Link>
+            {!isProvider && (
+              <>
+                <p className="mb-2 text-xs font-medium text-muted-foreground uppercase">Discover</p>
+                {discoverLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <link.icon className="h-4 w-4" />
+                    {link.label}
+                  </Link>
+                ))}
+                <div className="my-2 border-t border-border" />
+                <Link
+                  href="/cities"
+                  className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Cities
+                </Link>
+                {FEATURES.AI_PLANNER && (
+                  <Link
+                    href="/planner"
+                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    AI Travel Planner
+                  </Link>
+                )}
+                <Link
+                  href="/about"
+                  className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  About
+                </Link>
+                <div className="my-2 border-t border-border" />
+              </>
             )}
-            <Link
-              href="/about"
-              className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              About
-            </Link>
-            <div className="my-2 border-t border-border" />
             {/* Mobile Auth Section */}
             <div className="flex flex-col gap-2 pt-2">
               {isAuthenticated ? (

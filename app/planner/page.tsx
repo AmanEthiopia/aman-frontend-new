@@ -32,7 +32,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FEATURES } from "@/lib/config/features"
-import { mockCities } from "@/lib/mock-data/cities"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
 
@@ -66,145 +65,7 @@ const travelStyles = [
   { value: "luxury", label: "Luxury", description: "> $150/day" },
 ]
 
-// Mock generated itinerary
-const mockGeneratedItinerary: GeneratedDay[] = [
-  {
-    day: 1,
-    date: "Day 1",
-    city: "Addis Ababa",
-    activities: [
-      {
-        id: "1-1",
-        time: "09:00",
-        type: "experience",
-        title: "National Museum of Ethiopia",
-        description: "Visit Lucy and explore 3.2 million years of human history",
-        price: 15,
-        duration: "2-3 hours",
-        selected: true,
-      },
-      {
-        id: "1-2",
-        time: "12:30",
-        type: "restaurant",
-        title: "Yod Abyssinia",
-        description: "Traditional Ethiopian lunch with cultural performances",
-        price: 25,
-        duration: "1.5 hours",
-        selected: true,
-      },
-      {
-        id: "1-3",
-        time: "15:00",
-        type: "experience",
-        title: "Merkato Market Tour",
-        description: "Explore Africa's largest open-air market with a local guide",
-        price: 20,
-        duration: "2-3 hours",
-        selected: true,
-      },
-      {
-        id: "1-4",
-        time: "18:00",
-        type: "hotel",
-        title: "Check-in: Sheraton Addis",
-        description: "Luxury hotel in the heart of the city",
-        price: 180,
-        selected: true,
-      },
-    ],
-  },
-  {
-    day: 2,
-    date: "Day 2",
-    city: "Addis Ababa to Lalibela",
-    activities: [
-      {
-        id: "2-1",
-        time: "07:00",
-        type: "experience",
-        title: "Ethiopian Coffee Ceremony",
-        description: "Traditional morning coffee experience at hotel",
-        duration: "1 hour",
-        selected: true,
-      },
-      {
-        id: "2-2",
-        time: "10:00",
-        type: "transport",
-        title: "Flight to Lalibela",
-        description: "Ethiopian Airlines - 1 hour flight",
-        price: 150,
-        selected: true,
-      },
-      {
-        id: "2-3",
-        time: "14:00",
-        type: "experience",
-        title: "Rock-Hewn Churches (Group 1)",
-        description: "Visit the northern cluster including Bet Medhane Alem",
-        price: 50,
-        duration: "3-4 hours",
-        selected: true,
-      },
-      {
-        id: "2-4",
-        time: "18:30",
-        type: "hotel",
-        title: "Check-in: Maribela Hotel",
-        description: "Stunning mountain views and traditional architecture",
-        price: 120,
-        selected: true,
-      },
-    ],
-  },
-  {
-    day: 3,
-    date: "Day 3",
-    city: "Lalibela",
-    activities: [
-      {
-        id: "3-1",
-        time: "06:00",
-        type: "experience",
-        title: "Sunrise at Bet Giyorgis",
-        description: "Watch sunrise over the iconic cross-shaped church",
-        duration: "1.5 hours",
-        selected: true,
-      },
-      {
-        id: "3-2",
-        time: "09:00",
-        type: "experience",
-        title: "Rock-Hewn Churches (Group 2)",
-        description: "Southern cluster including Bet Gabriel-Rufael",
-        price: 50,
-        duration: "3-4 hours",
-        selected: true,
-      },
-      {
-        id: "3-3",
-        time: "13:00",
-        type: "restaurant",
-        title: "Ben Abeba Restaurant",
-        description: "Unique architecture with panoramic views, fusion cuisine",
-        price: 30,
-        duration: "1.5 hours",
-        selected: true,
-      },
-      {
-        id: "3-4",
-        time: "15:30",
-        type: "experience",
-        title: "Village Walk & Local Life",
-        description: "Guided walk through traditional villages",
-        price: 25,
-        duration: "2 hours",
-        selected: false,
-      },
-    ],
-  },
-]
+const mockGeneratedItinerary: GeneratedDay[] = []
 
 const activityTypeConfig = {
   hotel: { icon: Building2, color: "bg-blue-500/10 text-blue-600" },
@@ -251,7 +112,14 @@ function PlannerForm({ onGenerate }: { onGenerate: () => void }) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ai-suggest">Let AI suggest based on interests</SelectItem>
-              {mockCities.map((city) => (
+              {[
+                { id: "addis-ababa", name: "Addis Ababa" },
+                { id: "lalibela", name: "Lalibela" },
+                { id: "bahir-dar", name: "Bahir Dar" },
+                { id: "gondar", name: "Gondar" },
+                { id: "axum", name: "Axum" },
+                { id: "harar", name: "Harar" },
+              ].map((city) => (
                 <SelectItem key={city.id} value={city.id}>
                   {city.name}
                 </SelectItem>

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { X, Send, Loader2, Sparkles, User, Minimize2 } from "lucide-react"
 import { useApp } from "@/lib/contexts/app-context"
 import { sendAIQuery } from "@/lib/api/mock-api"
+import { FEATURES } from "@/lib/config/features"
 
 interface Message {
   role: "user" | "assistant"
@@ -36,6 +37,8 @@ export function FloatingAIAssistant() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  if (!FEATURES.AI_CONCIERGE) return null
 
   const handleSubmit = async (query: string) => {
     if (!query.trim() || isLoading) return
