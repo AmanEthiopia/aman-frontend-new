@@ -454,5 +454,6 @@ export type {
 export type {
   VerificationRequest,
   VerificationStatus,
-  VerificationEntityType,
+  VerificationStatusInfo,
+  EntityType as VerificationEntityType,
 } from "@/lib/api/verification"

@@ -25,6 +25,7 @@ import {
   X,
   Package,
   CalendarDays,
+  ShieldCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getMediaUrl } from "@/lib/utils/media"
@@ -102,6 +103,7 @@ function getSidebarItems(pendingBookings: number, unreadMessages: number): NavIt
     { href: "/provider/earnings", label: "Earnings", icon: DollarSign },
     { href: "/provider/reviews", label: "Reviews", icon: Star },
     { href: "/provider/photos", label: "Photos", icon: ImageIcon },
+    { href: "/provider/verification", label: "Verification", icon: ShieldCheck },
     { href: "/provider/settings", label: "Settings", icon: Settings },
   ]
 }

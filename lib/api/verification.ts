@@ -5,12 +5,13 @@ import { apiGet, apiPost, apiPut } from "./client"
 // ============================================================================
 
 export type EntityType = "hotel" | "restaurant" | "experience" | "guide" | "package"
-export type VerificationStatus = "pending" | "in_review" | "approved" | "rejected"
+export type VerificationStatus = "pending" | "in_review" | "approved" | "rejected" | "change_requested"
 
 export interface VerificationRequest {
   id: string
   entity_type: EntityType
   entity_id: string
+  entity_name?: string
   status: VerificationStatus
   submitted_by_email?: string
   reviewed_by_email?: string
@@ -23,10 +24,13 @@ export interface VerificationRequest {
   created_at: string
 }
 
-export interface VerificationStatus {
+// Renamed from VerificationStatus to avoid conflict with the status union type
+export interface VerificationStatusInfo {
   id: string
   status: VerificationStatus
   requirements: string[]
+  admin_notes?: string
+  entity_name?: string
   reviewed_at: string | null
 }
 
@@ -40,7 +44,7 @@ export interface SubmitVerificationPayload {
 // ============================================================================
 
 /**
- * Provider: Submit entity for verification
+ * Provider: Submit entity for verification (also used for resubmit after change request)
  */
 export async function submitForVerification(
   entityType: EntityType,
@@ -54,14 +58,14 @@ export async function submitForVerification(
 }
 
 /**
- * Provider: Check verification status
+ * Provider: Check verification status for a specific entity
  */
 export async function getVerificationStatus(
   entityType: EntityType,
   entityId: string
-): Promise<VerificationStatus | null> {
+): Promise<VerificationStatusInfo | null> {
   try {
-    return await apiGet<VerificationStatus>(
+    return await apiGet<VerificationStatusInfo>(
       `/admin/verifications/status/?entity_type=${entityType}&entity_id=${entityId}`
     )
   } catch {
@@ -97,6 +101,13 @@ export async function getVerificationDetail(verificationId: string): Promise<Ver
 }
 
 /**
+ * Admin: Move a request to in_review status
+ */
+export async function startReview(verificationId: string): Promise<VerificationRequest> {
+  return apiPost<VerificationRequest>(`/admin/verifications/${verificationId}/start-review/`, {})
+}
+
+/**
  * Admin: Set requirements for a verification
  */
 export async function setVerificationRequirements(
@@ -122,7 +133,20 @@ export async function approveVerification(
 }
 
 /**
- * Admin: Reject verification
+ * Admin: Request changes from provider (non-final — provider can fix and resubmit)
+ */
+export async function requestChanges(
+  verificationId: string,
+  payload: {
+    admin_notes: string
+    requirements?: string[]
+  }
+): Promise<VerificationRequest> {
+  return apiPost<VerificationRequest>(`/admin/verifications/${verificationId}/request-changes/`, payload)
+}
+
+/**
+ * Admin: Reject verification (final)
  */
 export async function rejectVerification(
   verificationId: string,
@@ -144,7 +168,9 @@ export function getStatusColor(status: string): string {
     case "in_review":
       return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
     case "approved":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+    case "change_requested":
+      return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
     case "rejected":
       return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
     default:
@@ -160,6 +186,8 @@ export function getStatusLabel(status: string): string {
       return "In Review"
     case "approved":
       return "Verified"
+    case "change_requested":
+      return "Changes Requested"
     case "rejected":
       return "Rejected"
     default:

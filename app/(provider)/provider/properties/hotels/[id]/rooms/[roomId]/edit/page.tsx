@@ -3,13 +3,14 @@
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Loader2, Check, Bed } from "lucide-react"
+import { ArrowLeft, Loader2, Check, Bed, Plus, X } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -39,7 +40,8 @@ interface RoomFormData {
   name: string
   description: string
   room_type: "standard" | "deluxe" | "suite" | "executive" | "family"
-  price_per_night: number
+  price_usd: number | ""
+  price_etb: number | ""
   max_guests: number
   bed_type: string
   amenities: string[]
@@ -58,11 +60,13 @@ export default function EditRoomPage({
   const [room, setRoom] = useState<ProviderRoom | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [customAmenityInput, setCustomAmenityInput] = useState("")
   const [formData, setFormData] = useState<RoomFormData>({
     name: "",
     description: "",
     room_type: "standard",
-    price_per_night: 0,
+    price_usd: "",
+    price_etb: "",
     max_guests: 2,
     bed_type: "Queen",
     amenities: [],
@@ -78,18 +82,17 @@ export default function EditRoomPage({
     try {
       const data = await providerAPI.getMyRoom(hotelId, roomId)
       setRoom(data)
+      const usdVal = Number(data.base_price ?? data.price_per_night ?? 0)
+      const etbVal = data.price_etb ? Number(data.price_etb) : ""
       setFormData({
         name: data.name || "",
         description: data.description || "",
         room_type: data.room_type || "standard",
-        // API returns base_price; fall back to price_per_night from payload shape
-        price_per_night: Number(data.base_price ?? data.price_per_night ?? 0),
-        // API returns max_adults; fall back to max_guests
+        price_usd: usdVal > 0 ? usdVal : "",
+        price_etb: etbVal,
         max_guests: data.max_adults ?? data.max_guests ?? 2,
         bed_type: data.bed_type || "Queen",
-        // API returns amenities as objects — extract the string label for the form
         amenities: (data.amenities || []).map(amenityLabel),
-        // API returns total_units; fall back to quantity
         quantity: data.total_units ?? data.quantity ?? 1,
       })
     } catch (error) {
@@ -112,11 +115,43 @@ export default function EditRoomPage({
     }
   }
 
+  const addCustomAmenity = () => {
+    const val = customAmenityInput.trim()
+    if (!val || formData.amenities.includes(val)) return
+    updateField("amenities", [...formData.amenities, val])
+    setCustomAmenityInput("")
+  }
+
+  const removeAmenity = (amenity: string) => {
+    updateField("amenities", formData.amenities.filter((a) => a !== amenity))
+  }
+
+  const customAmenities = formData.amenities.filter((a) => !ROOM_AMENITIES.includes(a))
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.price_usd && !formData.price_etb) {
+      toast.error("Please enter at least one price (ETB or USD)")
+      return
+    }
     setIsSubmitting(true)
     try {
-      await providerAPI.updateRoom(hotelId, roomId, formData)
+      const payload: Parameters<typeof providerAPI.updateRoom>[2] = {
+        name: formData.name,
+        description: formData.description,
+        room_type: formData.room_type,
+        max_guests: formData.max_guests,
+        bed_type: formData.bed_type,
+        amenities: formData.amenities,
+        quantity: formData.quantity,
+      }
+      if (formData.price_usd !== "" && Number(formData.price_usd) > 0) {
+        payload.price_per_night = Number(formData.price_usd)
+      }
+      if (formData.price_etb !== "" && Number(formData.price_etb) > 0) {
+        payload.price_etb = Number(formData.price_etb)
+      }
+      await providerAPI.updateRoom(hotelId, roomId, payload)
       toast.success("Room updated successfully")
       router.push(`/provider/properties/hotels/${hotelId}`)
     } catch (error) {
@@ -215,19 +250,59 @@ export default function EditRoomPage({
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-4">
-              <div className="space-y-2">
-                <Label htmlFor="price">Price/Night (USD) *</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  min={1}
-                  value={formData.price_per_night || ""}
-                  onChange={(e) => updateField("price_per_night", Number(e.target.value))}
-                  placeholder="120"
-                  required
-                />
+            {/* Pricing */}
+            <div className="space-y-2">
+              <Label>Price per Night</Label>
+              <p className="text-xs text-muted-foreground">Enter price in ETB, USD, or both — no conversion needed</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="price_etb" className="text-sm font-normal text-muted-foreground">
+                    ETB (Ethiopian Birr)
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground select-none">
+                      ETB
+                    </span>
+                    <Input
+                      id="price_etb"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      className="pl-14"
+                      value={formData.price_etb}
+                      onChange={(e) =>
+                        updateField("price_etb", e.target.value === "" ? "" : Number(e.target.value))
+                      }
+                      placeholder="e.g., 5000"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="price_usd" className="text-sm font-normal text-muted-foreground">
+                    USD (US Dollar)
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground select-none">
+                      $
+                    </span>
+                    <Input
+                      id="price_usd"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      className="pl-8"
+                      value={formData.price_usd}
+                      onChange={(e) =>
+                        updateField("price_usd", e.target.value === "" ? "" : Number(e.target.value))
+                      }
+                      placeholder="e.g., 120"
+                    />
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="max_guests">Max Guests *</Label>
                 <Input
@@ -269,9 +344,9 @@ export default function EditRoomPage({
         <Card>
           <CardHeader>
             <CardTitle>Room Amenities</CardTitle>
-            <CardDescription>Select amenities available in this room</CardDescription>
+            <CardDescription>Select from the list or add custom amenities</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="grid gap-2 sm:grid-cols-3">
               {ROOM_AMENITIES.map((amenity) => (
                 <div key={amenity} className="flex items-center space-x-2">
@@ -285,6 +360,50 @@ export default function EditRoomPage({
                   </Label>
                 </div>
               ))}
+            </div>
+
+            {/* Custom amenity chips */}
+            {customAmenities.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {customAmenities.map((amenity) => (
+                  <Badge key={amenity} variant="secondary" className="gap-1 pr-1 text-sm">
+                    {amenity}
+                    <button
+                      type="button"
+                      onClick={() => removeAmenity(amenity)}
+                      className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Add custom amenity input */}
+            <div className="flex gap-2 pt-1">
+              <Input
+                placeholder="Add custom amenity (e.g., Sea View)"
+                value={customAmenityInput}
+                onChange={(e) => setCustomAmenityInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    addCustomAmenity()
+                  }
+                }}
+                className="max-w-sm"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addCustomAmenity}
+                disabled={!customAmenityInput.trim()}
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                Add
+              </Button>
             </div>
           </CardContent>
         </Card>
