@@ -172,3 +172,15 @@
   background-color: var(--background);
   box-shadow: 0 1px 0 0 var(--border);
 }
+
+/* Testimonials infinite scroll carousel */
+@keyframes scroll-testimonials {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.testimonials-track {
+  animation: scroll-testimonials 36s linear infinite;
+}
+.testimonials-track:hover {
+  animation-play-state: paused;
+}

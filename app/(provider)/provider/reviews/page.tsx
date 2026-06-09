@@ -107,7 +107,7 @@ function ReviewCard({
                   {isAdminReview && (
                     <Badge variant="outline" className="border-green-600 text-green-700">
                       <Shield className="mr-1 h-3 w-3" />
-                      AMAN Verified
+                      Alga Ale Verified
                     </Badge>
                   )}
                 </div>

@@ -38,17 +38,17 @@ const faqs = [
   {
     question: "Is my payment secure?",
     answer:
-      "Yes, all payments on AMAN are processed through secure, encrypted channels. We never store your full payment details. Your funds are held securely until after check-in to protect both travelers and hosts.",
+      "Yes, all payments on Alga Ale are processed through secure, encrypted channels. We never store your full payment details. Your funds are held securely until after check-in to protect both travelers and hosts.",
   },
   {
     question: "How are properties verified?",
     answer:
-      "Every property on AMAN undergoes a verification process including identity verification of hosts, on-site inspections where possible, and review of safety standards. Properties display verification badges indicating their trust level.",
+      "Every property on Alga Ale undergoes a verification process including identity verification of hosts, on-site inspections where possible, and review of safety standards. Properties display verification badges indicating their trust level.",
   },
   {
     question: "What should I do in an emergency?",
     answer:
-      "Use the Emergency Access button available on every page to contact our 24/7 support line. You can also call local emergency services. AMAN provides real-time location sharing for emergency responders.",
+      "Use the Emergency Access button available on every page to contact our 24/7 support line. You can also call local emergency services. Alga Ale provides real-time location sharing for emergency responders.",
   },
   {
     question: "How do I become a verified host?",
@@ -156,7 +156,7 @@ export default function HelpPage() {
                 <h3 className="font-semibold">Call Us</h3>
                 <p className="mt-1 text-sm text-muted-foreground">24/7 support available</p>
                 <Button variant="outline" size="sm" className="mt-4 bg-transparent">
-                  +251-911-AMAN
+                  +251 91 123 4567
                 </Button>
               </CardContent>
             </Card>

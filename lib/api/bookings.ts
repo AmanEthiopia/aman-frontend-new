@@ -1,6 +1,6 @@
 "use client"
 
-import { apiPost, apiGet } from "./client"
+import { apiPost, apiGet, apiPatch } from "./client"
 
 // ============================================================================
 // Types
@@ -8,6 +8,13 @@ import { apiPost, apiGet } from "./client"
 
 export type BookingStatus = "pending" | "confirmed" | "rejected" | "cancelled" | "completed" | "no_show"
 export type PaymentStatus = "unpaid" | "paid" | "refunded"
+
+export interface GuestInfo {
+  first_name: string
+  last_name: string
+  gender: "male" | "female" | "other"
+  age?: number | null
+}
 
 // Payment response
 export interface PaymentInfo {
@@ -79,6 +86,7 @@ export interface HotelBooking {
   cancellation_reason?: string | null
   created_at: string
   source?: "online" | "manual"
+  guests_info?: GuestInfo[] | null
 }
 
 // Flat summary of a room as returned by the list endpoint
@@ -101,6 +109,7 @@ export interface HotelBookingListItem {
   hotel_photo?: string
   hotel_star_rating?: number
   hotel_average_rating?: number
+  hotel_provider_id?: string
   check_in_date: string
   check_out_date: string
   total_nights: number
@@ -136,6 +145,7 @@ export interface CreateHotelBookingPayload {
   guest_email: string
   guest_phone?: string
   special_requests?: string
+  guests?: GuestInfo[]
 }
 
 export async function createHotelBooking(payload: CreateHotelBookingPayload): Promise<HotelBookingResponse> {
@@ -154,6 +164,18 @@ export async function getHotelBookingById(id: string): Promise<HotelBooking> {
 
 export async function cancelHotelBooking(id: string, reason?: string): Promise<HotelBooking> {
   return apiPost<HotelBooking>(`/bookings/hotel/${id}/cancel/`, { reason })
+}
+
+export interface ModifyHotelBookingPayload {
+  check_in_date?: string
+  check_out_date?: string
+  num_adults?: number
+  num_children?: number
+  special_requests?: string
+}
+
+export async function modifyHotelBooking(id: string, payload: ModifyHotelBookingPayload): Promise<HotelBooking> {
+  return apiPatch<HotelBooking>(`/bookings/hotel/${id}/modify/`, payload)
 }
 
 // ============================================================================

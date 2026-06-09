@@ -26,10 +26,10 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getAllMyBookings, flattenBookings } from "@/lib/api/bookings"
-import { getHotels } from "@/lib/api/hotels"
 import { getAttractions } from "@/lib/api/content"
 import { FEATURES } from "@/lib/config/features"
 import { useAuth } from "@/contexts/auth-context"
+import { getRecentlyViewed, type RecentlyViewedItem } from "@/lib/utils/recently-viewed"
 import type { Booking, Hotel } from "@/lib/types"
 import type { Attraction } from "@/lib/api/content"
 
@@ -129,7 +129,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
-  const [recentHotels, setRecentHotels] = useState<Hotel[]>([])
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedItem[]>([])
   const [featuredAttractions, setFeaturedAttractions] = useState<Attraction[]>([])
 
   useEffect(() => {
@@ -173,15 +173,8 @@ export default function HomePage() {
         setUpcomingBookings([])
       }
 
-      console.log("[v0] HomePage: Fetching hotels...")
-      try {
-        const hotelsResponse = await getHotels({ limit: 3 })
-        console.log("[v0] HomePage: Hotels received:", hotelsResponse.results?.length || 0)
-        setRecentHotels(hotelsResponse.results || [])
-      } catch (err: any) {
-        console.error("[v0] HomePage: Failed to load hotels:", err)
-        setRecentHotels([])
-      }
+      // Recently viewed comes from localStorage — no network call needed
+      setRecentlyViewed(getRecentlyViewed())
 
       try {
         const attractions = await getAttractions()
@@ -367,9 +360,9 @@ export default function HomePage() {
               <Link key={attraction.id} href={`/attractions/${attraction.slug || attraction.id}`}>
                 <Card className="group cursor-pointer overflow-hidden transition-all hover:border-primary/50 hover:shadow-md">
                   <div className="relative h-36 bg-gradient-to-br from-amber-100 to-amber-50">
-                    {attraction.image ? (
+                    {attraction.photo_url ? (
                       <img
-                        src={getMediaUrl(attraction.image)}
+                        src={getMediaUrl(attraction.photo_url)}
                         alt={attraction.name}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
@@ -425,7 +418,7 @@ export default function HomePage() {
           <div className="flex-1">
             <h3 className="font-semibold text-green-800 dark:text-green-200">Travel with confidence</h3>
             <p className="mt-1 text-sm text-green-700 dark:text-green-300">
-              All AMAN listings are verified. 24/7 support available for emergencies.
+              All Alga Ale listings are verified. 24/7 support available for emergencies.
             </p>
           </div>
           <Button
@@ -439,43 +432,88 @@ export default function HomePage() {
         </CardContent>
       </Card>
 
-      {/* Recent Activity */}
+      {/* Recently Viewed */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold">Recently Viewed</h2>
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Recently Viewed</h2>
+            <p className="text-sm text-muted-foreground">Pick up where you left off</p>
           </div>
-        ) : recentHotels.length > 0 ? (
+          {recentlyViewed.length > 0 && (
+            <Link href="/hotels">
+              <Button variant="ghost" size="sm">
+                Explore more
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
+          )}
+        </div>
+
+        {recentlyViewed.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {recentHotels.map((hotel) => (
-              <Link key={hotel.id} href={`/hotels/${hotel.id}`}>
-                <Card className="group cursor-pointer overflow-hidden transition-all hover:shadow-md">
-                  <div className="relative h-24">
-                    <img
-                      src={getMediaUrl(hotel.images?.[0]?.url) || "/placeholder.svg"}
-                      alt={hotel.name}
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                    />
-                  </div>
-                  <CardContent className="py-3">
-                    <h4 className="truncate font-medium">{hotel.name}</h4>
-                    <p className="text-sm text-muted-foreground">{hotel.city?.name || "Ethiopia"}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+            {recentlyViewed.slice(0, 6).map((item) => {
+              const href =
+                item.type === "hotel" ? `/hotels/${item.slug || item.id}` :
+                item.type === "attraction" ? `/attractions/${item.slug || item.id}` :
+                item.type === "restaurant" ? `/restaurants/${item.slug || item.id}` :
+                `/experiences/${item.slug || item.id}`
+
+              const typeColors: Record<string, string> = {
+                hotel: "bg-blue-500/90",
+                attraction: "bg-amber-500/90",
+                restaurant: "bg-orange-500/90",
+                experience: "bg-purple-500/90",
+              }
+
+              return (
+                <Link key={`${item.type}-${item.id}`} href={href}>
+                  <Card className="group cursor-pointer overflow-hidden transition-all hover:border-primary/50 hover:shadow-md">
+                    <div className="relative h-28 bg-muted">
+                      {item.imageUrl ? (
+                        <img
+                          src={getMediaUrl(item.imageUrl)}
+                          alt={item.name}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <Compass className="h-8 w-8 text-muted-foreground/40" />
+                        </div>
+                      )}
+                      <div className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-medium capitalize text-white ${typeColors[item.type] ?? "bg-primary/90"}`}>
+                        {item.type}
+                      </div>
+                    </div>
+                    <CardContent className="py-3">
+                      <h4 className="truncate font-medium">{item.name}</h4>
+                      {item.location && (
+                        <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{item.location}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Link>
+              )
+            })}
           </div>
         ) : (
           <Card className="border-dashed">
-            <CardContent className="py-8 text-center">
+            <CardContent className="py-10 text-center">
               <Compass className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Start exploring to see your recent views here</p>
-              <Link href="/hotels">
-                <Button variant="link" className="mt-2">
-                  Browse Hotels
-                </Button>
-              </Link>
+              <p className="font-medium">Nothing here yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Browse hotels, attractions, or restaurants — they'll appear here for quick access
+              </p>
+              <div className="mt-4 flex justify-center gap-2">
+                <Link href="/hotels">
+                  <Button variant="outline" size="sm">Hotels</Button>
+                </Link>
+                <Link href="/attractions">
+                  <Button variant="outline" size="sm">Attractions</Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         )}

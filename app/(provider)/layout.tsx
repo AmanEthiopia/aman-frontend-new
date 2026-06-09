@@ -296,7 +296,7 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
                 <div className="flex h-16 items-center border-b px-4">
-                  <Link href="/" className="flex items-center gap-2" aria-label="AMAN home">
+                  <Link href="/" className="flex items-center gap-2" aria-label="Alga Ale home">
                     <AmanMark size={32} variant="stacked" className="rounded-md" />
                     <AmanWordmark height={22} />
                   </Link>
@@ -305,7 +305,7 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            <Link href="/" className="flex items-center gap-2" aria-label="AMAN home">
+            <Link href="/" className="flex items-center gap-2" aria-label="Alga Ale home">
               <AmanMark size={32} variant="stacked" className="rounded-md" />
               <AmanWordmark height={22} className="hidden sm:block" />
               <Badge variant="secondary" className="ml-2">

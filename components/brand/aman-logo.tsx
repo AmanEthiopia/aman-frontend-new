@@ -46,7 +46,7 @@ export function AmanLockup({
   return (
     <span
       className={cn("inline-flex items-center gap-2 leading-none", className)}
-      aria-label="AMAN — Trust-First Ethiopian Travel"
+      aria-label="Alga Ale — Trust-First Ethiopian Travel"
     >
       <Image
         src={ASSETS.en}
@@ -115,8 +115,8 @@ export function AmanWordmark({
       alt="AMAN"
       width={height * 4}
       height={height}
-      className={cn("w-auto select-none object-contain dark:invert", className)}
-      style={{ height }}
+      className={cn("select-none object-contain dark:invert", className)}
+      style={{ height, width: "auto" }}
     />
   )
 }
@@ -149,7 +149,7 @@ export function AmanZigzag({
       width={size * (96 / 44)}
       height={size}
       role="img"
-      aria-label={title ?? "AMAN AI"}
+      aria-label={title ?? "Alga Ale AI"}
       className={className}
     >
       <path
@@ -171,7 +171,7 @@ export function AmanZigzag({
 export function AmanZigzagLoader({
   size = 32,
   className,
-  label = "AMAN AI is thinking",
+  label = "Alga Ale AI is thinking",
 }: {
   size?: number
   className?: string

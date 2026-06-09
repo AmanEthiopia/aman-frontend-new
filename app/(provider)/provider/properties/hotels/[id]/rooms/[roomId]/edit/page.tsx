@@ -46,6 +46,7 @@ interface RoomFormData {
   bed_type: string
   amenities: string[]
   quantity: number
+  gender_restriction: "none" | "male_only" | "female_only"
 }
 
 export default function EditRoomPage({
@@ -71,6 +72,7 @@ export default function EditRoomPage({
     bed_type: "Queen",
     amenities: [],
     quantity: 1,
+    gender_restriction: "none",
   })
 
   useEffect(() => {
@@ -94,6 +96,7 @@ export default function EditRoomPage({
         bed_type: data.bed_type || "Queen",
         amenities: (data.amenities || []).map(amenityLabel),
         quantity: data.total_units ?? data.quantity ?? 1,
+        gender_restriction: (data as any).gender_restriction || "none",
       })
     } catch (error) {
       console.error("[v0] Failed to load room:", error)
@@ -144,6 +147,7 @@ export default function EditRoomPage({
         bed_type: formData.bed_type,
         amenities: formData.amenities,
         quantity: formData.quantity,
+        gender_restriction: formData.gender_restriction,
       }
       if (formData.price_usd !== "" && Number(formData.price_usd) > 0) {
         payload.price_per_night = Number(formData.price_usd)
@@ -302,7 +306,7 @@ export default function EditRoomPage({
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="max_guests">Max Guests *</Label>
                 <Input
@@ -335,6 +339,23 @@ export default function EditRoomPage({
                   onChange={(e) => updateField("quantity", Number(e.target.value))}
                   required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Guest Gender Restriction</Label>
+                <Select
+                  value={formData.gender_restriction}
+                  onValueChange={(v) => updateField("gender_restriction", v as RoomFormData["gender_restriction"])}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Restriction</SelectItem>
+                    <SelectItem value="male_only">Male Guests Only</SelectItem>
+                    <SelectItem value="female_only">Female Guests Only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Restrict bookings to a specific gender group</p>
               </div>
             </div>
           </CardContent>

@@ -154,7 +154,7 @@ export function DisputeModal({
                 </div>
               </div>
               <p className="mt-4 text-sm text-muted-foreground">
-                You'll receive updates via email and in your AMAN messages.
+                You'll receive updates via email and in your Alga Ale messages.
               </p>
             </div>
             <DialogFooter>

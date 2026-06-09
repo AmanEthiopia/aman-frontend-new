@@ -66,7 +66,7 @@ export function AIPreviewSection() {
                     <Sparkles className="h-5 w-5 text-primary-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">AMAN AI Assistant</h3>
+                    <h3 className="font-semibold">Alga Ale AI Assistant</h3>
                     <p className="text-sm text-muted-foreground">Ask me anything about Ethiopia</p>
                   </div>
                 </div>

@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { TrustBadge } from "@/components/shared/trust-badge"
 import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
-import { createHotelBooking } from "@/lib/api/bookings"
+import { createHotelBooking, type GuestInfo } from "@/lib/api/bookings"
 import { useAuth } from "@/contexts/auth-context"
 import type { Hotel, Room } from "@/lib/types"
 import {
@@ -36,7 +36,15 @@ import {
   Minus,
   Plus,
   XCircle,
+  UserCheck,
 } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getMediaUrl } from "@/lib/utils/media"
 import { formatRating } from "@/lib/utils"
@@ -75,6 +83,23 @@ export default function BookHotelPage() {
     numChildren: 0,
     message: "",
   })
+  const [guests, setGuests] = useState<GuestInfo[]>([])
+
+  // Sync guests array length to numAdults (only when >1)
+  useEffect(() => {
+    const count = Number(formData.numAdults)
+    if (count <= 1) {
+      setGuests([])
+    } else {
+      setGuests((prev) => {
+        if (prev.length === count) return prev
+        if (prev.length < count) {
+          return [...prev, ...Array.from({ length: count - prev.length }, () => ({ first_name: "", last_name: "", gender: "other" as const, age: undefined }))]
+        }
+        return prev.slice(0, count)
+      })
+    }
+  }, [formData.numAdults])
 
   const loadRooms = useCallback(async (hotelId: string, ci?: string, co?: string) => {
     setRoomsLoading(true)
@@ -167,6 +192,21 @@ export default function BookHotelPage() {
     }, 0)
   })()
 
+  // Total capacity of selected rooms
+  const totalRoomCapacity = roomsPayload.reduce((sum, { room_id, quantity }) => {
+    const room = rooms.find((r) => r.id === room_id)
+    const cap = room ? ((room.max_adults ?? 1) + (room.max_children ?? 0)) * quantity : 0
+    return sum + cap
+  }, 0)
+  const totalGuests = Number(formData.numAdults) + Number(formData.numChildren)
+  const capacityWarning = totalRoomCapacity > 0 && totalGuests > totalRoomCapacity
+
+  // Gender restriction notice for any selected room
+  const genderRestrictions = roomsPayload
+    .map(({ room_id }) => rooms.find((r) => r.id === room_id))
+    .filter((r) => r?.gender_restriction && r.gender_restriction !== "none")
+    .map((r) => ({ name: r!.name, restriction: r!.gender_restriction! }))
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!hotel) return
@@ -208,6 +248,7 @@ export default function BookHotelPage() {
         guest_email: formData.guestEmail,
         guest_phone: formData.guestPhone || undefined,
         special_requests: formData.message || undefined,
+        guests: guests.length > 0 ? guests : undefined,
       })
       setBookingNumber(response.booking?.booking_number ?? null)
       setSuccess(true)
@@ -618,6 +659,91 @@ export default function BookHotelPage() {
                         </div>
                       </div>
 
+                      {/* Capacity warning */}
+                      {capacityWarning && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 flex gap-2">
+                          <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                          <p>Your guest count ({totalGuests}) exceeds the selected rooms' combined capacity ({totalRoomCapacity}). Please add more rooms or reduce guests.</p>
+                        </div>
+                      )}
+
+                      {/* Gender restriction notice */}
+                      {genderRestrictions.length > 0 && (
+                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 flex gap-2">
+                          <Shield className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                          <div>
+                            {genderRestrictions.map((r) => (
+                              <p key={r.name}>
+                                <strong>{r.name}</strong>: {r.restriction === "male_only" ? "Male guests only" : "Female guests only"}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Per-guest details (when >1 adult) */}
+                      {guests.length > 0 && (
+                        <div className="space-y-4 rounded-lg border border-border p-4 bg-muted/30">
+                          <div className="flex items-center gap-2">
+                            <UserCheck className="h-4 w-4 text-primary" />
+                            <p className="text-sm font-medium">Guest Details</p>
+                            <span className="text-xs text-muted-foreground">(required for groups)</span>
+                          </div>
+                          {guests.map((guest, idx) => (
+                            <div key={idx} className="space-y-3">
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Guest {idx + 1}</p>
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">First Name *</Label>
+                                  <Input
+                                    placeholder="First name"
+                                    value={guest.first_name}
+                                    onChange={(e) => setGuests((prev) => prev.map((g, i) => i === idx ? { ...g, first_name: e.target.value } : g))}
+                                    required
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Last Name *</Label>
+                                  <Input
+                                    placeholder="Last name"
+                                    value={guest.last_name}
+                                    onChange={(e) => setGuests((prev) => prev.map((g, i) => i === idx ? { ...g, last_name: e.target.value } : g))}
+                                    required
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Gender *</Label>
+                                  <Select
+                                    value={guest.gender}
+                                    onValueChange={(v) => setGuests((prev) => prev.map((g, i) => i === idx ? { ...g, gender: v as GuestInfo["gender"] } : g))}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select gender" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="male">Male</SelectItem>
+                                      <SelectItem value="female">Female</SelectItem>
+                                      <SelectItem value="other">Other / Prefer not to say</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Age (Optional)</Label>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={120}
+                                    placeholder="Age"
+                                    value={guest.age ?? ""}
+                                    onChange={(e) => setGuests((prev) => prev.map((g, i) => i === idx ? { ...g, age: e.target.value ? Number(e.target.value) : undefined } : g))}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="space-y-2">
                         <Label htmlFor="message">Special Requests (Optional)</Label>
                         <div className="relative">
@@ -673,10 +799,12 @@ export default function BookHotelPage() {
                       <div className="mb-4 overflow-hidden rounded-lg">
                         <img
                           src={getMediaUrl(
-                            (hotel as any).images?.[0]?.url ||
-                            (hotel as any).images?.[0]?.image_url ||
+                            (hotel as any).photos?.find((p: any) => p.is_primary)?.photo_url ||
+                            (hotel as any).photos?.[0]?.photo_url ||
                             (hotel as any).cover_photo ||
-                            (hotel as any).cover_photo_url
+                            (hotel as any).cover_photo_url ||
+                            (hotel as any).images?.[0]?.url ||
+                            (hotel as any).images?.[0]?.image_url
                           ) || "/placeholder.svg"}
                           alt={hotel.name}
                           className="h-40 w-full object-cover"

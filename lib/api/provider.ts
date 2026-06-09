@@ -151,6 +151,7 @@ export interface CreateRoomPayload {
   bed_type: string
   amenities?: string[]
   quantity: number
+  gender_restriction?: "none" | "male_only" | "female_only"
 }
 
 // Restaurant Types

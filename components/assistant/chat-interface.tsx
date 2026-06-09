@@ -128,10 +128,10 @@ export function ChatInterface() {
       {/* Chat Header */}
       <div className="flex items-center gap-3 border-b border-border p-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <AmanZigzag size={18} strokeWidth={5} title="AMAN AI" />
+          <AmanZigzag size={18} strokeWidth={5} title="Alga Ale AI" />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold">AMAN AI Assistant</h3>
+          <h3 className="font-semibold">Alga Ale AI Assistant</h3>
           <p className="text-sm text-muted-foreground">Ask me anything about hotels in Ethiopia</p>
         </div>
         <Badge variant="secondary" className="text-xs">
@@ -144,7 +144,7 @@ export function ChatInterface() {
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <AmanZigzag size={28} strokeWidth={5} title="AMAN AI" />
+              <AmanZigzag size={28} strokeWidth={5} title="Alga Ale AI" />
             </div>
             <h3 className="mb-2 text-lg font-semibold">How can I help you today?</h3>
             <p className="mb-6 max-w-md text-sm text-muted-foreground">
@@ -169,7 +169,7 @@ export function ChatInterface() {
               <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                 {message.role === "assistant" && (
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <AmanZigzag size={14} strokeWidth={5} title="AMAN AI" />
+                    <AmanZigzag size={14} strokeWidth={5} title="Alga Ale AI" />
                   </div>
                 )}
                 <div
@@ -224,10 +224,10 @@ export function ChatInterface() {
             {isLoading && (
               <div className="flex gap-3">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <AmanZigzag size={14} strokeWidth={5} title="AMAN AI" />
+                  <AmanZigzag size={14} strokeWidth={5} title="Alga Ale AI" />
                 </div>
                 <div className="rounded-2xl bg-muted px-4 py-2">
-                  <AmanZigzagLoader size={22} label="AMAN AI is planning your trip" />
+                  <AmanZigzagLoader size={22} label="Alga Ale AI is planning your trip" />
                 </div>
               </div>
             )}
@@ -258,7 +258,7 @@ export function ChatInterface() {
           </Button>
         </form>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          AMAN AI may make mistakes. Verify key details before booking.
+          Alga Ale AI may make mistakes. Verify key details before booking.
         </p>
       </div>
     </div>

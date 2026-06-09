@@ -185,6 +185,8 @@ export interface GuideBookingGuide {
   pricing_type: GuidePricingType
   price: string
   price_currency: string
+  photo_url?: string
+  provider_id?: string
 }
 
 export interface GuideBooking {
@@ -238,6 +240,19 @@ export async function getGuideBookingById(id: string): Promise<GuideBooking> {
  */
 export async function cancelGuideBooking(id: string, reason?: string): Promise<void> {
   await apiPost(`/guides/bookings/${id}/cancel/`, { reason })
+}
+
+export interface ModifyGuideBookingPayload {
+  booking_date?: string
+  start_time?: string | null
+  hours_requested?: number | null
+  num_adults?: number
+  num_children?: number
+  special_requests?: string
+}
+
+export async function modifyGuideBooking(id: string, payload: ModifyGuideBookingPayload): Promise<GuideBooking> {
+  return apiPatch<GuideBooking>(`/guides/bookings/${id}/modify/`, payload)
 }
 
 // ============================================================================

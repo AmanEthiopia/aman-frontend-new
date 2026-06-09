@@ -1212,13 +1212,15 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div className="rounded-lg bg-muted/50 p-3 text-center">
                   <Bed className="mx-auto h-5 w-5 text-muted-foreground" />
-                  <p className="mt-2 text-xs text-muted-foreground">Total Rooms</p>
-                  <p className="font-semibold">{hotel.total_rooms || 0}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">Room Types</p>
+                  <p className="font-semibold">{hotel.rooms?.length ?? 0}</p>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-3 text-center">
                   <CheckCircle2 className="mx-auto h-5 w-5 text-green-600" />
-                  <p className="mt-2 text-xs text-muted-foreground">Available</p>
-                  <p className="font-semibold">{hotel.available_rooms || 0}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">Total Units</p>
+                  <p className="font-semibold">
+                    {(hotel.rooms ?? []).reduce((sum, r) => sum + (r.total_units ?? (r as any).quantity ?? 0), 0)}
+                  </p>
                 </div>
               </div>
             </CardContent>

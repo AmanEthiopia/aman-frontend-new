@@ -103,7 +103,7 @@ function VerifyEmailForm() {
           <CardDescription>Your account has been successfully verified</CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">
-          <p className="text-sm text-muted-foreground">You can now log in to your AMAN account</p>
+          <p className="text-sm text-muted-foreground">You can now log in to your Alga Ale account</p>
           <Button asChild className="w-full">
             <Link href={`/login?email=${encodeURIComponent(email)}`}>Go to Login</Link>
           </Button>

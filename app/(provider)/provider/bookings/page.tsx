@@ -7,15 +7,12 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  MoreHorizontal,
   Search,
   Loader2,
   Building2,
   UtensilsCrossed,
   Car,
   Map,
-  MessageSquare,
-  Phone,
   Plus,
   BedDouble,
   Minus,
@@ -30,13 +27,6 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -312,12 +302,34 @@ function BookingDetailModal({
             </div>
           )}
 
+          {/* Guest list (when per-guest info was collected) */}
+          {(hotelBooking?.guests_info?.length ?? 0) > 0 && (
+            <div className="rounded-lg border p-3 space-y-2">
+              <p className="text-sm font-medium flex items-center gap-1.5">
+                <User className="h-4 w-4" />
+                Guests ({hotelBooking!.guests_info!.length})
+              </p>
+              {hotelBooking!.guests_info!.map((g: any, i: number) => (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <span>{g.first_name} {g.last_name}</span>
+                  <span className="text-muted-foreground capitalize">{g.gender}{g.age ? ` · ${g.age}y` : ""}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Unit assignment for pending hotel bookings */}
           {booking.status === "pending" && hotelBooking && !showRejectForm && (
             <div className="space-y-3">
               <div>
                 <p className="text-sm font-medium">Assign Room Numbers (Optional)</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Select specific room units to assign to this booking</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Select specific room units — limit {hotelBooking.guests_info?.length
+                    ? hotelBooking.guests_info.length
+                    : (hotelBooking.num_adults ?? 0) + (hotelBooking.num_children ?? 0)} unit(s) for {hotelBooking.guests_info?.length
+                    ? hotelBooking.guests_info.length
+                    : (hotelBooking.num_adults ?? 0) + (hotelBooking.num_children ?? 0)} guest(s)
+                </p>
               </div>
               {roomsLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               {(hotelBooking.rooms ?? []).map((br) => {
@@ -688,7 +700,18 @@ function BookingRow({
                 </span>
                 <span className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
-                  {booking.guests} {booking.guests === 1 ? "guest" : "guests"}
+                  {(() => {
+                    const raw = booking.raw as any
+                    const adults = raw.num_adults ?? 0
+                    const children = raw.num_children ?? 0
+                    if (adults > 0 || children > 0) {
+                      return [
+                        adults > 0 ? `${adults} adult${adults !== 1 ? "s" : ""}` : null,
+                        children > 0 ? `${children} child${children !== 1 ? "ren" : ""}` : null,
+                      ].filter(Boolean).join(", ")
+                    }
+                    return `${booking.guests} ${booking.guests === 1 ? "guest" : "guests"}`
+                  })()}
                 </span>
               </div>
               {/* Room summary for hotel bookings */}
@@ -714,45 +737,28 @@ function BookingRow({
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="text-right">
               <p className="font-bold">
-                {Number(booking.total_price) > 0 ? `$${Number(booking.total_price).toLocaleString()}` : "Free"}
+                {Number(booking.total_price) > 0 ? `ETB ${Number(booking.total_price).toLocaleString()}` : "Free"}
               </p>
               <p className="text-xs text-muted-foreground">{timeAgo(booking.created_at)}</p>
             </div>
 
-            {booking.status === "pending" ? (
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={onReject} disabled={isLoading}>
-                  <XCircle className="mr-1 h-4 w-4" />
-                  Reject
-                </Button>
-                <Button size="sm" onClick={onConfirm} disabled={isLoading}>
-                  {isLoading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />}
-                  Confirm
-                </Button>
-              </div>
-            ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={onViewDetails}>
+                View Details
+              </Button>
+              {booking.status === "pending" && (
+                <>
+                  <Button variant="outline" size="sm" onClick={onReject} disabled={isLoading}>
+                    <XCircle className="mr-1 h-4 w-4" />
+                    Reject
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={onViewDetails}>View Details</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {booking.guest_phone && (
-                    <DropdownMenuItem>
-                      <Phone className="mr-2 h-4 w-4" />
-                      Call Guest
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem>
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Message Guest
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                  <Button size="sm" onClick={onConfirm} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />}
+                    Confirm
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>

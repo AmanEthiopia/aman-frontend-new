@@ -201,7 +201,7 @@ export default function WishlistPage() {
               : `No ${WISHLIST_ITEM_TYPE_LABELS[activeTab as WishlistItemType]?.toLowerCase()} saved yet`}
           </p>
           <Link href="/home" className="mt-4">
-            <Button>Explore AMAN</Button>
+            <Button>Explore Alga Ale</Button>
           </Link>
         </div>
       ) : (
