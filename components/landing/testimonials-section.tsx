@@ -1,72 +1,199 @@
-import { Card, CardContent } from "@/components/ui/card"
-import { Star, Quote } from "lucide-react"
+"use client"
 
-const testimonials = [
-  {
-    name: "Sarah Mitchell",
-    role: "Solo Traveler, USA",
-    content:
-      "AMAN made my Ethiopia trip stress-free. The verified hotels gave me confidence, and the AI recommendations were spot-on. I felt safe the entire time.",
-    rating: 5,
-    avatar: "/placeholder.svg?height=48&width=48",
-  },
-  {
-    name: "Marcus Schmidt",
-    role: "Family Trip, Germany",
-    content:
-      "Traveling with kids requires extra planning. AMAN's detailed safety notes and honest reviews helped us choose perfect family-friendly hotels in Lalibela and Gondar.",
-    rating: 5,
-    avatar: "/placeholder.svg?height=48&width=48",
-  },
-  {
-    name: "Priya Patel",
-    role: "Business Traveler, UK",
-    content:
-      "As a frequent visitor to Addis, AMAN has become my go-to. The airport transfer service they recommended was professional and reliable every time.",
-    rating: 5,
-    avatar: "/placeholder.svg?height=48&width=48",
-  },
-]
+import { useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Star, Quote, MessageSquarePlus, CheckCircle2 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+
+interface Testimonial {
+  name: string
+  role: string
+  content: string
+  rating: number
+}
+
+// Starts empty — will be populated once real submissions come through
+const LIVE_TESTIMONIALS: Testimonial[] = []
+
+const STORAGE_KEY = "algaale_testimonials"
 
 export function TestimonialsSection() {
+  const { toast } = useToast()
+  const [submitted, setSubmitted] = useState(false)
+  const [rating, setRating] = useState(0)
+  const [hovered, setHovered] = useState(0)
+  const [form, setForm] = useState({ name: "", role: "", message: "" })
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!rating) {
+      toast({ title: "Please select a star rating", variant: "destructive" })
+      return
+    }
+    try {
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")
+      existing.unshift({
+        name: form.name,
+        role: form.role,
+        content: form.message,
+        rating,
+        submittedAt: new Date().toISOString(),
+      })
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing.slice(0, 50)))
+    } catch {}
+    setSubmitted(true)
+    toast({ title: "Thank you for sharing your experience!" })
+  }
+
+  function resetForm() {
+    setSubmitted(false)
+    setForm({ name: "", role: "", message: "" })
+    setRating(0)
+    setHovered(0)
+  }
+
   return (
-    <section className="py-20">
+    <section className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
+        {/* Heading */}
         <div className="mx-auto max-w-3xl text-center">
           <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
             Testimonials
           </span>
-          <h2 className="mb-4 text-3xl font-bold tracking-tight md:text-4xl">Trusted by Travelers Worldwide</h2>
+          <h2 className="mb-4 text-3xl font-bold tracking-tight md:text-4xl">
+            Trusted by Travelers Worldwide
+          </h2>
           <p className="text-lg text-muted-foreground">
-            See what travelers are saying about their experience with AMAN
+            Real experiences from travelers exploring Ethiopia with Alga Ale
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {testimonials.map((testimonial) => (
-            <Card key={testimonial.name} className="relative">
-              <CardContent className="p-6">
-                <Quote className="mb-4 h-8 w-8 text-primary/20" />
-                <p className="mb-4 text-muted-foreground">{testimonial.content}</p>
-                <div className="mb-4 flex gap-0.5">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-primary text-primary" />
-                  ))}
-                </div>
-                <div className="flex items-center gap-3">
-                  <img
-                    src={testimonial.avatar || "/placeholder.svg"}
-                    alt={testimonial.name}
-                    className="h-12 w-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="font-semibold">{testimonial.name}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                  </div>
-                </div>
+        {/* ── Rotating carousel — only rendered when we have live testimonials ── */}
+        {LIVE_TESTIMONIALS.length > 0 && (
+          <div className="mt-12 overflow-hidden">
+            {/* Double the items for a seamless infinite loop */}
+            <div className="testimonials-track flex gap-6" style={{ width: "max-content" }}>
+              {[...LIVE_TESTIMONIALS, ...LIVE_TESTIMONIALS].map((t, i) => (
+                <Card key={i} className="w-80 flex-shrink-0 shadow-sm">
+                  <CardContent className="p-6">
+                    <Quote className="mb-3 h-7 w-7 text-primary/20" />
+                    <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t.content}</p>
+                    <div className="mb-3 flex gap-0.5">
+                      {[...Array(5)].map((_, j) => (
+                        <Star
+                          key={j}
+                          className={`h-4 w-4 ${j < t.rating ? "fill-primary text-primary" : "text-muted-foreground/30"}`}
+                        />
+                      ))}
+                    </div>
+                    <p className="font-semibold">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{t.role}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Submission form ── */}
+        <div className="mx-auto mt-16 max-w-xl">
+          <div className="mb-6 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <MessageSquarePlus className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold">Share your experience</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Help other travelers discover Ethiopia with confidence
+            </p>
+          </div>
+
+          {submitted ? (
+            <Card className="border-primary/20">
+              <CardContent className="py-10 text-center">
+                <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-primary" />
+                <h4 className="mb-2 text-lg font-semibold">Thank you!</h4>
+                <p className="text-sm text-muted-foreground">
+                  Your testimonial has been received and will be featured once reviewed.
+                </p>
+                <Button variant="ghost" className="mt-4" onClick={resetForm}>
+                  Write another
+                </Button>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Star rating */}
+                  <div className="space-y-1.5">
+                    <p className="text-sm font-medium">Your rating <span className="text-destructive">*</span></p>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setRating(s)}
+                          onMouseEnter={() => setHovered(s)}
+                          onMouseLeave={() => setHovered(0)}
+                          className="transition-transform hover:scale-110"
+                        >
+                          <Star
+                            className={`h-8 w-8 transition-colors ${
+                              s <= (hovered || rating)
+                                ? "fill-primary text-primary"
+                                : "text-muted-foreground/40"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">
+                        Name <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        placeholder="Your name"
+                        value={form.name}
+                        onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">Location / Role</label>
+                      <Input
+                        placeholder="e.g. Solo Traveler, USA"
+                        value={form.role}
+                        onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      Your experience <span className="text-destructive">*</span>
+                    </label>
+                    <Textarea
+                      placeholder="Tell us about your experience with Alga Ale..."
+                      rows={4}
+                      value={form.message}
+                      onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full" size="lg">
+                    Submit Testimonial
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </section>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { getMediaUrl } from "@/lib/utils/media"
@@ -23,6 +23,7 @@ import {
   Users,
   CreditCard,
   Ban,
+  Pencil,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -44,9 +45,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useAllBookings, useCancelHotelBooking, useCancelRestaurantReservation, useCancelPackageBooking } from "@/lib/hooks/use-bookings"
 import type { Booking, BookingStatus, HotelBookingListItem, RestaurantReservationListItem, PackageBooking, TransportBooking } from "@/lib/api/bookings"
-import { getMyGuideBookings, cancelGuideBooking, type GuideBooking, SERVICE_TYPE_LABELS } from "@/lib/api/guides"
+import { modifyHotelBooking, type ModifyHotelBookingPayload } from "@/lib/api/bookings"
+import { getMyGuideBookings, cancelGuideBooking, modifyGuideBooking, type GuideBooking, type ModifyGuideBookingPayload, SERVICE_TYPE_LABELS } from "@/lib/api/guides"
+import { ContactDialog } from "@/components/messaging/contact-dialog"
 import { toast } from "sonner"
 
 const statusConfig: Record<BookingStatus, { label: string; icon: typeof Clock; variant: "default" | "secondary" | "destructive" | "outline"; color: string }> = {
@@ -129,12 +134,276 @@ function getBookingEndDate(booking: Booking): Date {
   }
 }
 
-function HotelBookingCard({ booking, onCancel }: { booking: HotelBookingListItem; onCancel: () => void }) {
+// ── Modify Hotel Booking Dialog ────────────────────────────────────────────────
+function ModifyHotelBookingDialog({
+  booking,
+  open,
+  onClose,
+  onSuccess,
+}: {
+  booking: HotelBookingListItem
+  open: boolean
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    check_in_date: booking.check_in_date,
+    check_out_date: booking.check_out_date,
+    num_adults: booking.num_adults,
+    num_children: booking.num_children,
+    special_requests: booking.special_requests ?? "",
+  })
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (form.check_in_date >= form.check_out_date) {
+      toast.error("Check-out date must be after check-in date")
+      return
+    }
+    setSaving(true)
+    try {
+      const payload: ModifyHotelBookingPayload = {
+        check_in_date: form.check_in_date,
+        check_out_date: form.check_out_date,
+        num_adults: form.num_adults,
+        num_children: form.num_children,
+        special_requests: form.special_requests,
+      }
+      await modifyHotelBooking(booking.id, payload)
+      toast.success("Booking request updated — waiting for provider confirmation")
+      onSuccess()
+      onClose()
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update booking")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Modify Booking Request</DialogTitle>
+          <DialogDescription>
+            Update your request for {booking.hotel_name}. The provider will be notified.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="check_in">Check-in</Label>
+              <Input
+                id="check_in"
+                type="date"
+                value={form.check_in_date}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setForm((p) => ({ ...p, check_in_date: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="check_out">Check-out</Label>
+              <Input
+                id="check_out"
+                type="date"
+                value={form.check_out_date}
+                min={form.check_in_date || new Date().toISOString().split("T")[0]}
+                onChange={(e) => setForm((p) => ({ ...p, check_out_date: e.target.value }))}
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="adults">Adults</Label>
+              <Input
+                id="adults"
+                type="number"
+                min={1}
+                value={form.num_adults}
+                onChange={(e) => setForm((p) => ({ ...p, num_adults: parseInt(e.target.value) || 1 }))}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="children">Children</Label>
+              <Input
+                id="children"
+                type="number"
+                min={0}
+                value={form.num_children}
+                onChange={(e) => setForm((p) => ({ ...p, num_children: parseInt(e.target.value) || 0 }))}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="requests">Special Requests</Label>
+            <Textarea
+              id="requests"
+              rows={3}
+              placeholder="Any special requirements or notes..."
+              value={form.special_requests}
+              onChange={(e) => setForm((p) => ({ ...p, special_requests: e.target.value }))}
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Resend Request
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Modify Guide Booking Dialog ────────────────────────────────────────────────
+function ModifyGuideBookingDialog({
+  booking,
+  open,
+  onClose,
+  onSuccess,
+}: {
+  booking: GuideBooking
+  open: boolean
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    booking_date: booking.booking_date,
+    start_time: booking.start_time ?? "",
+    hours_requested: booking.hours_requested ? String(booking.hours_requested) : "",
+    num_adults: booking.num_adults,
+    num_children: booking.num_children,
+    special_requests: booking.special_requests ?? "",
+  })
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const payload: ModifyGuideBookingPayload = {
+        booking_date: form.booking_date,
+        start_time: form.start_time || null,
+        hours_requested: form.hours_requested ? parseFloat(form.hours_requested) : null,
+        num_adults: form.num_adults,
+        num_children: form.num_children,
+        special_requests: form.special_requests,
+      }
+      await modifyGuideBooking(booking.id, payload)
+      toast.success("Booking request updated — waiting for guide confirmation")
+      onSuccess()
+      onClose()
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update booking")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Modify Booking Request</DialogTitle>
+          <DialogDescription>
+            Update your request for {booking.guide.title}. The guide will be notified.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="booking_date">Date</Label>
+              <Input
+                id="booking_date"
+                type="date"
+                value={form.booking_date}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setForm((p) => ({ ...p, booking_date: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="start_time">Start Time</Label>
+              <Input
+                id="start_time"
+                type="time"
+                value={form.start_time}
+                onChange={(e) => setForm((p) => ({ ...p, start_time: e.target.value }))}
+              />
+            </div>
+          </div>
+          {booking.guide.pricing_type === "hourly" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="hours">Hours Requested</Label>
+              <Input
+                id="hours"
+                type="number"
+                min={1}
+                step={0.5}
+                value={form.hours_requested}
+                onChange={(e) => setForm((p) => ({ ...p, hours_requested: e.target.value }))}
+              />
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="guide_adults">Adults</Label>
+              <Input
+                id="guide_adults"
+                type="number"
+                min={1}
+                value={form.num_adults}
+                onChange={(e) => setForm((p) => ({ ...p, num_adults: parseInt(e.target.value) || 1 }))}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="guide_children">Children</Label>
+              <Input
+                id="guide_children"
+                type="number"
+                min={0}
+                value={form.num_children}
+                onChange={(e) => setForm((p) => ({ ...p, num_children: parseInt(e.target.value) || 0 }))}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="guide_requests">Special Requests</Label>
+            <Textarea
+              id="guide_requests"
+              rows={3}
+              placeholder="Any special requirements or notes..."
+              value={form.special_requests}
+              onChange={(e) => setForm((p) => ({ ...p, special_requests: e.target.value }))}
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Resend Request
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function HotelBookingCard({ booking, onCancel, onModified }: { booking: HotelBookingListItem; onCancel: () => void; onModified: () => void }) {
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const checkIn = new Date(booking.check_in_date)
   const checkOut = new Date(booking.check_out_date)
   const isPast = checkOut < new Date()
+  const [showModify, setShowModify] = useState(false)
 
   return (
     <Card className={isPast ? "opacity-75" : ""}>
@@ -216,15 +485,35 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBookingListItem
             <div className="mt-4 flex items-center justify-between border-t pt-4">
               <div>
                 <span className="text-sm text-muted-foreground">Total</span>
-                <p className="text-lg font-bold">{booking.currency} {parseFloat(booking.total_price).toLocaleString()}</p>
+                <p className="text-lg font-bold">ETB {parseFloat(booking.total_price).toLocaleString()}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Link href={`/bookings/hotel/${booking.id}`}>
                   <Button variant="outline" size="sm">
                     <Building2 className="mr-2 h-4 w-4" />
-                    View Details
+                    View Booking
                   </Button>
                 </Link>
+                {booking.status === "pending" && !isPast && (
+                  <Button variant="outline" size="sm" onClick={() => setShowModify(true)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Modify
+                  </Button>
+                )}
+                {booking.hotel_provider_id && (
+                  <ContactDialog
+                    recipientId={booking.hotel_provider_id}
+                    recipientName={booking.hotel_name}
+                    relatedToType="hotel"
+                    relatedToId={booking.id}
+                    relatedToName={booking.hotel_name}
+                  >
+                    <Button variant="outline" size="sm">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      {booking.status === "confirmed" ? "Contact Host" : "Message"}
+                    </Button>
+                  </ContactDialog>
+                )}
                 {(booking.status === "pending" || booking.status === "confirmed") && !isPast && (
                   <Button variant="ghost" size="sm" onClick={onCancel} className="text-destructive hover:text-destructive">
                     <XCircle className="mr-2 h-4 w-4" />
@@ -236,6 +525,14 @@ function HotelBookingCard({ booking, onCancel }: { booking: HotelBookingListItem
           </div>
         </div>
       </CardContent>
+      {showModify && (
+        <ModifyHotelBookingDialog
+          booking={booking}
+          open={showModify}
+          onClose={() => setShowModify(false)}
+          onSuccess={onModified}
+        />
+      )}
     </Card>
   )
 }
@@ -532,9 +829,10 @@ function TransportBookingCard({ booking }: { booking: TransportBooking }) {
   )
 }
 
-function GuideBookingCard({ booking, onCancel }: { booking: GuideBooking; onCancel: () => void }) {
+function GuideBookingCard({ booking, onCancel, onModified }: { booking: GuideBooking; onCancel: () => void; onModified: () => void }) {
   const bookingDate = new Date(booking.booking_date)
   const isPast = bookingDate < new Date()
+  const [showModify, setShowModify] = useState(false)
 
   const statusColors: Record<string, string> = {
     pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
@@ -556,8 +854,19 @@ function GuideBookingCard({ booking, onCancel }: { booking: GuideBooking; onCanc
     <Card className={isPast ? "opacity-75" : ""}>
       <CardContent className="p-0">
         <div className="flex flex-col sm:flex-row">
-          <div className="relative flex h-32 w-full items-center justify-center bg-teal-50 dark:bg-teal-950/20 sm:h-auto sm:w-40 sm:rounded-l-lg">
-            <Compass className="h-12 w-12 text-teal-400" />
+          <div className="relative h-32 w-full sm:h-auto sm:w-40">
+            {booking.guide.photo_url ? (
+              <Image
+                src={getMediaUrl(booking.guide.photo_url) || "/placeholder.svg?height=160&width=160"}
+                alt={booking.guide.title}
+                fill
+                className="object-cover sm:rounded-l-lg"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-teal-50 dark:bg-teal-950/20 sm:rounded-l-lg">
+                <Compass className="h-12 w-12 text-teal-400" />
+              </div>
+            )}
             <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-teal-600 px-2 py-0.5 text-xs font-medium text-white">
               <Compass className="h-3 w-3" />
               Guide
@@ -625,15 +934,36 @@ function GuideBookingCard({ booking, onCancel }: { booking: GuideBooking; onCanc
               <div>
                 <span className="text-sm text-muted-foreground">Total</span>
                 <p className="text-lg font-bold">
-                  {booking.currency} {parseFloat(booking.total_price).toLocaleString()}
+                  ETB {parseFloat(booking.total_price).toLocaleString()}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Link href={`/guides/${booking.guide.slug}`}>
                   <Button variant="outline" size="sm">
+                    <Compass className="mr-2 h-4 w-4" />
                     View Guide
                   </Button>
                 </Link>
+                {booking.status === "pending" && !isPast && (
+                  <Button variant="outline" size="sm" onClick={() => setShowModify(true)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Modify
+                  </Button>
+                )}
+                {booking.guide.provider_id && (
+                  <ContactDialog
+                    recipientId={booking.guide.provider_id}
+                    recipientName={booking.guide.title}
+                    relatedToType="guide"
+                    relatedToId={booking.id}
+                    relatedToName={booking.guide.title}
+                  >
+                    <Button variant="outline" size="sm">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      {booking.status === "confirmed" ? "Contact Guide" : "Message"}
+                    </Button>
+                  </ContactDialog>
+                )}
                 {(booking.status === "pending" || booking.status === "confirmed") && !isPast && (
                   <Button variant="ghost" size="sm" onClick={onCancel} className="text-destructive hover:text-destructive">
                     <XCircle className="mr-2 h-4 w-4" />
@@ -645,14 +975,22 @@ function GuideBookingCard({ booking, onCancel }: { booking: GuideBooking; onCanc
           </div>
         </div>
       </CardContent>
+      {showModify && (
+        <ModifyGuideBookingDialog
+          booking={booking}
+          open={showModify}
+          onClose={() => setShowModify(false)}
+          onSuccess={onModified}
+        />
+      )}
     </Card>
   )
 }
 
-function BookingCard({ booking, onCancel }: { booking: Booking; onCancel: () => void }) {
+function BookingCard({ booking, onCancel, onModified }: { booking: Booking; onCancel: () => void; onModified: () => void }) {
   switch (booking.type) {
     case "hotel":
-      return <HotelBookingCard booking={booking as any} onCancel={onCancel} />
+      return <HotelBookingCard booking={booking as any} onCancel={onCancel} onModified={onModified} />
     case "restaurant":
       return <RestaurantReservationCard booking={booking as any} onCancel={onCancel} />
     case "package":
@@ -723,20 +1061,19 @@ export default function BookingsPage() {
   const [guideCancelReason, setGuideCancelReason] = useState("")
   const [isCancellingGuide, setIsCancellingGuide] = useState(false)
 
-  useEffect(() => {
-    async function loadGuideBookings() {
-      setGuideBookingsLoading(true)
-      try {
-        const data = await getMyGuideBookings()
-        setGuideBookings(data)
-      } catch {
-        setGuideBookings([])
-      } finally {
-        setGuideBookingsLoading(false)
-      }
+  async function loadGuideBookings() {
+    setGuideBookingsLoading(true)
+    try {
+      const data = await getMyGuideBookings()
+      setGuideBookings(data)
+    } catch {
+      setGuideBookings([])
+    } finally {
+      setGuideBookingsLoading(false)
     }
-    loadGuideBookings()
-  }, [])
+  }
+
+  useEffect(() => { loadGuideBookings() }, [])
 
   const handleCancelGuideBooking = async () => {
     if (!guideCancelDialog.booking) return
@@ -907,10 +1244,11 @@ export default function BookingsPage() {
         <TabsContent value="upcoming" className="space-y-4">
           {upcomingBookings.length > 0 ? (
             upcomingBookings.map((booking: Booking) => (
-              <BookingCard 
-                key={booking.id} 
-                booking={booking} 
+              <BookingCard
+                key={booking.id}
+                booking={booking}
                 onCancel={() => setCancelDialog({ open: true, booking })}
+                onModified={() => mutate()}
               />
             ))
           ) : (
@@ -921,10 +1259,11 @@ export default function BookingsPage() {
         <TabsContent value="pending" className="space-y-4">
           {pendingBookings.length > 0 ? (
             pendingBookings.map((booking: Booking) => (
-              <BookingCard 
-                key={booking.id} 
-                booking={booking} 
+              <BookingCard
+                key={booking.id}
+                booking={booking}
                 onCancel={() => setCancelDialog({ open: true, booking })}
+                onModified={() => mutate()}
               />
             ))
           ) : (
@@ -939,6 +1278,7 @@ export default function BookingsPage() {
                 key={booking.id}
                 booking={booking}
                 onCancel={() => {}}
+                onModified={() => mutate()}
               />
             ))
           ) : (
@@ -957,6 +1297,7 @@ export default function BookingsPage() {
                 key={booking.id}
                 booking={booking}
                 onCancel={() => setGuideCancelDialog({ open: true, booking })}
+                onModified={loadGuideBookings}
               />
             ))
           ) : (

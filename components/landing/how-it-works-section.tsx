@@ -42,7 +42,7 @@ export function HowItWorksSection() {
           </span>
           <h2 className="mb-4 text-3xl font-bold tracking-tight md:text-4xl">How It Works</h2>
           <p className="text-lg text-muted-foreground">
-            Finding and booking your ideal stay in Ethiopia is easy with AMAN
+            Finding and booking your ideal stay in Ethiopia is easy with Alga Ale
           </p>
         </div>
 

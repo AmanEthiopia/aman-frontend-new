@@ -68,7 +68,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Top Navigation Bar */}
         <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
-            <Link href="/home" className="flex items-center gap-2" aria-label="AMAN home">
+            <Link href="/home" className="flex items-center gap-2" aria-label="Alga Ale home">
               <AmanMark size={32} variant="stacked" className="rounded-md" />
               <AmanWordmark height={22} className="hidden sm:block" />
             </Link>

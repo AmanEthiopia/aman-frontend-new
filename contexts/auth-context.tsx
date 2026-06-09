@@ -12,9 +12,9 @@ interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   isAuthReady: boolean
-  login: (email: string, password: string) => Promise<void>
-  loginWithGoogle: (idToken: string) => Promise<void>
-  registerWithGoogle: (idToken: string, role?: "traveler" | "provider") => Promise<void>
+  login: (email: string, password: string, redirectTo?: string) => Promise<void>
+  loginWithGoogle: (idToken: string, redirectTo?: string) => Promise<void>
+  registerWithGoogle: (idToken: string, role?: "traveler" | "provider", redirectTo?: string) => Promise<void>
   register: (payload: authAPI.RegisterPayload) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
@@ -76,7 +76,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function login(email: string, password: string) {
+  function safeRedirect(redirectTo: string | undefined, isProvider: boolean): string {
+    // Only allow relative paths to prevent open redirect attacks
+    if (redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
+      return redirectTo
+    }
+    return isProvider ? "/provider" : "/home"
+  }
+
+  async function login(email: string, password: string, redirectTo?: string) {
     setIsLoading(true)
     try {
       const response = await authAPI.login({ email, password })
@@ -87,8 +95,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profileData = await authAPI.getCurrentUser()
       setUserProfile(profileData)
 
-      setRoleCookie(profileData?.role?.is_provider ? "provider" : "traveler")
-      router.push(profileData?.role?.is_provider ? "/provider" : "/home")
+      const isProvider = !!profileData?.role?.is_provider
+      setRoleCookie(isProvider ? "provider" : "traveler")
+      router.push(safeRedirect(redirectTo, isProvider))
     } catch (error) {
       throw error
     } finally {
@@ -96,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function loginWithGoogle(idToken: string) {
+  async function loginWithGoogle(idToken: string, redirectTo?: string) {
     setIsLoading(true)
     try {
       const response = await authAPI.loginWithGoogle(idToken)
@@ -106,11 +115,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const profileData = await authAPI.getCurrentUser()
       setUserProfile(profileData)
-      
-      // Redirect based on user role
-      const isProvider = profileData?.role?.is_provider
+
+      const isProvider = !!profileData?.role?.is_provider
       setRoleCookie(isProvider ? "provider" : "traveler")
-      router.push(isProvider ? "/provider" : "/home")
+      router.push(safeRedirect(redirectTo, isProvider))
     } catch (error) {
       throw error
     } finally {
@@ -118,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function registerWithGoogle(idToken: string, role?: "traveler" | "provider") {
+  async function registerWithGoogle(idToken: string, role?: "traveler" | "provider", redirectTo?: string) {
     setIsLoading(true)
     try {
       const response = await authAPI.registerWithGoogle(idToken, role)
@@ -128,11 +136,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const profileData = await authAPI.getCurrentUser()
       setUserProfile(profileData)
-      
-      // Redirect based on user role
+
       const isProvider = profileData?.role?.is_provider || role === "provider"
       setRoleCookie(isProvider ? "provider" : "traveler")
-      router.push(isProvider ? "/provider" : "/home")
+      router.push(safeRedirect(redirectTo, !!isProvider))
     } catch (error) {
       throw error
     } finally {

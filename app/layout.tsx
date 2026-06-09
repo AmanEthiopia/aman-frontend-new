@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Inter, Geist_Mono } from "next/font/google"
+import Script from "next/script"
 import "./globals.css"
 import { AppProvider } from "@/lib/contexts/app-context"
 import { AuthProvider } from "@/contexts/auth-context"
@@ -10,9 +11,9 @@ const inter = Inter({ subsets: ["latin"] })
 const geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "AMAN | Trust-First Ethiopian Travel & Hospitality Platform",
+  title: "Alga Ale | Trust-First Ethiopian Travel & Local Intelligence",
   description:
-    "Discover verified hotels, restaurants, transport, and experiences across Ethiopia. AMAN provides trusted stays and local intelligence for travelers.",
+    "Discover verified hotels, restaurants, transport, and experiences across Ethiopia. Alga Ale — a Yichalal Family Initiative — provides trusted stays and local intelligence for travelers.",
   keywords: [
     "Ethiopia hotels",
     "Ethiopia travel",
@@ -23,19 +24,17 @@ export const metadata: Metadata = {
     "safe travel Ethiopia",
     "Ethiopian experiences",
   ],
-  authors: [{ name: "AMAN" }],
+  authors: [{ name: "Alga Ale" }],
   openGraph: {
-    title: "AMAN | Trust-First Ethiopian Travel & Hospitality Platform",
+    title: "Alga Ale | Trust-First Ethiopian Travel & Local Intelligence",
     description: "Discover verified hotels, restaurants, transport, and experiences across Ethiopia.",
     type: "website",
     locale: "en_US",
   },
   icons: {
-    icon: [
-      { url: "/brand/aman-logo-square.jpeg", type: "image/jpeg" },
-    ],
-    shortcut: "/brand/aman-logo-square.jpeg",
-    apple: "/brand/aman-logo-square.jpeg",
+    icon: [{ url: "/brand/icon.svg", type: "image/svg+xml" }],
+    shortcut: "/brand/icon.svg",
+    apple: "/brand/icon.svg",
   },
 }
 
@@ -56,6 +55,21 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
+        {/* Hidden Google Translate widget — reads googtrans cookie on load */}
+        <div id="google_translate_element" style={{ display: "none" }} />
+        <Script id="google-translate-init" strategy="afterInteractive">{`
+          window.googleTranslateElementInit = function() {
+            new window.google.translate.TranslateElement({
+              pageLanguage: 'en',
+              includedLanguages: 'am,en',
+              autoDisplay: false
+            }, 'google_translate_element');
+          };
+        `}</Script>
+        <Script
+          src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+          strategy="afterInteractive"
+        />
         <AppProvider>
           <AuthProvider>
             <TestBanner />

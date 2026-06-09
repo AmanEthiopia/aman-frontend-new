@@ -369,3 +369,11 @@ export async function revokeSession(sessionId: string): Promise<void> {
 export async function revokeAllOtherSessions(): Promise<void> {
   return apiPost("/auth/sessions/revoke-all/", {})
 }
+
+/**
+ * Permanently delete the authenticated user's account
+ * Requires password confirmation
+ */
+export async function deleteAccount(password: string): Promise<void> {
+  await apiPost("/auth/delete-account/", { password })
+}

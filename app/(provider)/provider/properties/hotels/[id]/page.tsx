@@ -32,6 +32,8 @@ import {
   ImagePlus,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Hash,
 } from "lucide-react"
 import { getRoomUnits, createRoomUnit, updateRoomUnit, deleteRoomUnit } from "@/lib/api/hotels"
@@ -376,7 +378,7 @@ function RoomPhotosSection({ hotelId, roomId }: { hotelId: string; roomId: strin
   )
 }
 
-function HotelPhotosSection({ hotelId }: { hotelId: string }) {
+function HotelPhotosSection({ hotelId, onPhotosChange }: { hotelId: string; onPhotosChange?: () => void }) {
   const [photos, setPhotos] = useState<PropertyPhoto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
@@ -408,6 +410,7 @@ function HotelPhotosSection({ hotelId }: { hotelId: string }) {
     try {
       const photo = await providerAPI.uploadHotelPhoto(hotelId, file, photoType)
       setPhotos((p) => [...p, photo])
+      onPhotosChange?.()
       toast.success("Photo uploaded")
     } catch {
       toast.error("Failed to upload photo")
@@ -421,6 +424,7 @@ function HotelPhotosSection({ hotelId }: { hotelId: string }) {
     try {
       await providerAPI.deleteHotelPhoto(hotelId, photoId)
       setPhotos((p) => p.filter((x) => x.id !== photoId))
+      onPhotosChange?.()
       toast.success("Photo deleted")
     } catch {
       toast.error("Failed to delete photo")
@@ -431,6 +435,7 @@ function HotelPhotosSection({ hotelId }: { hotelId: string }) {
     try {
       await providerAPI.setHotelPhotoPrimary(hotelId, photoId)
       await loadPhotos()
+      onPhotosChange?.()
       toast.success("Cover photo updated")
     } catch {
       toast.error("Failed to set primary photo")
@@ -448,6 +453,7 @@ function HotelPhotosSection({ hotelId }: { hotelId: string }) {
         hotelId,
         newPhotos.map((p, i) => ({ id: p.id, display_order: i + 1 }))
       )
+      onPhotosChange?.()
     } catch {
       toast.error("Failed to reorder photos")
       await loadPhotos()
@@ -573,48 +579,66 @@ function AddRoomModal({
   onSuccess: () => void
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState<CreateRoomPayload>({
+  const [customAmenityInput, setCustomAmenityInput] = useState("")
+  const [amenities, setAmenities] = useState<string[]>([])
+  const [priceUsd, setPriceUsd] = useState<number | "">("")
+  const [priceEtb, setPriceEtb] = useState<number | "">("")
+  const [formData, setFormData] = useState<Omit<CreateRoomPayload, "amenities" | "price_per_night" | "price_etb">>({
     name: "",
     description: "",
     room_type: "standard",
-    price_per_night: 0,
     max_guests: 2,
     bed_type: "Queen",
-    amenities: [],
     quantity: 1,
   })
 
-  const updateField = <K extends keyof CreateRoomPayload>(key: K, value: CreateRoomPayload[K]) => {
+  const updateField = <K extends keyof typeof formData>(key: K, value: (typeof formData)[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }))
   }
 
   const toggleAmenity = (amenity: string) => {
-    const amenities = formData.amenities || []
-    if (amenities.includes(amenity)) {
-      updateField("amenities", amenities.filter((a) => a !== amenity))
-    } else {
-      updateField("amenities", [...amenities, amenity])
-    }
+    setAmenities((prev) =>
+      prev.includes(amenity) ? prev.filter((a) => a !== amenity) : [...prev, amenity]
+    )
+  }
+
+  const addCustomAmenity = () => {
+    const val = customAmenityInput.trim()
+    if (!val || amenities.includes(val)) return
+    setAmenities((prev) => [...prev, val])
+    setCustomAmenityInput("")
+  }
+
+  const removeCustomAmenity = (amenity: string) => {
+    setAmenities((prev) => prev.filter((a) => a !== amenity))
+  }
+
+  const customAmenities = amenities.filter((a) => !ROOM_AMENITIES.includes(a))
+
+  const handleClose = () => {
+    setFormData({ name: "", description: "", room_type: "standard", max_guests: 2, bed_type: "Queen", quantity: 1 })
+    setAmenities([])
+    setPriceUsd("")
+    setPriceEtb("")
+    setCustomAmenityInput("")
+    onClose()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!priceUsd && !priceEtb) {
+      toast.error("Please enter at least one price (ETB or USD)")
+      return
+    }
     setIsSubmitting(true)
     try {
-      await providerAPI.createRoom(hotelId, formData)
+      const payload: CreateRoomPayload = { ...formData, amenities }
+      if (priceUsd !== "" && Number(priceUsd) > 0) payload.price_per_night = Number(priceUsd)
+      if (priceEtb !== "" && Number(priceEtb) > 0) payload.price_etb = Number(priceEtb)
+      await providerAPI.createRoom(hotelId, payload)
       toast.success("Room added successfully")
       onSuccess()
-      onClose()
-      setFormData({
-        name: "",
-        description: "",
-        room_type: "standard",
-        price_per_night: 0,
-        max_guests: 2,
-        bed_type: "Queen",
-        amenities: [],
-        quantity: 1,
-      })
+      handleClose()
     } catch (error) {
       console.error("[v0] Failed to create room:", error)
       toast.error("Failed to add room")
@@ -624,7 +648,7 @@ function AddRoomModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Room</DialogTitle>
@@ -675,19 +699,51 @@ function AddRoomModal({
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-4">
-            <div className="space-y-2">
-              <Label htmlFor="price">Price/Night (USD) *</Label>
-              <Input
-                id="price"
-                type="number"
-                min={1}
-                value={formData.price_per_night || ""}
-                onChange={(e) => updateField("price_per_night", Number(e.target.value))}
-                placeholder="120"
-                required
-              />
+          {/* Pricing */}
+          <div className="space-y-2">
+            <Label>Price per Night</Label>
+            <p className="text-xs text-muted-foreground">Enter price in ETB, USD, or both — no conversion needed</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="add_price_etb" className="text-sm font-normal text-muted-foreground">
+                  ETB (Ethiopian Birr)
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground select-none">ETB</span>
+                  <Input
+                    id="add_price_etb"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    className="pl-14"
+                    value={priceEtb}
+                    onChange={(e) => setPriceEtb(e.target.value === "" ? "" : Number(e.target.value))}
+                    placeholder="e.g., 5000"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="add_price_usd" className="text-sm font-normal text-muted-foreground">
+                  USD (US Dollar)
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground select-none">$</span>
+                  <Input
+                    id="add_price_usd"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    className="pl-8"
+                    value={priceUsd}
+                    onChange={(e) => setPriceUsd(e.target.value === "" ? "" : Number(e.target.value))}
+                    placeholder="e.g., 120"
+                  />
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="max_guests">Max Guests *</Label>
               <Input
@@ -723,14 +779,14 @@ function AddRoomModal({
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label>Room Amenities</Label>
             <div className="grid gap-2 sm:grid-cols-3">
               {ROOM_AMENITIES.map((amenity) => (
                 <div key={amenity} className="flex items-center space-x-2">
                   <Checkbox
                     id={`room-amenity-${amenity}`}
-                    checked={formData.amenities?.includes(amenity)}
+                    checked={amenities.includes(amenity)}
                     onCheckedChange={() => toggleAmenity(amenity)}
                   />
                   <Label htmlFor={`room-amenity-${amenity}`} className="cursor-pointer text-sm">
@@ -739,10 +795,51 @@ function AddRoomModal({
                 </div>
               ))}
             </div>
+
+            {/* Custom amenity chips */}
+            {customAmenities.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {customAmenities.map((amenity) => (
+                  <Badge key={amenity} variant="secondary" className="gap-1 pr-1 text-sm">
+                    {amenity}
+                    <button
+                      type="button"
+                      onClick={() => removeCustomAmenity(amenity)}
+                      className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Add custom amenity */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add custom amenity (e.g., Sea View)"
+                value={customAmenityInput}
+                onChange={(e) => setCustomAmenityInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); addCustomAmenity() }
+                }}
+                className="max-w-xs"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addCustomAmenity}
+                disabled={!customAmenityInput.trim()}
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                Add
+              </Button>
+            </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
@@ -810,9 +907,16 @@ function RoomCard({
                   <Bed className="h-4 w-4 text-muted-foreground" />
                   {room.bed_type}
                 </span>
-                <span className="font-medium text-primary">
-                  ${room.base_price ?? room.price_per_night}/night
-                </span>
+                {(room.base_price || room.price_per_night) ? (
+                  <span className="font-medium text-primary">
+                    ${Number(room.base_price ?? room.price_per_night).toLocaleString()}/night
+                  </span>
+                ) : null}
+                {room.price_etb ? (
+                  <span className="font-medium text-primary">
+                    {Number(room.price_etb).toLocaleString()} ETB/night
+                  </span>
+                ) : null}
               </div>
               {room.amenities.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
@@ -873,16 +977,27 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
+  const [heroPhotos, setHeroPhotos] = useState<PropertyPhoto[]>([])
+  const [heroSlide, setHeroSlide] = useState(0)
 
   useEffect(() => {
     loadHotel()
   }, [resolvedParams.id])
+
+  async function loadHeroPhotos(hotelId: string) {
+    try {
+      const data = await providerAPI.getHotelPhotos(hotelId)
+      setHeroPhotos(data)
+      setHeroSlide(0)
+    } catch { /* silent — hero falls back to cover_photo_url */ }
+  }
 
   async function loadHotel() {
     setIsLoading(true)
     try {
       const data = await providerAPI.getMyHotel(resolvedParams.id)
       setHotel(data)
+      loadHeroPhotos(resolvedParams.id)
     } catch (error) {
       console.error("[v0] Failed to load hotel:", error)
       toast.error("Failed to load hotel data")
@@ -1012,15 +1127,52 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
         <div className="lg:col-span-2">
           <Card className="overflow-hidden">
             <div className="relative aspect-[16/9]">
-              {hotel.cover_photo_url ? (
+              {heroPhotos.length > 0 ? (
+                <>
+                  <img
+                    src={getMediaUrl(heroPhotos[heroSlide].url) || "/placeholder.svg"}
+                    alt={hotel.name}
+                    className="h-full w-full object-cover transition-opacity duration-300"
+                  />
+                  {heroPhotos.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setHeroSlide((i) => (i - 1 + heroPhotos.length) % heroPhotos.length)}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 transition-colors"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHeroSlide((i) => (i + 1) % heroPhotos.length)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 transition-colors"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                        {heroPhotos.map((_, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setHeroSlide(i)}
+                            className={`h-1.5 rounded-full transition-all ${i === heroSlide ? "w-4 bg-white" : "w-1.5 bg-white/50"}`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : hotel.cover_photo_url ? (
                 <img
                   src={getMediaUrl(hotel.cover_photo_url)}
                   alt={hotel.name}
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-muted">
+                <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-muted">
                   <Camera className="h-16 w-16 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">No photos uploaded yet</p>
                 </div>
               )}
               <div className="absolute left-4 top-4 flex gap-2">
@@ -1031,6 +1183,11 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
                 {!hotel.is_active && (
                   <Badge variant="secondary" className="bg-gray-900/70 text-white">
                     Inactive
+                  </Badge>
+                )}
+                {heroPhotos.length > 1 && (
+                  <Badge className="bg-background/90 text-foreground">
+                    {heroSlide + 1}/{heroPhotos.length}
                   </Badge>
                 )}
               </div>
@@ -1055,13 +1212,15 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div className="rounded-lg bg-muted/50 p-3 text-center">
                   <Bed className="mx-auto h-5 w-5 text-muted-foreground" />
-                  <p className="mt-2 text-xs text-muted-foreground">Total Rooms</p>
-                  <p className="font-semibold">{hotel.total_rooms || 0}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">Room Types</p>
+                  <p className="font-semibold">{hotel.rooms?.length ?? 0}</p>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-3 text-center">
                   <CheckCircle2 className="mx-auto h-5 w-5 text-green-600" />
-                  <p className="mt-2 text-xs text-muted-foreground">Available</p>
-                  <p className="font-semibold">{hotel.available_rooms || 0}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">Total Units</p>
+                  <p className="font-semibold">
+                    {(hotel.rooms ?? []).reduce((sum, r) => sum + (r.total_units ?? (r as any).quantity ?? 0), 0)}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -1163,7 +1322,10 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
       </Card>
 
       {/* Hotel Photos */}
-      <HotelPhotosSection hotelId={hotel.id} />
+      <HotelPhotosSection
+        hotelId={hotel.id}
+        onPhotosChange={() => loadHeroPhotos(hotel.id)}
+      />
 
       {/* Add Room Modal */}
       <AddRoomModal

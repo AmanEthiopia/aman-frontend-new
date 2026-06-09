@@ -9,12 +9,12 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
           {/* Brand */}
           <div className="flex flex-col gap-4 lg:col-span-2">
-            <Link href="/" className="inline-flex w-fit items-center gap-3 py-2" aria-label="AMAN home">
+            <Link href="/" className="inline-flex w-fit items-center gap-3 py-2" aria-label="Alga Ale home">
               <AmanWordmark height={40} />
-              <span className="font-serif text-xl text-muted-foreground">አማን</span>
+              <span className="font-serif text-xl text-muted-foreground">አልጋ አለ</span>
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">
-              Your trusted platform for verified hotels, restaurants, transport, and experiences across Ethiopia.
+              A Yichalal Family Initiative — connecting locals, diaspora, and foreign travelers with verified hotels, experiences, and transport across Ethiopia.
             </p>
             {/* Safety Promise */}
             <div className="mt-2 rounded-lg border border-border bg-card p-3">
@@ -23,7 +23,7 @@ export function Footer() {
                 <div>
                   <p className="text-xs font-medium">If something goes wrong</p>
                   <p className="text-xs text-muted-foreground">
-                    If a booking fails, changes, or feels unsafe — AMAN steps in.
+                    If a booking fails, changes, or feels unsafe — Alga Ale steps in.
                   </p>
                 </div>
               </div>
@@ -101,15 +101,15 @@ export function Footer() {
                   <p>Police: 991 | Ambulance: 907</p>
                 </div>
               </div>
-              <a href="mailto:support@aman.et" className="text-muted-foreground hover:text-foreground">
-                support@aman.et
+              <a href="mailto:support@algaale.com" className="text-muted-foreground hover:text-foreground">
+                support@algaale.com
               </a>
             </div>
           </div>
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
-          <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} AMAN. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Alga Ale. A Yichalal Family Initiative. All rights reserved.</p>
           <div className="flex flex-wrap justify-center gap-6">
             <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
               Privacy Policy

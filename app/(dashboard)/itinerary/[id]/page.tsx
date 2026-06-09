@@ -55,6 +55,7 @@ import {
   type ItemType,
   type ItemStatus,
   type CreateItemPayload,
+  type UpdateItemPayload,
 } from "@/lib/api/itinerary"
 import { searchHotels, type Hotel } from "@/lib/api/hotels"
 import { getRestaurants, type Restaurant } from "@/lib/api/restaurants"
@@ -206,10 +207,17 @@ function AddItemDialog({
   const [customLocation, setCustomLocation] = useState("")
   const { toast } = useToast()
 
-  const isCustomType = itemType === "custom" || itemType === "transport"
+  const isDualMode = itemType === "custom" || itemType === "transport"
+  const [subMode, setSubMode] = useState<"search" | "manual">("search")
+  const [customSubType, setCustomSubType] = useState<"hotel" | "restaurant" | "attraction" | "experience" | "guide">("hotel")
+  const isManualMode = isDualMode && subMode === "manual"
+  const effectiveSearchType: ItemType =
+    itemType === "transport" ? "guide" :
+    itemType === "custom" ? customSubType :
+    itemType
 
   const handleSearch = useCallback(async () => {
-    if (isCustomType) return
+    if (isManualMode) return
     if (!searchQuery.trim()) {
       setSearchResults([])
       return
@@ -218,7 +226,7 @@ function AddItemDialog({
     setSearching(true)
     try {
       let results: any[] = []
-      switch (itemType) {
+      switch (effectiveSearchType) {
         case "hotel":
           const hotelRes = await searchHotels({ search: searchQuery })
           results = hotelRes.results || []
@@ -243,7 +251,7 @@ function AddItemDialog({
     } finally {
       setSearching(false)
     }
-  }, [itemType, searchQuery, isCustomType])
+  }, [effectiveSearchType, searchQuery, isManualMode])
 
   useEffect(() => {
     const debounce = setTimeout(handleSearch, 300)
@@ -261,31 +269,35 @@ function AddItemDialog({
     setCustomTitle("")
     setCustomDescription("")
     setCustomLocation("")
+    setSubMode("search")
+    setCustomSubType("hotel")
   }
 
   const handleSubmit = async () => {
-    if (!isCustomType && !selectedResource) {
-      toast({ title: "Please select an item", variant: "destructive" })
-      return
-    }
-    if (isCustomType && !customTitle.trim()) {
+    if (isManualMode && !customTitle.trim()) {
       toast({ title: "Please enter a title", variant: "destructive" })
       return
     }
+    if (!isManualMode && !selectedResource) {
+      toast({ title: "Please select an item", variant: "destructive" })
+      return
+    }
+
+    const effectiveItemType: ItemType = isManualMode ? itemType : effectiveSearchType
 
     setLoading(true)
     try {
       const payload: CreateItemPayload = {
-        item_type: itemType,
+        item_type: effectiveItemType,
         time_slot: timeSlot || undefined,
         duration_minutes: durationMinutes ? parseInt(durationMinutes, 10) : undefined,
         notes: notes || undefined,
         status: "planned",
       }
 
-      // Add resource ID based on type
-      if (selectedResource) {
-        switch (itemType) {
+      // Add resource ID based on effective type
+      if (selectedResource && !isManualMode) {
+        switch (effectiveItemType) {
           case "hotel":
             payload.hotel_id = selectedResource.id
             break
@@ -304,8 +316,8 @@ function AddItemDialog({
         }
       }
 
-      // For custom/transport items
-      if (isCustomType) {
+      // For manual entry items
+      if (isManualMode) {
         payload.title = customTitle
         payload.description = customDescription || undefined
         payload.location = customLocation || undefined
@@ -355,7 +367,105 @@ function AddItemDialog({
             </Select>
           </div>
 
-          {!isCustomType ? (
+          {isDualMode ? (
+            <Tabs value={subMode} onValueChange={(v) => { setSubMode(v as "search" | "manual"); setSelectedResource(null); setSearchResults([]); setSearchQuery("") }}>
+              <TabsList className="w-full">
+                <TabsTrigger value="search" className="flex-1">
+                  {itemType === "transport" ? "Find Driver/Guide" : "Search Aman"}
+                </TabsTrigger>
+                <TabsTrigger value="manual" className="flex-1">
+                  Custom Entry
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="search" className="mt-2 space-y-2">
+                {itemType === "custom" && (
+                  <Select value={customSubType} onValueChange={(v) => { setCustomSubType(v as any); setSelectedResource(null); setSearchResults([]); setSearchQuery("") }}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(["hotel", "restaurant", "attraction", "experience", "guide"] as const).map((type) => {
+                        const SubIcon = itemTypeConfig[type].icon
+                        return (
+                          <SelectItem key={type} value={type}>
+                            <div className="flex items-center gap-2">
+                              <SubIcon className="h-4 w-4" />
+                              {itemTypeConfig[type].label}
+                            </div>
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Input
+                  placeholder={`Search for a ${itemType === "transport" ? "driver or guide" : itemTypeConfig[effectiveSearchType].label.toLowerCase()}...`}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searching && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Searching...
+                  </div>
+                )}
+                {searchResults.length > 0 && (
+                  <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
+                    {searchResults.map((result) => (
+                      <button
+                        key={result.id}
+                        type="button"
+                        className={`w-full rounded-md p-2 text-left text-sm transition-colors hover:bg-accent ${
+                          selectedResource?.id === result.id ? "bg-primary/10 ring-1 ring-primary" : ""
+                        }`}
+                        onClick={() => setSelectedResource(result)}
+                      >
+                        <p className="font-medium">{getResourceDisplayName(result)}</p>
+                        {result.address && <p className="text-xs text-muted-foreground">{result.address}</p>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {selectedResource && (
+                  <div className="rounded-lg border bg-primary/5 p-3">
+                    <p className="font-medium">Selected: {getResourceDisplayName(selectedResource)}</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="manual" className="mt-2 space-y-2">
+                <div className="space-y-2">
+                  <Label htmlFor="customTitle">Title *</Label>
+                  <Input
+                    id="customTitle"
+                    placeholder={itemType === "transport" ? "e.g., Flight to Lalibela" : "e.g., Visit local market"}
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customDescription">Description</Label>
+                  <Textarea
+                    id="customDescription"
+                    placeholder="Optional description..."
+                    value={customDescription}
+                    onChange={(e) => setCustomDescription(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customLocation">Location</Label>
+                  <Input
+                    id="customLocation"
+                    placeholder="e.g., Merkato, Addis Ababa"
+                    value={customLocation}
+                    onChange={(e) => setCustomLocation(e.target.value)}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+          ) : (
             <div className="space-y-2">
               <Label>Search {itemTypeConfig[itemType].label}</Label>
               <Input
@@ -394,37 +504,6 @@ function AddItemDialog({
                 </div>
               )}
             </div>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="customTitle">Title *</Label>
-                <Input
-                  id="customTitle"
-                  placeholder={itemType === "transport" ? "e.g., Flight to Lalibela" : "e.g., Visit local market"}
-                  value={customTitle}
-                  onChange={(e) => setCustomTitle(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="customDescription">Description</Label>
-                <Textarea
-                  id="customDescription"
-                  placeholder="Optional description..."
-                  value={customDescription}
-                  onChange={(e) => setCustomDescription(e.target.value)}
-                  rows={2}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="customLocation">Location</Label>
-                <Input
-                  id="customLocation"
-                  placeholder="e.g., Merkato, Addis Ababa"
-                  value={customLocation}
-                  onChange={(e) => setCustomLocation(e.target.value)}
-                />
-              </div>
-            </>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -583,6 +662,155 @@ function AddDayDialog({
   )
 }
 
+function EditItemDialog({
+  open,
+  onOpenChange,
+  tripId,
+  dayId,
+  item,
+  onItemUpdated,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  tripId: string
+  dayId: string
+  item: ItineraryItem
+  onItemUpdated: () => void
+}) {
+  const [loading, setLoading] = useState(false)
+  const [timeSlot, setTimeSlot] = useState(item.time_slot || "")
+  const [durationMinutes, setDurationMinutes] = useState(item.duration_minutes ? String(item.duration_minutes) : "")
+  const [notes, setNotes] = useState(item.notes || "")
+  const [status, setStatus] = useState<ItemStatus>(item.status)
+  const [title, setTitle] = useState(item.title || "")
+  const [description, setDescription] = useState(item.description || "")
+  const [location, setLocation] = useState(item.location || "")
+  const { toast } = useToast()
+
+  const isCustomOrTransport = item.item_type === "custom" || item.item_type === "transport"
+
+  const handleSubmit = async () => {
+    setLoading(true)
+    try {
+      const payload: UpdateItemPayload = {
+        status,
+        time_slot: timeSlot || undefined,
+        duration_minutes: durationMinutes ? parseInt(durationMinutes, 10) : undefined,
+        notes: notes || undefined,
+      }
+      if (isCustomOrTransport) {
+        payload.title = title || undefined
+        payload.description = description || undefined
+        payload.location = location || undefined
+      }
+      await updateDayItem(tripId, dayId, item.id, payload)
+      toast({ title: "Activity updated!" })
+      onItemUpdated()
+      onOpenChange(false)
+    } catch (err: any) {
+      toast({ title: err.message || "Failed to update activity", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit Activity</DialogTitle>
+          <DialogDescription>Update details for this activity</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {isCustomOrTransport && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="editTitle">Title *</Label>
+                <Input
+                  id="editTitle"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editDescription">Description</Label>
+                <Textarea
+                  id="editDescription"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editLocation">Location</Label>
+                <Input
+                  id="editLocation"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+              </div>
+            </>
+          )}
+
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <Select value={status} onValueChange={(v) => setStatus(v as ItemStatus)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="planned">Planned</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="editTimeSlot">Time</Label>
+              <Input
+                id="editTimeSlot"
+                type="time"
+                value={timeSlot}
+                onChange={(e) => setTimeSlot(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editDuration">Duration (minutes)</Label>
+              <Input
+                id="editDuration"
+                type="number"
+                placeholder="e.g., 120"
+                value={durationMinutes}
+                onChange={(e) => setDurationMinutes(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="editNotes">Notes</Label>
+            <Textarea
+              id="editNotes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function TripDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -591,17 +819,24 @@ export default function TripDetailPage() {
   
   const [trip, setTrip] = useState<Trip | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pageError, setPageError] = useState<{ notFound: boolean } | null>(null)
   const [addDayOpen, setAddDayOpen] = useState(false)
   const [addItemDay, setAddItemDay] = useState<ItineraryDay | null>(null)
+  const [editingItem, setEditingItem] = useState<{ dayId: string; item: ItineraryItem } | null>(null)
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<{ dayId: string; itemId: string } | null>(null)
   const [deleteConfirmDay, setDeleteConfirmDay] = useState<ItineraryDay | null>(null)
 
   const loadTrip = useCallback(async () => {
+    setLoading(true)
+    setPageError(null)
     try {
       const data = await getTripDetail(tripId)
       setTrip(data)
-    } catch (err) {
-      toast({ title: "Failed to load trip", variant: "destructive" })
+    } catch (err: any) {
+      setPageError({ notFound: err?.status === 404 })
+      if (err?.status !== 404) {
+        toast({ title: "Failed to load trip", variant: "destructive" })
+      }
     } finally {
       setLoading(false)
     }
@@ -674,12 +909,25 @@ export default function TripDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <Calendar className="mb-4 h-12 w-12 text-muted-foreground/50" />
-        <h2 className="text-xl font-semibold">Trip not found</h2>
-        <p className="mt-2 text-muted-foreground">This trip doesn't exist or you don't have access to it.</p>
-        <Button variant="outline" className="mt-6" onClick={() => router.push("/itinerary")}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to My Trips
-        </Button>
+        <h2 className="text-xl font-semibold">
+          {pageError?.notFound ? "Trip not found" : "Failed to load trip"}
+        </h2>
+        <p className="mt-2 text-muted-foreground">
+          {pageError?.notFound
+            ? "This trip doesn't exist or you don't have access to it."
+            : "Something went wrong loading your trip. Please try again."}
+        </p>
+        <div className="mt-6 flex gap-3">
+          {!pageError?.notFound && (
+            <Button variant="outline" onClick={() => loadTrip()}>
+              Try Again
+            </Button>
+          )}
+          <Button variant={pageError?.notFound ? "outline" : "ghost"} onClick={() => router.push("/itinerary")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to My Trips
+          </Button>
+        </div>
       </div>
     )
   }
@@ -782,7 +1030,7 @@ export default function TripDetailPage() {
                       item={item}
                       tripId={tripId}
                       dayId={day.id}
-                      onEdit={() => {}}
+                      onEdit={() => setEditingItem({ dayId: day.id, item })}
                       onDelete={() => setDeleteConfirmItem({ dayId: day.id, itemId: item.id })}
                       onConfirm={() => handleConfirmItem(day.id, item.id)}
                     />
@@ -836,6 +1084,18 @@ export default function TripDetailPage() {
           tripId={tripId}
           dayId={addItemDay.id}
           onItemAdded={loadTrip}
+        />
+      )}
+
+      {/* Edit Item Dialog */}
+      {editingItem && (
+        <EditItemDialog
+          open={!!editingItem}
+          onOpenChange={(open) => { if (!open) setEditingItem(null) }}
+          tripId={tripId}
+          dayId={editingItem.dayId}
+          item={editingItem.item}
+          onItemUpdated={() => { setEditingItem(null); loadTrip() }}
         />
       )}
 

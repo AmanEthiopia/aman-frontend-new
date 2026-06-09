@@ -61,7 +61,7 @@ const testimonials = [
     name: "African Development Bank",
     role: "Travel Coordinator",
     quote:
-      "AMAN has transformed how we manage travel for our 200+ staff. The centralized booking and compliance features are invaluable.",
+      "Alga Ale has transformed how we manage travel for our 200+ staff. The centralized booking and compliance features are invaluable.",
     rating: 5,
   },
   {
@@ -152,7 +152,7 @@ export default function BusinessPage() {
               <Badge className="mb-4 bg-green-600">Security First</Badge>
               <h2 className="text-3xl font-bold">Trusted by Leading Organizations</h2>
               <p className="mt-4 text-muted-foreground">
-                AMAN provides verified accommodations with enhanced security protocols for diplomatic missions,
+                Alga Ale provides verified accommodations with enhanced security protocols for diplomatic missions,
                 international organizations, and corporate travelers.
               </p>
               <ul className="mt-6 space-y-3">

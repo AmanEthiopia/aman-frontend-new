@@ -93,9 +93,9 @@ function AttractionsContent() {
                   slug={attraction.slug}
                   type="attraction"
                   name={attraction.name}
-                  imageUrl={getMediaUrl(attraction.image) || "/placeholder.svg?height=300&width=400&query=attraction"}
-                  location={attraction.city || ""}
-                  city={attraction.city || ""}
+                  imageUrl={getMediaUrl(attraction.photo_url) || "/placeholder.svg?height=300&width=400&query=attraction"}
+                  location={attraction.address || attraction.city_name || attraction.city || ""}
+                  city={attraction.city_name || attraction.city || ""}
                   description={attraction.description || ""}
                   priceDisplay={attraction.entry_fee ? `Entry: ${attraction.entry_fee}` : "Free"}
                   rating={attraction.rating || 0}

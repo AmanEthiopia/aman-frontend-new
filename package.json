@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev",
+    "dev": "node node_modules/next/dist/bin/next dev",
     "lint": "eslint .",
     "start": "next start"
   },

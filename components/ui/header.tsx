@@ -32,7 +32,6 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useApp } from "@/lib/contexts/app-context"
 import { FEATURES } from "@/lib/config/features"
-import { AmanLockup } from "@/components/brand/aman-logo"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -48,6 +47,19 @@ export function Header() {
   const { language, setLanguage, currency, setCurrency } = useApp()
   const userName = [userProfile?.user?.first_name, userProfile?.user?.last_name].filter(Boolean).join(" ") || "User"
   const isProvider = userProfile?.role?.is_provider ?? false
+
+  const handleSetLanguage = (lang: string) => {
+    setLanguage(lang)
+    if (typeof window === "undefined") return
+    if (lang === "en") {
+      document.cookie = "googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC"
+      document.cookie = `googtrans=; path=/; domain=.${location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 UTC`
+    } else {
+      document.cookie = `googtrans=/en/${lang}; path=/`
+      document.cookie = `googtrans=/en/${lang}; path=/; domain=.${location.hostname}`
+    }
+    location.reload()
+  }
 
   const discoverLinks = [
     { href: "/hotels", label: "Hotels & Stays", icon: Hotel },
@@ -69,8 +81,8 @@ export function Header() {
             <span className="text-lg font-bold text-primary-foreground">A</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold leading-none text-foreground">AMAN</span>
-            <span className="text-xs text-muted-foreground">አማን</span>
+            <span className="text-lg font-bold leading-none text-foreground">Alga Ale</span>
+            <span className="text-xs text-muted-foreground">አልጋ አለ</span>
           </div>
         </Link>
 
@@ -128,8 +140,8 @@ export function Header() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Language</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => setLanguage("en")}>English {language === "en" && "✓"}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("am")}>አማርኛ {language === "am" && "✓"}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSetLanguage("en")}>English {language === "en" && "✓"}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSetLanguage("am")}>አማርኛ {language === "am" && "✓"}</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Currency</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => setCurrency("USD")}>

@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import Link from "next/link"
-import { Compass, Loader2, AlertCircle, Hotel, Utensils } from "lucide-react"
+import { Compass, Loader2, AlertCircle, Hotel, Utensils, Map } from "lucide-react"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
@@ -12,11 +12,13 @@ import { getCities, type City } from "@/lib/api/content"
 import { searchHotels } from "@/lib/api/hotels"
 import { getRestaurantsPaginated } from "@/lib/api/restaurants"
 import { getExperiencesPaginated } from "@/lib/api/experiences"
+import { searchGuides } from "@/lib/api/guides"
 
 interface CityCounts {
   hotels: number
   restaurants: number
   experiences: number
+  guides: number
   loading: boolean
 }
 
@@ -28,32 +30,42 @@ function getMediaUrl(path: string | null | undefined): string {
   return `https://api.aman.yichalal.ai/${path}`
 }
 
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export default function CitiesPage() {
   const [cities, setCities] = useState<City[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [liveCounts, setLiveCounts] = useState<Record<string, CityCounts>>({})
+  const rawCities = useRef<City[]>([])
 
-  // Fetch live counts for a single city
   const fetchCityCounts = useCallback(async (city: City) => {
     const citySlug = city.slug
-    
+
     setLiveCounts(prev => ({
       ...prev,
       [citySlug]: {
         hotels: city.hotels_count || 0,
         restaurants: city.restaurants_count || 0,
         experiences: city.experiences_count || 0,
+        guides: city.guides_count || 0,
         loading: true,
       }
     }))
 
     try {
-      // Use paginated endpoints to get accurate total counts
-      const [hotelsRes, restaurantsRes, experiencesRes] = await Promise.all([
+      const [hotelsRes, restaurantsRes, experiencesRes, guidesRes] = await Promise.all([
         searchHotels({ city: citySlug }).catch(() => ({ count: 0 })),
         getRestaurantsPaginated({ city: citySlug }).catch(() => ({ count: 0 })),
         getExperiencesPaginated({ city: citySlug }).catch(() => ({ count: 0 })),
+        searchGuides({ city: citySlug }).catch(() => ({ count: 0, results: [] })),
       ])
 
       setLiveCounts(prev => ({
@@ -62,6 +74,7 @@ export default function CitiesPage() {
           hotels: hotelsRes.count ?? city.hotels_count ?? 0,
           restaurants: restaurantsRes.count ?? city.restaurants_count ?? 0,
           experiences: experiencesRes.count ?? city.experiences_count ?? 0,
+          guides: guidesRes.count ?? city.guides_count ?? 0,
           loading: false,
         }
       }))
@@ -82,8 +95,8 @@ export default function CitiesPage() {
       setLoading(true)
       setError(null)
       const data = await getCities()
-      setCities(data)
-      // Fetch live counts for all cities
+      rawCities.current = data
+      setCities(shuffleArray(data))
       data.forEach(city => fetchCityCounts(city))
     } catch (err: any) {
       setError(err.message || "Failed to load cities")
@@ -92,16 +105,27 @@ export default function CitiesPage() {
     }
   }
 
+  function reshuffle() {
+    setCities(shuffleArray(rawCities.current))
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
         <section className="bg-gradient-to-b from-primary/5 to-background py-12">
-          <div className="container mx-auto px-4">
-            <h1 className="mb-2 text-3xl font-bold tracking-tight md:text-4xl">Explore Ethiopian Cities</h1>
-            <p className="text-muted-foreground">
-              Discover hotels, restaurants, and experiences in Ethiopia&apos;s most popular destinations
-            </p>
+          <div className="container mx-auto px-4 flex items-end justify-between">
+            <div>
+              <h1 className="mb-2 text-3xl font-bold tracking-tight md:text-4xl">Explore Ethiopian Cities</h1>
+              <p className="text-muted-foreground">
+                Discover hotels, restaurants, guides, and experiences in Ethiopia&apos;s most popular destinations
+              </p>
+            </div>
+            {!loading && cities.length > 0 && (
+              <Button variant="outline" size="sm" onClick={reshuffle} className="shrink-0">
+                Shuffle
+              </Button>
+            )}
           </div>
         </section>
 
@@ -131,66 +155,67 @@ export default function CitiesPage() {
               </div>
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {cities.map((city) => (
-                  <Link
-                    key={city.id}
-                    href={`/cities/${city.slug}`}
-                    className="group relative overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-xl"
-                  >
-                    <div className="aspect-[4/3] overflow-hidden">
-                      <img
-                        src={getMediaUrl(city.cover_photo_url) || "/placeholder.svg"}
-                        alt={city.name}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <h2 className="text-2xl font-bold text-white">{city.name}</h2>
-                      {city.nickname && (
-                        <p className="text-sm font-medium text-white/90">{city.nickname}</p>
-                      )}
-                      <p className="text-white/80">{city.country}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/80">
-                        {liveCounts[city.slug]?.loading ? (
-                          <>
-                            <span className="inline-flex items-center gap-1">
-                              <Hotel className="h-3 w-3" />
-                              <span className="inline-block h-3 w-4 animate-pulse rounded bg-white/30" />
-                            </span>
-                            <span className="text-white/50">•</span>
-                            <span className="inline-flex items-center gap-1">
-                              <Utensils className="h-3 w-3" />
-                              <span className="inline-block h-3 w-4 animate-pulse rounded bg-white/30" />
-                            </span>
-                            <span className="text-white/50">•</span>
-                            <span className="inline-flex items-center gap-1">
-                              <Compass className="h-3 w-3" />
-                              <span className="inline-block h-3 w-4 animate-pulse rounded bg-white/30" />
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="inline-flex items-center gap-1">
-                              <Hotel className="h-3 w-3" />
-                              {liveCounts[city.slug]?.hotels ?? city.hotels_count ?? 0} Hotels
-                            </span>
-                            <span className="text-white/50">•</span>
-                            <span className="inline-flex items-center gap-1">
-                              <Utensils className="h-3 w-3" />
-                              {liveCounts[city.slug]?.restaurants ?? city.restaurants_count ?? 0} Restaurants
-                            </span>
-                            <span className="text-white/50">•</span>
-                            <span className="inline-flex items-center gap-1">
-                              <Compass className="h-3 w-3" />
-                              {liveCounts[city.slug]?.experiences ?? city.experiences_count ?? 0} Experiences
-                            </span>
-                          </>
-                        )}
+                {cities.map((city) => {
+                  const counts = liveCounts[city.slug]
+                  return (
+                    <Link
+                      key={city.id}
+                      href={`/cities/${city.slug}`}
+                      className="group relative overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-xl"
+                    >
+                      <div className="aspect-[4/3] overflow-hidden">
+                        <img
+                          src={getMediaUrl(city.cover_photo_url) || "/placeholder.svg"}
+                          alt={city.name}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-6">
+                        <h2 className="text-2xl font-bold text-white">{city.name}</h2>
+                        {city.nickname && (
+                          <p className="text-sm font-medium text-white/90">{city.nickname}</p>
+                        )}
+                        <p className="text-white/80">{city.country}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/80">
+                          {counts?.loading ? (
+                            <>
+                              {[Hotel, Utensils, Compass, Map].map((Icon, i) => (
+                                <span key={i} className="inline-flex items-center gap-1">
+                                  {i > 0 && <span className="text-white/50 -ml-1">•</span>}
+                                  <Icon className="h-3 w-3" />
+                                  <span className="inline-block h-3 w-4 animate-pulse rounded bg-white/30" />
+                                </span>
+                              ))}
+                            </>
+                          ) : (
+                            <>
+                              <span className="inline-flex items-center gap-1">
+                                <Hotel className="h-3 w-3" />
+                                {counts?.hotels ?? city.hotels_count ?? 0} Hotels
+                              </span>
+                              <span className="text-white/50">•</span>
+                              <span className="inline-flex items-center gap-1">
+                                <Utensils className="h-3 w-3" />
+                                {counts?.restaurants ?? city.restaurants_count ?? 0} Restaurants
+                              </span>
+                              <span className="text-white/50">•</span>
+                              <span className="inline-flex items-center gap-1">
+                                <Compass className="h-3 w-3" />
+                                {counts?.experiences ?? city.experiences_count ?? 0} Experiences
+                              </span>
+                              <span className="text-white/50">•</span>
+                              <span className="inline-flex items-center gap-1">
+                                <Map className="h-3 w-3" />
+                                {counts?.guides ?? city.guides_count ?? 0} Guides
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             )}
           </div>

@@ -5,7 +5,7 @@ import { X } from "lucide-react"
 
 // Set to false to completely hide the banner
 const SHOW_TEST_BANNER = true
-const BANNER_MESSAGE = "🚀 AMAN is now live for public testing — explore, book, and share your feedback with us!"
+const BANNER_MESSAGE = "🚀 Alga Ale is now live for public testing — explore, book, and share your feedback with us!"
 
 export function TestBanner() {
   const [dismissed, setDismissed] = useState(false)

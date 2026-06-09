@@ -19,6 +19,7 @@ function VerifyEmailForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const emailParam = searchParams.get("email")
+  const redirectParam = searchParams.get("redirect") || undefined
 
   const [email, setEmail] = useState(emailParam || "")
   const [otpCode, setOtpCode] = useState("")
@@ -45,7 +46,8 @@ function VerifyEmailForm() {
       setSuccess(true)
 
       setTimeout(() => {
-        router.push(`/login?email=${encodeURIComponent(email)}`)
+        const loginUrl = `/login?email=${encodeURIComponent(email)}${redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : ""}`
+        router.push(loginUrl)
       }, 2000)
     } catch (err: any) {
       console.error("[v0] Verification error:", err)
@@ -103,9 +105,9 @@ function VerifyEmailForm() {
           <CardDescription>Your account has been successfully verified</CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">
-          <p className="text-sm text-muted-foreground">You can now log in to your AMAN account</p>
+          <p className="text-sm text-muted-foreground">You can now log in to your Alga Ale account</p>
           <Button asChild className="w-full">
-            <Link href={`/login?email=${encodeURIComponent(email)}`}>Go to Login</Link>
+            <Link href={`/login?email=${encodeURIComponent(email)}${redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : ""}`}>Go to Login</Link>
           </Button>
         </CardContent>
       </Card>

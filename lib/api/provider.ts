@@ -111,7 +111,8 @@ export interface ProviderRoom {
   room_type?: "standard" | "deluxe" | "suite" | "executive" | "family"
   // API response uses base_price / max_adults / total_units; frontend form uses the aliases below
   base_price?: number | string
-  price_per_night?: number  // alias for base_price in CreateRoomPayload
+  price_per_night?: number  // alias for base_price in CreateRoomPayload (USD)
+  price_etb?: number        // ETB price (optional alongside USD)
   max_adults?: number
   max_children?: number
   max_guests?: number       // alias for max_adults in CreateRoomPayload
@@ -144,11 +145,13 @@ export interface CreateRoomPayload {
   name: string
   description: string
   room_type: "standard" | "deluxe" | "suite" | "executive" | "family"
-  price_per_night: number
+  price_per_night?: number  // USD price (optional — at least one of price_per_night or price_etb expected)
+  price_etb?: number        // ETB price (optional)
   max_guests: number
   bed_type: string
   amenities?: string[]
   quantity: number
+  gender_restriction?: "none" | "male_only" | "female_only"
 }
 
 // Restaurant Types

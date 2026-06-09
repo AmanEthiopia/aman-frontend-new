@@ -363,6 +363,7 @@ export interface Room {
   total_units?: number
   available_units?: number | null  // null = no dates; number = with dates; 0 = fully booked
   units?: RoomUnit[]
+  gender_restriction?: "none" | "male_only" | "female_only"
 }
 
 export interface RoomImage {
@@ -454,5 +455,6 @@ export type {
 export type {
   VerificationRequest,
   VerificationStatus,
-  VerificationEntityType,
+  VerificationStatusInfo,
+  EntityType as VerificationEntityType,
 } from "@/lib/api/verification"

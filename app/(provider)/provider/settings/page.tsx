@@ -8,6 +8,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -36,7 +37,7 @@ import {
   type PayoutSettings,
   type ProfileCompletion,
 } from "@/lib/api/users"
-import { changePassword } from "@/lib/api/auth"
+import { changePassword, deleteAccount } from "@/lib/api/auth"
 
 // ─── Profile completion banner ────────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ function CompletionBanner({ completion }: { completion: ProfileCompletion | null
 // ─── Provider Settings Page ───────────────────────────────────────────────────
 
 export default function ProviderSettingsPage() {
-  const { userProfile, refreshUser } = useAuth()
+  const { userProfile, refreshUser, logout } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [activeTab, setActiveTab] = useState("profile")
@@ -133,6 +134,11 @@ export default function ProviderSettingsPage() {
   const [showPasswords, setShowPasswords] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
+
+  // ── Delete account ───────────────────────────────────────────────────────
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletePassword, setDeletePassword] = useState("")
+  const [deletingAccount, setDeletingAccount] = useState(false)
 
   // ── Sync profile form when userProfile loads ─────────────────────────────
   useEffect(() => {
@@ -290,6 +296,20 @@ export default function ProviderSettingsPage() {
       setPasswordError(err.message || "Failed to change password")
     } finally {
       setSavingPassword(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) return
+    setDeletingAccount(true)
+    try {
+      await deleteAccount(deletePassword)
+      toast.success("Account deleted successfully")
+      logout()
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete account")
+    } finally {
+      setDeletingAccount(false)
     }
   }
 
@@ -824,7 +844,7 @@ export default function ProviderSettingsPage() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => toast.info("Account deletion — contact support to proceed")}
+                  onClick={() => setDeleteDialogOpen(true)}
                 >
                   Delete Account
                 </Button>
@@ -833,6 +853,53 @@ export default function ProviderSettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setDeletePassword("") }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Account
+            </DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. Your account, all listings, and associated data will be permanently deleted.
+              Enter your password to confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="provider-delete-password">Current Password</Label>
+            <Input
+              id="provider-delete-password"
+              type="password"
+              placeholder="Enter your password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && deletePassword) handleDeleteAccount() }}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => { setDeleteDialogOpen(false); setDeletePassword("") }}
+              disabled={deletingAccount}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={deletingAccount || !deletePassword}
+            >
+              {deletingAccount ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Deleting...</>
+              ) : (
+                "Delete My Account"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

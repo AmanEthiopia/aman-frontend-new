@@ -15,7 +15,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getAttractionBySlug, getAttractions } from "@/lib/api/content"
 import { APIError } from "@/lib/api/client"
 import { getMediaUrl } from "@/lib/utils/media"
-import type { Attraction } from "@/lib/types"
+import { addRecentlyViewed } from "@/lib/utils/recently-viewed"
+import type { Attraction } from "@/lib/api/content"
 import {
   MapPin,
   Phone,
@@ -52,6 +53,14 @@ export default function AttractionDetailPage() {
         // Try to fetch by slug first
         const data = await getAttractionBySlug(slug)
         setAttraction(data)
+        addRecentlyViewed({
+          id: data.id,
+          type: "attraction",
+          name: data.name,
+          imageUrl: data.photo_url || "",
+          slug: data.slug,
+          location: data.address || data.city_name || "",
+        })
       } catch (err) {
         // Fallback to search if direct slug fails
         try {
@@ -143,7 +152,7 @@ export default function AttractionDetailPage() {
                 <p className="mt-2 text-lg text-muted-foreground capitalize">{attraction.category}</p>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="icon"
@@ -151,13 +160,13 @@ export default function AttractionDetailPage() {
               >
                 <Heart className={`h-4 w-4 ${isSaved ? "fill-current text-red-500" : ""}`} />
               </Button>
-<AddToItineraryButton
-  itemType="attraction"
-  itemId={attraction.id}
-  itemName={attraction.name}
-/>
-</div>
-</div>
+              <AddToItineraryButton
+                itemType="attraction"
+                itemId={attraction.id}
+                itemName={attraction.name}
+              />
+            </div>
+          </div>
 
 {/* Main Content Grid */}
           <div className="grid gap-8 lg:grid-cols-3">
@@ -166,7 +175,7 @@ export default function AttractionDetailPage() {
               {/* Hero Image */}
               <div className="mb-8 overflow-hidden rounded-xl">
                 <img
-                  src={getMediaUrl(attraction.image) || "/placeholder.svg?height=400&width=800&query=attraction"}
+                  src={getMediaUrl(attraction.photo_url) || "/placeholder.svg?height=400&width=800&query=attraction"}
                   alt={attraction.name}
                   className="h-96 w-full object-cover"
                 />
@@ -216,7 +225,7 @@ export default function AttractionDetailPage() {
                   <div className="mb-4 flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Location</p>
-                      <p className="font-semibold">{attraction.city || "Not specified"}</p>
+                      <p className="font-semibold">{attraction.address || attraction.city_name || "Not specified"}</p>
                     </div>
                     {attraction.rating && (
                       <div className="flex items-center gap-1">
@@ -247,9 +256,30 @@ export default function AttractionDetailPage() {
                     )}
                   </div>
 
-                  <Button className="w-full" size="lg">
-                    Plan Visit
-                  </Button>
+                  {attraction.entry_fee && (
+                    <div className="mb-4 rounded-lg bg-muted/60 p-3 text-sm">
+                      <p className="font-medium flex items-center gap-1.5">
+                        <DollarSign className="h-4 w-4 text-primary" />
+                        Entry Fee: {attraction.entry_fee}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Payment or ticket may be required at the venue.
+                      </p>
+                    </div>
+                  )}
+                  <Link href="/itinerary">
+                    <Button variant="outline" className="w-full mb-2" size="lg">
+                      Plan Visit
+                    </Button>
+                  </Link>
+                  <AddToItineraryButton
+                    itemType="attraction"
+                    itemId={attraction.id}
+                    itemName={attraction.name}
+                    variant="default"
+                    size="lg"
+                    className="w-full"
+                  />
                 </CardContent>
               </Card>
             </div>

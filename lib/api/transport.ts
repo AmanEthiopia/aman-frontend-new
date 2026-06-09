@@ -1,6 +1,8 @@
 import { apiFetch } from "./client"
 import type { Transport } from "@/lib/types"
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.aman.yichalal.ai/api/v1"
+
 export interface TransportFilters {
   city?: string // Uses slug
   vehicle_type?: string
@@ -15,6 +17,42 @@ export interface PaginatedTransport {
   next: string | null
   previous: string | null
   results: Transport[]
+}
+
+/**
+ * Fetch transport with pagination info (includes total count)
+ */
+export async function getTransportsPaginated(filters: TransportFilters = {}): Promise<PaginatedTransport> {
+  const params = new URLSearchParams()
+  if (filters.city && filters.city !== "all") params.append("city", filters.city)
+  if (filters.vehicle_type && filters.vehicle_type !== "all") params.append("vehicle_type", filters.vehicle_type)
+  if (filters.service_type && filters.service_type !== "all") params.append("service_type", filters.service_type)
+  if (filters.search) params.append("search", filters.search)
+  if (filters.page) params.append("page", String(filters.page))
+  if (filters.page_size) params.append("page_size", String(filters.page_size))
+
+  const queryString = params.toString()
+  const url = `${API_BASE_URL}/drivers/${queryString ? `?${queryString}` : ""}`
+
+  try {
+    const res = await fetch(url, { method: "GET", headers: { "Content-Type": "application/json" } })
+    if (!res.ok) return { count: 0, next: null, previous: null, results: [] }
+    const raw = await res.json()
+
+    if (raw.meta?.pagination) {
+      const p = raw.meta.pagination
+      return { count: p.count ?? 0, next: p.next || null, previous: p.previous || null, results: raw.data || raw.results || [] }
+    }
+    if (raw.success !== undefined && raw.data) {
+      const arr = Array.isArray(raw.data) ? raw.data : raw.data.results || []
+      return { count: arr.length, next: null, previous: null, results: arr }
+    }
+    if (raw.results) return raw as PaginatedTransport
+    if (Array.isArray(raw)) return { count: raw.length, next: null, previous: null, results: raw }
+    return { count: 0, next: null, previous: null, results: [] }
+  } catch {
+    return { count: 0, next: null, previous: null, results: [] }
+  }
 }
 
 /**

@@ -464,7 +464,7 @@ function GuidesContent() {
         {/* Why Choose Section */}
         {!loading && guides.length > 0 && (
           <section className="mt-16 rounded-2xl bg-muted/40 p-8">
-            <h2 className="mb-6 text-center text-2xl font-bold">Why Book Through AMAN?</h2>
+            <h2 className="mb-6 text-center text-2xl font-bold">Why Book Through Alga Ale?</h2>
             <div className="grid gap-6 sm:grid-cols-3">
               <div className="flex flex-col items-center gap-3 text-center">
                 <div className="rounded-full bg-green-100 p-4 dark:bg-green-950/40">

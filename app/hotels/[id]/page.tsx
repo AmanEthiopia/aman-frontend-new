@@ -19,6 +19,7 @@ import { ContactDialog } from "@/components/messaging/contact-dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
 import { APIError } from "@/lib/api/client"
+import { addRecentlyViewed } from "@/lib/utils/recently-viewed"
 import type { Hotel, Room } from "@/lib/types"
 import {
   MapPin,
@@ -115,6 +116,20 @@ export default function HotelDetailPage() {
       try {
         const hotelData = await getHotelById(slug)
         setHotel(hotelData)
+        if (hotelData) {
+          addRecentlyViewed({
+            id: hotelData.id,
+            type: "hotel",
+            name: hotelData.name,
+            imageUrl: hotelData.photos?.find((p: any) => p.is_primary)?.photo_url
+              || hotelData.photos?.[0]?.photo_url
+              || hotelData.cover_photo_url
+              || hotelData.images?.[0]?.url
+              || "",
+            slug: hotelData.slug || hotelData.id,
+            location: hotelData.city?.name || hotelData.city_name || hotelData.address || "",
+          })
+        }
         if (hotelData?.id) {
           await loadRooms(hotelData.id)
         }

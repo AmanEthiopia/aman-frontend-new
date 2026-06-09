@@ -14,6 +14,7 @@ export interface City {
   hotels_count: number
   restaurants_count: number
   experiences_count: number
+  guides_count?: number
 }
 
 export interface CityDetail extends City {
