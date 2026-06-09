@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,8 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectParam = searchParams.get("redirect") || undefined
   const { registerWithGoogle } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -76,7 +78,8 @@ export default function RegisterPage() {
       setSuccess(true)
 
       setTimeout(() => {
-        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`)
+        const verifyUrl = `/verify-email?email=${encodeURIComponent(formData.email)}${redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : ""}`
+        router.push(verifyUrl)
       }, 2000)
     } catch (err: any) {
       setError(err.message || "Failed to create account. Please try again.")
@@ -101,7 +104,7 @@ export default function RegisterPage() {
       // Send ID token to backend with selected role
       // Backend verifies with Google and returns JWT tokens
       // No email verification needed for Google users - they are auto-verified
-      await registerWithGoogle(idToken, accountType)
+      await registerWithGoogle(idToken, accountType, redirectParam)
     } catch (err: any) {
       setError(err.message || "Failed to register with Google. Please try again.")
     } finally {
@@ -360,7 +363,7 @@ export default function RegisterPage() {
 
               <p className="mt-6 text-center text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link href="/login" className="text-primary hover:underline">
+                <Link href={redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : "/login"} className="text-primary hover:underline">
                   Sign in
                 </Link>
               </p>

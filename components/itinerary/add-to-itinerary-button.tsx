@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import { Calendar, Plus, Loader2, Check, CalendarDays } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -62,6 +63,8 @@ export function AddToItineraryButton({
 }: AddToItineraryButtonProps) {
   const { isAuthenticated } = useAuth()
   const { toast } = useToast()
+  const router = useRouter()
+  const pathname = usePathname()
 
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -216,11 +219,17 @@ export function AddToItineraryButton({
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
 
-  if (!isAuthenticated) return null
+  const handleButtonClick = () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`)
+      return
+    }
+    setOpen(true)
+  }
 
   return (
     <>
-      <Button variant={variant} size={size} className={className} onClick={() => setOpen(true)}>
+      <Button variant={variant} size={size} className={className} onClick={handleButtonClick}>
         <Calendar className="mr-2 h-4 w-4" />
         Add to Itinerary
       </Button>

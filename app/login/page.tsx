@@ -23,6 +23,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const emailParam = searchParams.get("email")
   const verifyParam = searchParams.get("verify")
+  const redirectParam = searchParams.get("redirect") || undefined
 
   const { login, loginWithGoogle, isLoading: authLoading } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
@@ -46,7 +47,7 @@ function LoginForm() {
     setShowVerifyNotice(false)
 
     try {
-      await login(formData.email, formData.password)
+      await login(formData.email, formData.password, redirectParam)
     } catch (err: any) {
       if (
         err.message.includes("Email not verified") ||
@@ -80,7 +81,7 @@ function LoginForm() {
 
     try {
       // Send ID token to backend - backend verifies with Google and returns JWT tokens
-      await loginWithGoogle(idToken)
+      await loginWithGoogle(idToken, redirectParam)
     } catch (err: any) {
       setError(err.message || "Failed to sign in with Google. Please try again.")
     } finally {
@@ -235,7 +236,7 @@ function LoginForm() {
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-primary hover:underline">
+          <Link href={redirectParam ? `/register?redirect=${encodeURIComponent(redirectParam)}` : "/register"} className="text-primary hover:underline">
             Sign up
           </Link>
         </p>
