@@ -152,7 +152,7 @@ export default function AttractionDetailPage() {
                 <p className="mt-2 text-lg text-muted-foreground capitalize">{attraction.category}</p>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="icon"
@@ -160,8 +160,13 @@ export default function AttractionDetailPage() {
               >
                 <Heart className={`h-4 w-4 ${isSaved ? "fill-current text-red-500" : ""}`} />
               </Button>
+              <AddToItineraryButton
+                itemType="attraction"
+                itemId={attraction.id}
+                itemName={attraction.name}
+              />
             </div>
-</div>
+          </div>
 
 {/* Main Content Grid */}
           <div className="grid gap-8 lg:grid-cols-3">
@@ -262,6 +267,11 @@ export default function AttractionDetailPage() {
                       </p>
                     </div>
                   )}
+                  <Link href="/itinerary">
+                    <Button variant="outline" className="w-full mb-2" size="lg">
+                      Plan Visit
+                    </Button>
+                  </Link>
                   <AddToItineraryButton
                     itemType="attraction"
                     itemId={attraction.id}

@@ -85,20 +85,16 @@ export default function BookHotelPage() {
   })
   const [guests, setGuests] = useState<GuestInfo[]>([])
 
-  // Sync guests array length to numAdults (only when >1)
+  // Sync guests array to numAdults - 1 additional guests (primary booker is already captured above)
   useEffect(() => {
-    const count = Number(formData.numAdults)
-    if (count <= 1) {
-      setGuests([])
-    } else {
-      setGuests((prev) => {
-        if (prev.length === count) return prev
-        if (prev.length < count) {
-          return [...prev, ...Array.from({ length: count - prev.length }, () => ({ first_name: "", last_name: "", gender: "other" as const, age: undefined }))]
-        }
-        return prev.slice(0, count)
-      })
-    }
+    const additional = Math.max(0, Number(formData.numAdults) - 1)
+    setGuests((prev) => {
+      if (prev.length === additional) return prev
+      if (prev.length < additional) {
+        return [...prev, ...Array.from({ length: additional - prev.length }, () => ({ first_name: "", last_name: "", gender: "other" as const, age: undefined }))]
+      }
+      return prev.slice(0, additional)
+    })
   }, [formData.numAdults])
 
   const loadRooms = useCallback(async (hotelId: string, ci?: string, co?: string) => {
@@ -686,12 +682,12 @@ export default function BookHotelPage() {
                         <div className="space-y-4 rounded-lg border border-border p-4 bg-muted/30">
                           <div className="flex items-center gap-2">
                             <UserCheck className="h-4 w-4 text-primary" />
-                            <p className="text-sm font-medium">Guest Details</p>
-                            <span className="text-xs text-muted-foreground">(required for groups)</span>
+                            <p className="text-sm font-medium">Additional Guests</p>
+                            <span className="text-xs text-muted-foreground">(details required for groups)</span>
                           </div>
                           {guests.map((guest, idx) => (
                             <div key={idx} className="space-y-3">
-                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Guest {idx + 1}</p>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Guest {idx + 2}</p>
                               <div className="grid gap-3 sm:grid-cols-2">
                                 <div className="space-y-1">
                                   <Label className="text-xs">First Name *</Label>
