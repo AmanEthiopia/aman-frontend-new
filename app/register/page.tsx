@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Header } from "@/components/ui/header"
@@ -20,7 +20,7 @@ import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google"
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectParam = searchParams.get("redirect") || undefined
@@ -384,5 +384,13 @@ export default function RegisterPage() {
         <Footer />
       </div>
     </GoogleOAuthProvider>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   )
 }
