@@ -605,7 +605,7 @@ interface RestaurantFormData {
   nickname: string
   description: string
   cuisine_types: string[]
-  price_range: "budget" | "mid_range" | "fine_dining" | "moderate" | "upscale"
+  price_range: "budget" | "moderate" | "expensive" | "fine_dining"
   address: string
   city_id: string
   seating_capacity: string
@@ -801,11 +801,10 @@ export default function EditRestaurantPage({ params }: { params: Promise<{ id: s
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="budget">Budget</SelectItem>
-                    <SelectItem value="moderate">Moderate</SelectItem>
-                    <SelectItem value="mid_range">Mid-Range</SelectItem>
-                    <SelectItem value="upscale">Upscale</SelectItem>
-                    <SelectItem value="fine_dining">Fine Dining</SelectItem>
+                    <SelectItem value="budget">Budget ($)</SelectItem>
+                    <SelectItem value="moderate">Moderate ($$)</SelectItem>
+                    <SelectItem value="expensive">Expensive ($$$)</SelectItem>
+                    <SelectItem value="fine_dining">Fine Dining ($$$$)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

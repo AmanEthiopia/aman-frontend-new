@@ -271,7 +271,7 @@ export default function ProviderDashboard() {
   const totals = data?.totals
   const recentReviews = data?.recent_reviews ?? []
 
-  const currency = stats?.this_month_revenue?.currency ?? "USD"
+  const currency = stats?.this_month_revenue?.currency ?? "ETB"
 
   return (
     <div className="space-y-6">

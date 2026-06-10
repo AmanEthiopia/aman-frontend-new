@@ -19,6 +19,7 @@ export type PackageItemType = "hotel" | "restaurant" | "attraction" | "activity"
 export interface PackagePhoto {
   id: string
   photo_url: string
+  caption?: string
   is_primary: boolean
   display_order: number
 }
@@ -470,8 +471,45 @@ export async function addPackageCity(packageId: string, data: AddCityRequest): P
   return apiPost<PackageCity>(`/experiences/provider/${packageId}/cities/`, data)
 }
 
+export async function updatePackageCity(
+  packageId: string,
+  cityEntryId: string,
+  data: { order?: number; night_count?: number }
+): Promise<PackageCity> {
+  return apiPatch<PackageCity>(`/experiences/provider/${packageId}/cities/${cityEntryId}/`, data)
+}
+
 export async function removePackageCity(packageId: string, cityEntryId: string): Promise<void> {
   await apiDelete(`/experiences/provider/${packageId}/cities/${cityEntryId}/`)
+}
+
+// Photo management
+export async function getPackagePhotos(packageId: string): Promise<PackagePhoto[]> {
+  return apiGet<PackagePhoto[]>(`/experiences/provider/${packageId}/photos/`)
+}
+
+export async function uploadPackagePhoto(
+  packageId: string,
+  file: File,
+  options?: { caption?: string; display_order?: number; is_primary?: boolean }
+): Promise<PackagePhoto> {
+  const form = new FormData()
+  form.append("photo", file)
+  if (options?.caption) form.append("caption", options.caption)
+  if (options?.display_order !== undefined) form.append("display_order", String(options.display_order))
+  if (options?.is_primary) form.append("is_primary", "true")
+  return apiFetch<PackagePhoto>(`/experiences/provider/${packageId}/photos/`, {
+    method: "POST",
+    body: form,
+  })
+}
+
+export async function deletePackagePhoto(packageId: string, photoId: string): Promise<void> {
+  await apiDelete(`/experiences/provider/${packageId}/photos/${photoId}/`)
+}
+
+export async function setPackagePhotoPrimary(packageId: string, photoId: string): Promise<PackagePhoto> {
+  return apiPost<PackagePhoto>(`/experiences/provider/${packageId}/photos/${photoId}/set-primary/`, {})
 }
 
 // Day management

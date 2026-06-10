@@ -158,7 +158,7 @@ export interface CreateRoomPayload {
 export interface ProviderRestaurant extends PropertyBase {
   category: "restaurant"
   cuisine_types: string[]
-  price_range: "budget" | "mid_range" | "fine_dining"
+  price_range: "budget" | "moderate" | "expensive" | "fine_dining"
   opening_hours: Record<string, string>
   seating_capacity?: number
   has_delivery: boolean
@@ -173,7 +173,7 @@ export interface CreateRestaurantPayload {
   description: string
   category: "restaurant"
   cuisine_types: string[]
-  price_range: "budget" | "mid_range" | "fine_dining"
+  price_range: "budget" | "moderate" | "expensive" | "fine_dining"
   address: string
   city_id: string
   opening_hours: Record<string, string>
@@ -738,8 +738,20 @@ export async function deleteTrip(tripId: string): Promise<void> {
 /**
  * Create a new tour guide listing
  */
-export async function createTourGuide(payload: CreateTourGuidePayload): Promise<ProviderTourGuide> {
-  return apiPost<ProviderTourGuide>("/tour-guides/", payload)
+export async function createTourGuide(payload: CreateTourGuidePayload): Promise<{ id: string; slug: string }> {
+  const pricingType = payload.price_per_hour ? "hourly" : "daily"
+  const price = String(payload.price_per_hour || payload.price_per_day || 0)
+  return apiPost<{ id: string; slug: string }>("/guides/provider/", {
+    title: payload.name,
+    nickname: payload.nickname,
+    description: payload.description,
+    service_type: "cultural_guide",
+    pricing_type: pricingType,
+    price,
+    languages: payload.languages,
+    years_experience: payload.experience_years,
+    certifications: payload.specializations?.length ? payload.specializations : payload.certifications,
+  })
 }
 
 /**
@@ -785,8 +797,20 @@ export async function deleteTourGuide(tourGuideId: string): Promise<void> {
 /**
  * Create a new translator listing
  */
-export async function createTranslator(payload: CreateTranslatorPayload): Promise<ProviderTranslator> {
-  return apiPost<ProviderTranslator>("/translators/", payload)
+export async function createTranslator(payload: CreateTranslatorPayload): Promise<{ id: string; slug: string }> {
+  const pricingType = payload.price_per_hour ? "hourly" : "daily"
+  const price = String(payload.price_per_hour || payload.price_per_day || 0)
+  return apiPost<{ id: string; slug: string }>("/guides/provider/", {
+    title: payload.name,
+    nickname: payload.nickname,
+    description: payload.description,
+    service_type: "interpreter",
+    pricing_type: pricingType,
+    price,
+    languages: payload.languages,
+    years_experience: payload.experience_years,
+    certifications: payload.certifications?.length ? payload.certifications : payload.specializations?.length ? payload.specializations : undefined,
+  })
 }
 
 /**
