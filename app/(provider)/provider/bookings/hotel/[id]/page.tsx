@@ -116,12 +116,15 @@ export default function ProviderHotelBookingDetailPage() {
       .finally(() => setIsLoading(false))
   }, [id])
 
-  const toggleUnit = (bookingRoomId: string, unitId: string) => {
+  const toggleUnit = (bookingRoomId: string, unitId: string, maxUnits: number) => {
     setAssignments((prev) => {
       const current = prev[bookingRoomId] ?? []
-      const next = current.includes(unitId)
-        ? current.filter((x) => x !== unitId)
-        : [...current, unitId]
+      if (current.includes(unitId)) {
+        return { ...prev, [bookingRoomId]: current.filter((x) => x !== unitId) }
+      }
+      const next = current.length < maxUnits
+        ? [...current, unitId]
+        : [...current.slice(0, -1), unitId] // at cap: drop last chosen, add new
       return { ...prev, [bookingRoomId]: next }
     })
   }
@@ -500,7 +503,7 @@ export default function ProviderHotelBookingDetailPage() {
                 return (
                   <div key={br.id} className="space-y-2">
                     <p className="text-sm font-medium">
-                      {br.room_name} — pick {br.quantity} unit{br.quantity !== 1 ? "s" : ""}
+                      {br.room_name} — {selectedIds.length}/{br.quantity} unit{br.quantity !== 1 ? "s" : ""} selected
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {room.units.filter((u) => u.is_active).map((unit) => {
@@ -509,7 +512,7 @@ export default function ProviderHotelBookingDetailPage() {
                           <button
                             key={unit.id}
                             type="button"
-                            onClick={() => toggleUnit(br.id, unit.id)}
+                            onClick={() => toggleUnit(br.id, unit.id, br.quantity)}
                             className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
                               isSelected
                                 ? "border-primary bg-primary text-primary-foreground"
