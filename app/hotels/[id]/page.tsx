@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { TrustBadge } from "@/components/shared/trust-badge"
+import { ShareButton } from "@/components/shared/share-button"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
 import { ContactDialog } from "@/components/messaging/contact-dialog"
@@ -315,7 +316,10 @@ export default function HotelDetailPage() {
                     <Badge variant="outline" className="capitalize">{hotel.category}</Badge>
                   )}
                 </div>
-                <h1 className="mb-2 text-3xl font-bold tracking-tight md:text-4xl">{hotel.name}</h1>
+                <div className="flex items-start justify-between gap-4">
+                  <h1 className="mb-2 text-3xl font-bold tracking-tight md:text-4xl">{hotel.name}</h1>
+                  <ShareButton title={hotel.name} className="mt-1 flex-shrink-0" />
+                </div>
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4" />

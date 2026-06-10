@@ -16,8 +16,9 @@ import {
   Camera, Car, Compass, Mountain, Mic, Sparkles, CheckCircle,
   Calendar, DollarSign, Award, MessageSquare, ChevronLeft, ChevronRight
 } from "lucide-react"
-import { 
-  getGuideBySlug, 
+import { ShareButton } from "@/components/shared/share-button"
+import {
+  getGuideBySlug,
   type Guide, 
   type GuideServiceType,
   SERVICE_TYPE_LABELS,
@@ -198,7 +199,10 @@ export default function GuideDetailPage() {
                     {SERVICE_TYPE_LABELS[guide.service_type]}
                   </Badge>
                 </div>
-                <h1 className="mb-2 text-3xl font-bold">{guide.title}</h1>
+                <div className="flex items-start justify-between gap-4">
+                  <h1 className="mb-2 text-3xl font-bold">{guide.title}</h1>
+                  <ShareButton title={guide.title} className="mt-1 flex-shrink-0" />
+                </div>
                 {guide.nickname && (
                   <p className="mb-3 text-lg text-muted-foreground">{guide.nickname}</p>
                 )}

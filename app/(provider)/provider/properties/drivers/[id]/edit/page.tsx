@@ -68,7 +68,7 @@ interface DriverFormData {
   city_id: string
   address: string
   languages: string[]
-  services: DriverService[]
+  services: string[]
   price_per_km: string
   price_per_hour: string
   price_per_day: string
@@ -104,6 +104,7 @@ export default function EditDriverPage({ params }: { params: Promise<{ id: strin
     is_available_24h: false,
   })
   const [customLanguage, setCustomLanguage] = useState("")
+  const [customServiceInput, setCustomServiceInput] = useState("")
 
   useEffect(() => {
     loadData()
@@ -150,7 +151,7 @@ export default function EditDriverPage({ params }: { params: Promise<{ id: strin
     setFormData((prev) => ({ ...prev, [key]: value }))
   }
 
-  const toggleService = (service: DriverService) => {
+  const toggleService = (service: string) => {
     if (formData.services.includes(service)) {
       updateField("services", formData.services.filter((s) => s !== service))
     } else {
@@ -172,6 +173,15 @@ export default function EditDriverPage({ params }: { params: Promise<{ id: strin
     updateField("languages", [...formData.languages, lang])
     setCustomLanguage("")
   }
+
+  const addCustomService = () => {
+    const svc = customServiceInput.trim()
+    if (!svc || formData.services.includes(svc)) return
+    updateField("services", [...formData.services, svc])
+    setCustomServiceInput("")
+  }
+
+  const isCustomVehicleType = formData.vehicle_type !== "" && !VEHICLE_TYPES.some((t) => t.value === formData.vehicle_type)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -322,18 +332,33 @@ export default function EditDriverPage({ params }: { params: Promise<{ id: strin
               <div className="space-y-2">
                 <Label>Vehicle Type *</Label>
                 <Select
-                  value={formData.vehicle_type}
-                  onValueChange={(v) => updateField("vehicle_type", v)}
+                  value={isCustomVehicleType ? "__other__" : (formData.vehicle_type || "")}
+                  onValueChange={(v) => {
+                    if (v === "__other__") {
+                      updateField("vehicle_type", "")
+                    } else {
+                      updateField("vehicle_type", v)
+                    }
+                  }}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select vehicle type" />
                   </SelectTrigger>
                   <SelectContent>
                     {VEHICLE_TYPES.map((t) => (
                       <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                     ))}
+                    <SelectItem value="__other__">Other...</SelectItem>
                   </SelectContent>
                 </Select>
+                {(isCustomVehicleType || formData.vehicle_type === "") && (
+                  <Input
+                    placeholder="Type vehicle type (e.g. Pickup, Tuk-tuk…)"
+                    value={isCustomVehicleType ? formData.vehicle_type : ""}
+                    onChange={(e) => updateField("vehicle_type", e.target.value)}
+                    autoFocus={formData.vehicle_type === ""}
+                  />
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="max_passengers">Max Passengers *</Label>
@@ -411,6 +436,42 @@ export default function EditDriverPage({ params }: { params: Promise<{ id: strin
                   </Label>
                 </div>
               ))}
+              {/* Custom services */}
+              {formData.services
+                .filter((s) => !SERVICE_OPTIONS.some((o) => o.value === s))
+                .map((custom) => (
+                  <div key={custom} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`service-custom-${custom}`}
+                      checked
+                      onCheckedChange={() => toggleService(custom)}
+                    />
+                    <Label htmlFor={`service-custom-${custom}`} className="cursor-pointer flex-1">
+                      {custom}
+                    </Label>
+                    <button
+                      type="button"
+                      onClick={() => toggleService(custom)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+            </div>
+            {/* Add custom service */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add custom service (e.g. Wedding Transfer)…"
+                value={customServiceInput}
+                onChange={(e) => setCustomServiceInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomService())}
+                className="flex-1"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={addCustomService} disabled={!customServiceInput.trim()}>
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Add
+              </Button>
             </div>
             <div className="flex gap-4 pt-2">
               <div className="flex items-center gap-2">

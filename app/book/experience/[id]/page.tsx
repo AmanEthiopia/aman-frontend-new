@@ -17,6 +17,7 @@ import { FieldGroup, Field, FieldLabel } from "@/components/ui/field"
 import {
   getExperienceBySlug,
   createPackageBooking,
+  getMyPackageBookings,
   type Package,
   type Departure,
 } from "@/lib/api/experiences"
@@ -39,8 +40,16 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
-function formatCurrency(amount: string | number, currency = "USD"): string {
+function formatCurrency(amount: string | number, currency = "ETB"): string {
   const num = typeof amount === "string" ? parseFloat(amount) : amount
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -73,6 +82,8 @@ export default function BookExperiencePage() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [bookingNumber, setBookingNumber] = useState<string | null>(null)
+  const [existingBookings, setExistingBookings] = useState<any[]>([])
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     numAdults: 1,
@@ -104,6 +115,7 @@ export default function BookExperiencePage() {
             guestEmail: u.email || "",
             guestPhone: u.phone || "",
           }))
+          getMyPackageBookings().then(setExistingBookings).catch(() => {})
         }
       } catch (err) {
         if (err instanceof APIError) {
@@ -124,19 +136,15 @@ export default function BookExperiencePage() {
   const adultTotal = pricePerPerson * formData.numAdults
   const childTotal = childPrice * formData.numChildren
   const totalPrice = adultTotal + childTotal
-  const currency = pkg?.price_currency || "USD"
+  const currency = pkg?.price_currency || "ETB"
 
   const maxSeats = departure?.available_seats ?? Infinity
   const totalPax = formData.numAdults + formData.numChildren
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!pkg || !isAuthenticated || !departure) return
-
+  const doSubmit = async () => {
+    if (!pkg || !departure) return
     setSubmitting(true)
     setError(null)
-
     try {
       const response = await createPackageBooking({
         package_id: pkg.id,
@@ -148,7 +156,6 @@ export default function BookExperiencePage() {
         guest_phone: formData.guestPhone || undefined,
         special_requests: formData.specialRequests || undefined,
       })
-
       setBookingNumber(response.booking.booking_number)
       setSuccess(true)
     } catch (err) {
@@ -160,6 +167,27 @@ export default function BookExperiencePage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!pkg || !isAuthenticated || !departure) return
+
+    // Duplicate check: same package + same departure already booked
+    const duplicate = existingBookings
+      .filter((b) => b.status !== "cancelled" && b.status !== "rejected")
+      .find((b) => b.departure_id === departure.id || b.package_id === pkg.id)
+
+    if (duplicate) {
+      const tripName = (duplicate as any).package?.title ?? pkg.title
+      const depDate = (duplicate as any).departure?.start_date ?? ""
+      setDuplicateWarning(
+        `You already have an active booking for "${tripName}"${depDate ? ` (departure: ${formatDate(depDate)})` : ""}. Are you sure you want to book again?`
+      )
+      return
+    }
+
+    await doSubmit()
   }
 
   if (loading) {
@@ -590,6 +618,23 @@ export default function BookExperiencePage() {
       </main>
       <FloatingAIAssistant />
       <Footer />
+
+      {/* Duplicate booking warning */}
+      <Dialog open={!!duplicateWarning} onOpenChange={(open) => { if (!open) setDuplicateWarning(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Duplicate Booking
+            </DialogTitle>
+            <DialogDescription>{duplicateWarning}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setDuplicateWarning(null)}>Go Back</Button>
+            <Button onClick={() => { setDuplicateWarning(null); doSubmit() }}>Book Anyway</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
