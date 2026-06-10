@@ -13,13 +13,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
-import { 
+import {
   ArrowLeft, Calendar, Clock, Users, MapPin, Star, Shield,
   Loader2, CheckCircle, AlertCircle, Compass
 } from "lucide-react"
-import { 
-  getGuideBySlug, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  getGuideBySlug,
   createGuideBooking,
+  getMyGuideBookings,
   type Guide,
   SERVICE_TYPE_LABELS,
   PRICING_TYPE_LABELS,
@@ -50,6 +59,8 @@ export default function BookGuidePage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [bookingNumber, setBookingNumber] = useState<string | null>(null)
+  const [existingBookings, setExistingBookings] = useState<any[]>([])
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     booking_date: "",
@@ -87,6 +98,7 @@ export default function BookGuidePage() {
         guest_email: user.email || "",
         guest_phone: user.phone || "",
       }))
+      getMyGuideBookings().then(setExistingBookings).catch(() => {})
     }
   }, [userProfile])
 
@@ -104,20 +116,10 @@ export default function BookGuidePage() {
     }
   ) : 0
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!isAuthenticated) {
-      toast.error("Please log in to book a guide")
-      router.push(`/login?redirect=/book/guide/${slug}`)
-      return
-    }
-
+  const doSubmit = async () => {
     if (!guide) return
-
     setSubmitting(true)
     setError(null)
-
     try {
       const payload = {
         guide_id: guide.id,
@@ -131,7 +133,6 @@ export default function BookGuidePage() {
         guest_phone: formData.guest_phone || undefined,
         special_requests: formData.special_requests || undefined,
       }
-
       const response = await createGuideBooking(payload)
       setSuccess(true)
       setBookingNumber(response.booking_number)
@@ -143,6 +144,34 @@ export default function BookGuidePage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!isAuthenticated) {
+      toast.error("Please log in to book a guide")
+      router.push(`/login?redirect=/book/guide/${slug}`)
+      return
+    }
+
+    if (!guide) return
+
+    // Duplicate check: same guide + same date
+    if (formData.booking_date) {
+      const duplicate = existingBookings
+        .filter((b) => b.status !== "cancelled" && b.status !== "rejected")
+        .find((b) => (b.guide_id === guide.id || b.guide?.id === guide.id) && b.booking_date === formData.booking_date)
+
+      if (duplicate) {
+        setDuplicateWarning(
+          `You already have an active booking for "${guide.title}" on ${formData.booking_date}. Are you sure you want to request another?`
+        )
+        return
+      }
+    }
+
+    await doSubmit()
   }
 
   if (loading) {
@@ -453,6 +482,23 @@ export default function BookGuidePage() {
         </div>
       </main>
       <Footer />
+
+      {/* Duplicate booking warning */}
+      <Dialog open={!!duplicateWarning} onOpenChange={(open) => { if (!open) setDuplicateWarning(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Duplicate Booking
+            </DialogTitle>
+            <DialogDescription>{duplicateWarning}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setDuplicateWarning(null)}>Go Back</Button>
+            <Button onClick={() => { setDuplicateWarning(null); doSubmit() }}>Book Anyway</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

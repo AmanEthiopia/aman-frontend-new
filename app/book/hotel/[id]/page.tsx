@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { TrustBadge } from "@/components/shared/trust-badge"
 import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
-import { createHotelBooking, type GuestInfo } from "@/lib/api/bookings"
+import { createHotelBooking, getMyHotelBookings, type GuestInfo, type HotelBooking } from "@/lib/api/bookings"
 import { useAuth } from "@/contexts/auth-context"
 import type { Hotel, Room } from "@/lib/types"
 import {
@@ -45,6 +45,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getMediaUrl } from "@/lib/utils/media"
 import { formatRating } from "@/lib/utils"
@@ -69,6 +77,8 @@ export default function BookHotelPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [bookingNumber, setBookingNumber] = useState<string | null>(null)
+  const [existingBookings, setExistingBookings] = useState<HotelBooking[]>([])
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
 
   // Selected rooms: room_id → quantity
   const [selectedRooms, setSelectedRooms] = useState<Record<string, number>>({})
@@ -141,6 +151,7 @@ export default function BookHotelPage() {
         guestEmail: userProfile.user?.email || prev.guestEmail,
         guestPhone: userProfile.user?.phone || prev.guestPhone,
       }))
+      getMyHotelBookings().then(setExistingBookings).catch(() => {})
     }
   }, [isAuthenticated, userProfile])
 
@@ -203,6 +214,37 @@ export default function BookHotelPage() {
     .filter((r) => r?.gender_restriction && r.gender_restriction !== "none")
     .map((r) => ({ name: r!.name, restriction: r!.gender_restriction! }))
 
+  const datesOverlap = (aIn: string, aOut: string, bIn: string, bOut: string) =>
+    aIn < bOut && aOut > bIn
+
+  const doSubmit = async () => {
+    if (!hotel) return
+    setIsSubmitting(true)
+    setError(null)
+    try {
+      const response = await createHotelBooking({
+        hotel_id: hotel.id,
+        check_in_date: formData.checkInDate,
+        check_out_date: formData.checkOutDate,
+        num_adults: Number(formData.numAdults),
+        num_children: Number(formData.numChildren) || undefined,
+        rooms: roomsPayload,
+        guest_name: formData.guestName,
+        guest_email: formData.guestEmail,
+        guest_phone: formData.guestPhone || undefined,
+        special_requests: formData.message || undefined,
+        guests: guests.length > 0 ? guests : undefined,
+      })
+      setBookingNumber(response.booking?.booking_number ?? null)
+      setSuccess(true)
+    } catch (err: any) {
+      console.error("Booking error:", err)
+      setError(err.message || "Failed to submit booking request. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!hotel) return
@@ -229,31 +271,20 @@ export default function BookHotelPage() {
       }
     }
 
-    setIsSubmitting(true)
-    setError(null)
+    // Duplicate check
+    const duplicate = existingBookings
+      .filter((b) => b.status !== "cancelled" && b.status !== "rejected")
+      .find((b) => datesOverlap(formData.checkInDate, formData.checkOutDate, b.check_in_date, b.check_out_date))
 
-    try {
-      const response = await createHotelBooking({
-        hotel_id: hotel.id,
-        check_in_date: formData.checkInDate,
-        check_out_date: formData.checkOutDate,
-        num_adults: Number(formData.numAdults),
-        num_children: Number(formData.numChildren) || undefined,
-        rooms: roomsPayload,
-        guest_name: formData.guestName,
-        guest_email: formData.guestEmail,
-        guest_phone: formData.guestPhone || undefined,
-        special_requests: formData.message || undefined,
-        guests: guests.length > 0 ? guests : undefined,
-      })
-      setBookingNumber(response.booking?.booking_number ?? null)
-      setSuccess(true)
-    } catch (err: any) {
-      console.error("Booking error:", err)
-      setError(err.message || "Failed to submit booking request. Please try again.")
-    } finally {
-      setIsSubmitting(false)
+    if (duplicate) {
+      const name = (duplicate as any).hotel?.name ?? "another hotel"
+      setDuplicateWarning(
+        `You already have an active booking at ${name} (${duplicate.check_in_date} → ${duplicate.check_out_date}). Are you sure you want to submit another booking for these overlapping dates?`
+      )
+      return
     }
+
+    await doSubmit()
   }
 
   const today = new Date().toISOString().split("T")[0]
@@ -876,6 +907,23 @@ export default function BookHotelPage() {
       </main>
       <Footer />
       <FloatingAIAssistant />
+
+      {/* Duplicate booking warning */}
+      <Dialog open={!!duplicateWarning} onOpenChange={(open) => { if (!open) setDuplicateWarning(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Duplicate Booking
+            </DialogTitle>
+            <DialogDescription>{duplicateWarning}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setDuplicateWarning(null)}>Go Back</Button>
+            <Button onClick={() => { setDuplicateWarning(null); doSubmit() }}>Book Anyway</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
