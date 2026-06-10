@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getExperienceBySlug, type Package, type PackageDay, type PackageDayItem, type Departure } from "@/lib/api/experiences"
 import { ContactDialog } from "@/components/messaging/contact-dialog"
+import { ShareButton } from "@/components/shared/share-button"
 import { APIError } from "@/lib/api/client"
 import { getMediaUrl } from "@/lib/utils/media"
 import {
@@ -341,7 +342,10 @@ export default function ExperienceDetailPage() {
                   </Badge>
                 )}
               </div>
-              <h1 className="text-4xl font-bold text-white">{pkg.title}</h1>
+              <div className="flex items-start justify-between gap-4">
+                <h1 className="text-4xl font-bold text-white">{pkg.title}</h1>
+                <ShareButton title={pkg.title} className="mt-1 flex-shrink-0 border-white/40 text-white hover:bg-white/10 hover:text-white" />
+              </div>
               {pkg.nickname && <p className="text-xl text-white/80">{pkg.nickname}</p>}
               
               {/* Quick stats */}
