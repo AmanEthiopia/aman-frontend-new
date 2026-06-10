@@ -4,7 +4,6 @@ import type React from "react"
 import { useState, useEffect, useCallback } from "react"
 import {
   TrendingUp,
-  TrendingDown,
   DollarSign,
   Calendar,
   Clock,
@@ -15,12 +14,15 @@ import {
   ArrowDownRight,
   Building2,
   Receipt,
+  FileText,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import {
   getNewProviderEarnings,
@@ -36,6 +38,7 @@ const PERIOD_LABELS: Record<EarningsPeriod, string> = {
   last_3_months: "Last 3 Months",
   last_6_months: "Last 6 Months",
   this_year:     "This Year",
+  custom:        "Custom Range",
 }
 
 // ============================================================================
@@ -96,7 +99,7 @@ function MetricCard({
 // Transaction Row
 // ============================================================================
 
-function TransactionRow({ tx }: { tx: EarningsTransaction }) {
+function TransactionRow({ tx, currency }: { tx: EarningsTransaction; currency: string }) {
   const isCredit = tx.is_credit
   const isFee = tx.type === "service_fee"
 
@@ -133,11 +136,118 @@ function TransactionRow({ tx }: { tx: EarningsTransaction }) {
           <Badge variant="outline" className="text-xs text-orange-600 border-orange-200">Fee</Badge>
         )}
         <p className={`text-base font-semibold whitespace-nowrap ${isCredit ? "text-green-600" : "text-muted-foreground"}`}>
-          {isCredit ? "+" : "−"}{tx.amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+          {isCredit ? "+" : "−"}{currency} {tx.amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
         </p>
       </div>
     </div>
   )
+}
+
+// ============================================================================
+// PDF Export
+// ============================================================================
+
+function exportToPDF(
+  data: ProviderEarningsData,
+  transactions: EarningsTransaction[],
+  currency: string,
+  periodLabel: string,
+) {
+  const fmt = (n: number) => `${currency} ${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  const metrics = data.metrics
+
+  const rows = transactions.map((t) => `
+    <tr>
+      <td>${fmtDate(t.date)}</td>
+      <td>${t.type === "service_fee" ? "Service Fee" : "Booking"}</td>
+      <td>${t.description}</td>
+      <td>${t.property_name}</td>
+      <td style="text-align:right; color:${t.is_credit ? "#16a34a" : "#9ca3af"}">
+        ${t.is_credit ? "+" : "−"}${fmt(t.amount)}
+      </td>
+    </tr>
+  `).join("")
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Earnings Report — ${periodLabel}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; color: #111; padding: 32px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #6b7280; font-size: 13px; margin-bottom: 24px; }
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .metric { border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; }
+  .metric-label { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+  .metric-value { font-size: 20px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #f3f4f6; text-align: left; padding: 8px 10px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e5e7eb; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .footer { margin-top: 24px; color: #9ca3af; font-size: 11px; }
+  @media print { body { padding: 16px; } button { display: none; } }
+</style>
+</head>
+<body>
+  <h1>Earnings Report</h1>
+  <p class="subtitle">
+    Period: ${periodLabel} &nbsp;·&nbsp;
+    ${fmtDate(data.period_start)} – ${fmtDate(data.period_end)} &nbsp;·&nbsp;
+    Generated ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+  </p>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Total Revenue</div>
+      <div class="metric-value">${fmt(metrics.total_revenue.value)}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Total Bookings</div>
+      <div class="metric-value">${metrics.total_bookings.value}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Avg. Nightly Rate</div>
+      <div class="metric-value">${fmt(metrics.avg_nightly_rate.value)}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Occupancy Rate</div>
+      <div class="metric-value">${metrics.occupancy_rate.value}%</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Property</th>
+        <th style="text-align:right">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows || '<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:20px">No transactions</td></tr>'}
+    </tbody>
+  </table>
+
+  <div class="footer">Aman Ethiopia · Alga Ale Provider Dashboard</div>
+</body>
+</html>`
+
+  const win = window.open("", "_blank", "width=900,height=700")
+  if (!win) {
+    toast.error("Pop-up blocked — please allow pop-ups and try again")
+    return
+  }
+  win.document.write(html)
+  win.document.close()
+  win.onload = () => {
+    win.focus()
+    win.print()
+  }
 }
 
 // ============================================================================
@@ -150,12 +260,20 @@ export default function ProviderEarningsPage() {
   const [data, setData] = useState<ProviderEarningsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
 
   const load = useCallback(async (showRefreshing = false) => {
+    if (period === "custom" && (!dateFrom || !dateTo)) return
     if (showRefreshing) setRefreshing(true)
     else setLoading(true)
     try {
-      const result = await getNewProviderEarnings({ period, type: txType, page_size: 100 })
+      const result = await getNewProviderEarnings({
+        period,
+        type: txType,
+        page_size: 100,
+        ...(period === "custom" ? { date_from: dateFrom, date_to: dateTo } : {}),
+      })
       setData(result)
       if (showRefreshing) toast.success("Earnings refreshed")
     } catch (err) {
@@ -165,7 +283,7 @@ export default function ProviderEarningsPage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [period, txType])
+  }, [period, txType, dateFrom, dateTo])
 
   useEffect(() => { load() }, [load])
 
@@ -174,29 +292,16 @@ export default function ProviderEarningsPage() {
       toast.info("No transactions to export")
       return
     }
-    const headers = ["Date", "Type", "Description", "Property", "Amount", "Credit"]
-    const rows = data.transactions.map((t) => [
-      t.date,
-      t.type,
-      `"${t.description.replace(/"/g, '""')}"`,
-      `"${t.property_name.replace(/"/g, '""')}"`,
-      t.amount.toString(),
-      t.is_credit ? "yes" : "no",
-    ])
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
-    const blob = new Blob([csv], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `earnings-${period}-${new Date().toISOString().split("T")[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-    toast.success("Earnings exported")
+    const label = period === "custom"
+      ? `${dateFrom} to ${dateTo}`
+      : PERIOD_LABELS[period]
+    exportToPDF(data, filtered, currency, label)
+    toast.success("Opening PDF — use your browser's print dialog to save")
   }
 
   const metrics = data?.metrics
   const transactions = data?.transactions ?? []
-  const currency = metrics?.total_revenue?.currency ?? "USD"
+  const currency = metrics?.total_revenue?.currency ?? "ETB"
 
   const filtered = txType === "all"
     ? transactions
@@ -212,12 +317,14 @@ export default function ProviderEarningsPage() {
           <h1 className="text-2xl font-bold">Earnings</h1>
           <p className="text-muted-foreground">Track your revenue and payouts</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="ghost" size="icon" onClick={() => load(true)} disabled={refreshing}>
+        <div className="flex gap-2 flex-wrap items-end">
+          <Button variant="ghost" size="icon" onClick={() => load(true)} disabled={refreshing || (period === "custom" && (!dateFrom || !dateTo))}>
             <RefreshCcw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
+
+          {/* Period selector */}
           <Select value={period} onValueChange={(v) => setPeriod(v as EarningsPeriod)}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-44">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -226,9 +333,42 @@ export default function ProviderEarningsPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={handleExport} disabled={loading}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
+
+          {/* Custom date pickers */}
+          {period === "custom" && (
+            <div className="flex items-end gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">From</Label>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-36 h-9"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">To</Label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-36 h-9"
+                />
+              </div>
+              <Button
+                size="sm"
+                onClick={() => load(false)}
+                disabled={!dateFrom || !dateTo || loading}
+                className="h-9"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+              </Button>
+            </div>
+          )}
+
+          <Button variant="outline" onClick={handleExport} disabled={loading || !data?.transactions?.length}>
+            <FileText className="mr-2 h-4 w-4" />
+            Export PDF
           </Button>
         </div>
       </div>
@@ -245,6 +385,16 @@ export default function ProviderEarningsPage() {
             {new Date(data.period_end).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           </span>
         </p>
+      )}
+
+      {/* Custom period — prompt to apply */}
+      {period === "custom" && (!dateFrom || !dateTo) && (
+        <Card className="border-dashed">
+          <CardContent className="flex items-center gap-3 py-4">
+            <Calendar className="h-5 w-5 text-muted-foreground shrink-0" />
+            <p className="text-sm text-muted-foreground">Select a start and end date above, then click <strong>Apply</strong> to load earnings.</p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Metric Cards */}
@@ -286,8 +436,10 @@ export default function ProviderEarningsPage() {
             <div>
               <CardTitle>Transactions</CardTitle>
               <CardDescription>
-                {filtered.length} transaction{filtered.length !== 1 ? "s" : ""} for{" "}
-                {PERIOD_LABELS[period].toLowerCase()}
+                {filtered.length} transaction{filtered.length !== 1 ? "s" : ""}{" "}
+                {period === "custom" && dateFrom && dateTo
+                  ? `from ${dateFrom} to ${dateTo}`
+                  : `for ${PERIOD_LABELS[period].toLowerCase()}`}
               </CardDescription>
             </div>
           </div>
@@ -317,7 +469,7 @@ export default function ProviderEarningsPage() {
                     No transactions found for this period
                   </div>
                 ) : (
-                  filtered.map((tx) => <TransactionRow key={tx.id} tx={tx} />)
+                  filtered.map((tx) => <TransactionRow key={tx.id} tx={tx} currency={currency} />)
                 )}
               </TabsContent>
             ))}

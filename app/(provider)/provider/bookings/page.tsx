@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import {
   Calendar,
   Users,
@@ -271,7 +272,7 @@ function BookingDetailModal({
             <div>
               <p className="text-muted-foreground">Total</p>
               <p className="text-lg font-bold">
-                {Number(booking.total_price) > 0 ? `$${Number(booking.total_price).toLocaleString()}` : "Free / TBD"}
+                {Number(booking.total_price) > 0 ? `${booking.currency ?? "ETB"} ${Number(booking.total_price).toLocaleString()}` : "Free / TBD"}
               </p>
             </div>
             <div>
@@ -288,7 +289,7 @@ function BookingDetailModal({
                 <div key={br.id} className="text-sm">
                   <div className="flex justify-between text-muted-foreground">
                     <span>{br.room_name} × {br.quantity}</span>
-                    <span>${br.subtotal}</span>
+                    <span>{(hotelBooking?.currency ?? booking.currency ?? "ETB")} {parseFloat(br.subtotal).toLocaleString()}</span>
                   </div>
                   {br.assigned_unit_numbers && br.assigned_unit_numbers.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1">
@@ -580,7 +581,7 @@ function WalkInBookingModal({
                     <div>
                       <p className="text-sm font-medium">{room.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        ${(room.base_price !== undefined ? parseFloat(String(room.base_price)) : room.price_per_night) ?? 0}/night
+                        ETB {(room.base_price !== undefined ? parseFloat(String(room.base_price)) : room.price_per_night) ?? 0}/night
                         {" · "}
                         {room.max_adults !== undefined
                           ? `${room.max_adults} adults${room.max_children ? `, ${room.max_children} children` : ""}`
@@ -771,6 +772,7 @@ function BookingRow({
 // ============================================================================
 
 export default function ProviderBookingsPage() {
+  const router = useRouter()
   const [bookings, setBookings] = useState<NormalizedBooking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -922,8 +924,8 @@ export default function ProviderBookingsPage() {
               <BookingRow
                 key={b.id}
                 booking={b}
-                onViewDetails={() => setSelectedBooking(b)}
-                onConfirm={() => b.service_type === "hotel" ? setSelectedBooking(b) : handleConfirm(b)}
+                onViewDetails={() => b.service_type === "hotel" ? router.push(`/provider/bookings/hotel/${b.id}`) : setSelectedBooking(b)}
+                onConfirm={() => b.service_type === "hotel" ? router.push(`/provider/bookings/hotel/${b.id}`) : handleConfirm(b)}
                 onReject={() => setSelectedBooking(b)}
                 isLoading={actionLoading === b.id}
               />
@@ -943,7 +945,7 @@ export default function ProviderBookingsPage() {
               <BookingRow
                 key={b.id}
                 booking={b}
-                onViewDetails={() => setSelectedBooking(b)}
+                onViewDetails={() => b.service_type === "hotel" ? router.push(`/provider/bookings/hotel/${b.id}`) : setSelectedBooking(b)}
                 onConfirm={() => {}}
                 onReject={() => {}}
                 isLoading={false}
@@ -964,7 +966,7 @@ export default function ProviderBookingsPage() {
               <BookingRow
                 key={b.id}
                 booking={b}
-                onViewDetails={() => setSelectedBooking(b)}
+                onViewDetails={() => b.service_type === "hotel" ? router.push(`/provider/bookings/hotel/${b.id}`) : setSelectedBooking(b)}
                 onConfirm={() => {}}
                 onReject={() => {}}
                 isLoading={false}

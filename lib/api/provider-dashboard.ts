@@ -117,7 +117,7 @@ export async function rejectDashboardBooking(id: string, type: DashboardPendingR
 // Provider Earnings  GET /api/v1/provider/earnings/
 // ============================================================================
 
-export type EarningsPeriod = "this_month" | "last_month" | "last_3_months" | "last_6_months" | "this_year"
+export type EarningsPeriod = "this_month" | "last_month" | "last_3_months" | "last_6_months" | "this_year" | "custom"
 export type EarningsType = "all" | "booking" | "service_fee"
 
 export interface EarningsMetricValue {
@@ -162,12 +162,16 @@ export async function getNewProviderEarnings(params?: {
   type?: EarningsType
   page?: number
   page_size?: number
+  date_from?: string
+  date_to?: string
 }): Promise<ProviderEarningsData> {
   const p = new URLSearchParams()
   if (params?.period) p.append("period", params.period)
   if (params?.type) p.append("type", params.type)
   if (params?.page) p.append("page", params.page.toString())
   if (params?.page_size) p.append("page_size", params.page_size.toString())
+  if (params?.date_from) p.append("date_from", params.date_from)
+  if (params?.date_to) p.append("date_to", params.date_to)
   const query = p.toString() ? `?${p.toString()}` : ""
   return apiGet<ProviderEarningsData>(`/provider/earnings/${query}`)
 }

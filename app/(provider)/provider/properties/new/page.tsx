@@ -672,7 +672,7 @@ function RestaurantForm({
     description: "",
     category: "restaurant",
     cuisine_types: [],
-    price_range: "mid_range",
+    price_range: "moderate",
     address: "",
     city_id: "",
     opening_hours: {
@@ -803,8 +803,9 @@ function RestaurantForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="budget">Budget ($)</SelectItem>
-                  <SelectItem value="mid_range">Mid-Range ($$)</SelectItem>
-                  <SelectItem value="fine_dining">Fine Dining ($$$)</SelectItem>
+                  <SelectItem value="moderate">Moderate ($$)</SelectItem>
+                  <SelectItem value="expensive">Expensive ($$$)</SelectItem>
+                  <SelectItem value="fine_dining">Fine Dining ($$$$)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

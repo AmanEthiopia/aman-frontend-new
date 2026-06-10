@@ -162,6 +162,10 @@ export async function getHotelBookingById(id: string): Promise<HotelBooking> {
   return apiGet<HotelBooking>(`/bookings/hotel/${id}/`)
 }
 
+export async function getProviderHotelBookingById(id: string): Promise<HotelBooking> {
+  return apiGet<HotelBooking>(`/bookings/provider/hotel/${id}/`)
+}
+
 export async function cancelHotelBooking(id: string, reason?: string): Promise<HotelBooking> {
   return apiPost<HotelBooking>(`/bookings/hotel/${id}/cancel/`, { reason })
 }
@@ -625,6 +629,7 @@ export interface NormalizedBooking {
   date_to?: string
   guests: number
   total_price: string
+  currency: string
   status: BookingStatus
   special_requests?: string
   created_at: string
@@ -638,7 +643,7 @@ export function normalizeHotelBooking(b: HotelBookingListItem): NormalizedBookin
     guest_name: b.guest_name, guest_email: b.guest_email, guest_phone: b.guest_phone,
     date_from: b.check_in_date, date_to: b.check_out_date,
     guests: (b.num_adults ?? 0) + (b.num_children ?? 0),
-    total_price: b.total_price ?? "0", status: b.status,
+    total_price: b.total_price ?? "0", currency: b.currency ?? "ETB", status: b.status,
     special_requests: b.special_requests, created_at: b.created_at, raw: b,
   }
 }
@@ -650,7 +655,7 @@ export function normalizeRestaurantReservation(r: RestaurantReservationListItem)
     guest_name: r.guest_name, guest_email: r.guest_email, guest_phone: r.guest_phone,
     date_from: r.reservation_date,
     guests: r.party_size,
-    total_price: r.total_price ?? "0", status: r.status,
+    total_price: r.total_price ?? "0", currency: (r as any).currency ?? "ETB", status: r.status,
     special_requests: r.special_requests, created_at: r.created_at, raw: r,
   }
 }
@@ -662,7 +667,7 @@ export function normalizePackageBooking(b: PackageBooking): NormalizedBooking {
     guest_name: b.guest_name, guest_email: b.guest_email, guest_phone: b.guest_phone,
     date_from: b.start_date,
     guests: (b.num_adults ?? 0) + (b.num_children ?? 0),
-    total_price: b.total_price ?? "0", status: b.status,
+    total_price: b.total_price ?? "0", currency: b.currency ?? "ETB", status: b.status,
     special_requests: b.special_requests, created_at: b.created_at, raw: b,
   }
 }
@@ -674,7 +679,7 @@ export function normalizeDriverBooking(b: DriverBooking): NormalizedBooking {
     guest_name: b.guest_name, guest_email: b.guest_email, guest_phone: b.guest_phone,
     date_from: b.trip_date,
     guests: b.num_passengers ?? 1,
-    total_price: String(b.estimated_price ?? 0), status: b.status,
+    total_price: String(b.estimated_price ?? 0), currency: (b as any).currency ?? "ETB", status: b.status,
     special_requests: b.special_requests, created_at: b.created_at, raw: b,
   }
 }

@@ -46,7 +46,7 @@ export default function NewPackagePage() {
     category: "multi_city" as PackageCategory,
     duration_days: 3,
     price_per_person: "",
-    price_currency: "USD",
+    price_currency: "ETB",
     child_price: "",
     payment_required: true,
     min_group_size: 1,

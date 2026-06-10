@@ -23,14 +23,12 @@ import {
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { getAllMyBookings, flattenBookings } from "@/lib/api/bookings"
+import { getAllMyBookings, flattenBookings, type Booking } from "@/lib/api/bookings"
 import { getAttractions } from "@/lib/api/content"
 import { FEATURES } from "@/lib/config/features"
 import { useAuth } from "@/contexts/auth-context"
 import { getRecentlyViewed, type RecentlyViewedItem } from "@/lib/utils/recently-viewed"
-import type { Booking, Hotel } from "@/lib/types"
 import type { Attraction } from "@/lib/api/content"
 
 const API_BASE = "https://api.aman.yichalal.ai"
@@ -69,24 +67,70 @@ function EmptyState({
   )
 }
 
-function UpcomingTripCard({ booking, hotel }: { booking: Booking; hotel: Hotel }) {
-  const checkIn = new Date(booking.check_in)
-  const daysUntil = Math.ceil((checkIn.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+function getBookingMeta(booking: Booking) {
+  switch (booking.type) {
+    case "hotel":
+      return {
+        name: booking.hotel_name,
+        location: booking.hotel_city || "Ethiopia",
+        photo: booking.hotel_photo,
+        date: booking.check_in_date,
+        dateLabel: "Check-in",
+      }
+    case "restaurant":
+      return {
+        name: booking.restaurant_name,
+        location: booking.restaurant_city || "Ethiopia",
+        photo: booking.restaurant_photo,
+        date: booking.reservation_date,
+        dateLabel: "Reservation",
+      }
+    case "package":
+      return {
+        name: booking.package?.title || "Trip Package",
+        location: "Ethiopia",
+        photo: booking.package?.cover_photo_url,
+        date: booking.start_date,
+        dateLabel: "Start date",
+      }
+    case "transport":
+      return {
+        name: booking.driver_name || "Transport",
+        location: booking.pickup_location || "Ethiopia",
+        photo: undefined,
+        date: booking.trip_date,
+        dateLabel: "Pickup",
+      }
+  }
+}
+
+function UpcomingTripCard({ booking }: { booking: Booking }) {
+  const { name, location, photo, date, dateLabel } = getBookingMeta(booking)
+  const checkDate = date ? new Date(date) : null
+  const daysUntil = checkDate
+    ? Math.ceil((checkDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null
 
   return (
     <Card className="overflow-hidden">
       <div className="relative h-32 bg-gradient-to-br from-primary/20 to-primary/5">
-        <img
-          src={getMediaUrl(hotel?.images?.[0]?.url) || "/placeholder.svg"}
-          alt={booking.hotel_name}
-          className="h-full w-full object-cover"
-        />
+        {photo ? (
+          <img
+            src={getMediaUrl(photo)}
+            alt={name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <Building2 className="h-10 w-10 text-primary/30" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
         <div className="absolute bottom-3 left-4 right-4">
-          <h3 className="font-semibold text-foreground">{booking.hotel_name}</h3>
+          <h3 className="font-semibold text-foreground">{name}</h3>
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="h-3 w-3" />
-            {hotel?.city?.name || "Ethiopia"}
+            {location}
           </div>
         </div>
       </div>
@@ -94,18 +138,18 @@ function UpcomingTripCard({ booking, hotel }: { booking: Booking; hotel: Hotel }
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">{checkIn.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+            <span className="text-sm">
+              {checkDate
+                ? checkDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                : "—"}
+            </span>
+            <span className="text-xs text-muted-foreground">{dateLabel}</span>
           </div>
-          <Badge variant={daysUntil <= 3 ? "default" : "secondary"}>
-            {daysUntil === 0 ? "Today!" : daysUntil === 1 ? "Tomorrow" : `${daysUntil} days`}
-          </Badge>
-        </div>
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Trip preparation</span>
-            <span className="font-medium">60%</span>
-          </div>
-          <Progress value={60} className="h-2" />
+          {daysUntil !== null && (
+            <Badge variant={daysUntil <= 3 ? "default" : "secondary"}>
+              {daysUntil === 0 ? "Today!" : daysUntil === 1 ? "Tomorrow" : `${daysUntil} days`}
+            </Badge>
+          )}
         </div>
         <div className="mt-4 flex gap-2">
           <Link href="/bookings" className="flex-1">
@@ -162,7 +206,7 @@ export default function HomePage() {
         const upcoming = bookings.filter((b: any) => {
           const isConfirmed = b.status === "confirmed"
           // Handle different booking types - hotels have check_in_date, restaurants have reservation_date
-          const dateField = b.check_in_date || b.reservation_date || b.start_date || b.pickup_datetime
+          const dateField = b.check_in_date || b.reservation_date || b.start_date || (b as any).trip_date
           const isFuture = dateField ? new Date(dateField) > new Date() : false
           return isConfirmed && isFuture
         })
@@ -316,7 +360,7 @@ export default function HomePage() {
         ) : upcomingBookings.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2">
             {upcomingBookings.slice(0, 2).map((booking) => (
-              <UpcomingTripCard key={booking.id} booking={booking} hotel={booking as any} />
+              <UpcomingTripCard key={booking.id} booking={booking} />
             ))}
           </div>
         ) : (
@@ -381,7 +425,7 @@ export default function HomePage() {
                     <h4 className="truncate font-medium">{attraction.name}</h4>
                     <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                       <MapPin className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{attraction.city || "Ethiopia"}</span>
+                      <span className="truncate">{attraction.city_name || "Ethiopia"}</span>
                       {attraction.rating && (
                         <>
                           <Star className="ml-auto h-3 w-3 flex-shrink-0 fill-amber-400 text-amber-400" />

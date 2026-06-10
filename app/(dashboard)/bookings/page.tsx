@@ -807,7 +807,7 @@ function TransportBookingCard({ booking }: { booking: TransportBooking }) {
                 {b.estimated_price ? (
                   <>
                     <span className="text-sm text-muted-foreground">Estimated</span>
-                    <p className="text-lg font-bold">${Number(b.estimated_price).toLocaleString()}</p>
+                    <p className="text-lg font-bold">{(b as any).currency ?? "ETB"} {Number(b.estimated_price).toLocaleString()}</p>
                   </>
                 ) : (
                   <span className="text-sm text-muted-foreground">Price TBD</span>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,7 @@ import {
   updatePackage,
   togglePackagePublish,
   addPackageCity,
+  updatePackageCity,
   removePackageCity,
   addPackageDay,
   updatePackageDay,
@@ -42,7 +43,12 @@ import {
   createDeparture,
   updateDeparture,
   deleteDeparture,
+  getPackagePhotos,
+  uploadPackagePhoto,
+  deletePackagePhoto,
+  setPackagePhotoPrimary,
   type Package,
+  type PackagePhoto,
   type PackageDay,
   type PackageDayItem,
   type PackageCity,
@@ -51,6 +57,7 @@ import {
   type Departure,
 } from "@/lib/api/experiences"
 import { getCities, type City } from "@/lib/api/content"
+import { getMediaUrl } from "@/lib/utils/media"
 import { searchHotels } from "@/lib/api/hotels"
 import { getRestaurants } from "@/lib/api/restaurants"
 import { getAttractions } from "@/lib/api/content"
@@ -68,11 +75,15 @@ import {
   MapPin,
   Globe,
   GlobeLock,
-  Save,
   Eye,
   Calendar,
   CalendarDays,
   Pencil,
+  ImagePlus,
+  ChevronUp,
+  ChevronDown,
+  Star,
+  Upload,
 } from "lucide-react"
 
 const CATEGORIES: { value: PackageCategory; label: string }[] = [
@@ -128,6 +139,12 @@ export default function EditPackagePage() {
     notes: "",
   })
   const [departureSubmitting, setDepartureSubmitting] = useState(false)
+
+  // Photo state
+  const [photos, setPhotos] = useState<PackagePhoto[]>([])
+  const [photosLoading, setPhotosLoading] = useState(false)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
 
   // Form states for dialogs
   const [newCity, setNewCity] = useState({ city_id: "", order: 1, night_count: 1 })
@@ -189,11 +206,24 @@ export default function EditPackagePage() {
     }
   }, [packageId])
 
+  const loadPhotos = useCallback(async () => {
+    setPhotosLoading(true)
+    try {
+      const data = await getPackagePhotos(packageId)
+      setPhotos(Array.isArray(data) ? data : [])
+    } catch {
+      // silently fail
+    } finally {
+      setPhotosLoading(false)
+    }
+  }, [packageId])
+
   useEffect(() => {
     loadPackage()
     loadAvailableData()
     loadDepartures()
-  }, [loadPackage, loadAvailableData, loadDepartures])
+    loadPhotos()
+  }, [loadPackage, loadAvailableData, loadDepartures, loadPhotos])
 
   const openAddDeparture = () => {
     setEditingDeparture(null)
@@ -296,6 +326,81 @@ export default function EditPackagePage() {
       showSuccess("City removed")
     } catch (err: any) {
       setError(err.message || "Failed to remove city")
+    }
+  }
+
+  const handleMoveCityOrder = async (cityEntryId: string, direction: "up" | "down") => {
+    if (!pkg) return
+    const sorted = [...(pkg.cities || [])].sort((a, b) => a.order - b.order)
+    const idx = sorted.findIndex(c => c.id === cityEntryId)
+    if (direction === "up" && idx <= 0) return
+    if (direction === "down" && idx >= sorted.length - 1) return
+
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1
+    const current = sorted[idx]
+    const swap = sorted[swapIdx]
+
+    const newCurrentOrder = swap.order
+    const newSwapOrder = current.order
+
+    try {
+      await Promise.all([
+        updatePackageCity(pkg.id, current.id, { order: newCurrentOrder }),
+        updatePackageCity(pkg.id, swap.id, { order: newSwapOrder }),
+      ])
+      setPkg(prev => {
+        if (!prev) return null
+        return {
+          ...prev,
+          cities: prev.cities?.map(c => {
+            if (c.id === current.id) return { ...c, order: newCurrentOrder }
+            if (c.id === swap.id) return { ...c, order: newSwapOrder }
+            return c
+          }),
+        }
+      })
+    } catch (err: any) {
+      setError(err.message || "Failed to reorder cities")
+    }
+  }
+
+  // Photo management
+  const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !pkg) return
+    setPhotoUploading(true)
+    try {
+      const isFirst = photos.length === 0
+      const photo = await uploadPackagePhoto(pkg.id, file, { is_primary: isFirst })
+      setPhotos(prev => [...prev, photo])
+      showSuccess("Photo uploaded")
+    } catch (err: any) {
+      setError(err.message || "Failed to upload photo")
+    } finally {
+      setPhotoUploading(false)
+      if (photoInputRef.current) photoInputRef.current.value = ""
+    }
+  }
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!pkg || !confirm("Delete this photo?")) return
+    try {
+      await deletePackagePhoto(pkg.id, photoId)
+      setPhotos(prev => prev.filter(p => p.id !== photoId))
+      showSuccess("Photo deleted")
+    } catch (err: any) {
+      setError(err.message || "Failed to delete photo")
+    }
+  }
+
+  const handleSetPrimaryPhoto = async (photoId: string) => {
+    if (!pkg) return
+    try {
+      await setPackagePhotoPrimary(pkg.id, photoId)
+      setPhotos(prev => prev.map(p => ({ ...p, is_primary: p.id === photoId })))
+      showSuccess("Cover photo set")
+    } catch (err: any) {
+      setError(err.message || "Failed to set cover photo")
     }
   }
 
@@ -488,6 +593,7 @@ export default function EditPackagePage() {
         <TabsList>
           <TabsTrigger value="itinerary">Itinerary Builder</TabsTrigger>
           <TabsTrigger value="cities">Cities</TabsTrigger>
+          <TabsTrigger value="photos">Photos</TabsTrigger>
           <TabsTrigger value="departures">Departures</TabsTrigger>
           <TabsTrigger value="details">Package Details</TabsTrigger>
         </TabsList>
@@ -839,15 +945,15 @@ export default function EditPackagePage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {pkg.cities
+            <div className="space-y-3">
+              {[...pkg.cities]
                 .sort((a, b) => a.order - b.order)
-                .map((cityEntry) => (
+                .map((cityEntry, idx, arr) => (
                   <Card key={cityEntry.id}>
                     <CardContent className="flex items-center justify-between p-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
-                          {cityEntry.order}
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
+                          {idx === 0 ? "1st" : idx === arr.length - 1 ? "Last" : idx + 1}
                         </div>
                         <div>
                           <p className="font-medium">{cityEntry.city.name}</p>
@@ -856,12 +962,137 @@ export default function EditPackagePage() {
                           </p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveCity(cityEntry.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={idx === 0}
+                          onClick={() => handleMoveCityOrder(cityEntry.id, "up")}
+                          title="Move up"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={idx === arr.length - 1}
+                          onClick={() => handleMoveCityOrder(cityEntry.id, "down")}
+                          title="Move down"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveCity(cityEntry.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Photos Tab */}
+        <TabsContent value="photos" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground">
+                Upload photos of your trip. The cover photo is shown to travelers first.
+              </p>
+            </div>
+            <div>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleUploadPhoto}
+              />
+              <Button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={photoUploading}
+              >
+                {photoUploading ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading...</>
+                ) : (
+                  <><ImagePlus className="mr-2 h-4 w-4" />Upload Photo</>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {photosLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-48 animate-pulse rounded-lg bg-muted" />
+              ))}
+            </div>
+          ) : photos.length === 0 ? (
+            <Card>
+              <CardContent className="py-16 text-center">
+                <Upload className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                <h3 className="mt-4 text-lg font-semibold">No photos yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Upload photos from your past trips to attract travelers.
+                </p>
+                <Button onClick={() => photoInputRef.current?.click()} disabled={photoUploading}>
+                  <ImagePlus className="mr-2 h-4 w-4" />
+                  Upload First Photo
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[...photos]
+                .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || a.display_order - b.display_order)
+                .map((photo) => (
+                  <div key={photo.id} className="group relative overflow-hidden rounded-lg border">
+                    <img
+                      src={getMediaUrl(photo.photo_url) || "/placeholder.svg?height=192&width=384"}
+                      alt="Package photo"
+                      className="h-48 w-full object-cover"
+                    />
+                    {photo.is_primary && (
+                      <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+                        <Star className="h-3 w-3" />
+                        Cover
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                      {!photo.is_primary && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleSetPrimaryPhoto(photo.id)}
+                          className="gap-1"
+                        >
+                          <Star className="h-3.5 w-3.5" />
+                          Set Cover
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDeletePhoto(photo.id)}
+                        className="gap-1"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={photoUploading}
+                className="flex h-48 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+              >
+                {photoUploading ? (
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                ) : (
+                  <><ImagePlus className="h-8 w-8" /><span className="text-sm">Add Photo</span></>
+                )}
+              </button>
             </div>
           )}
         </TabsContent>

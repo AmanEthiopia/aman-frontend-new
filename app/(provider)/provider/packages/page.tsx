@@ -46,7 +46,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   historical: "Historical",
 }
 
-function formatCurrency(amount: string | number, currency = "USD"): string {
+function formatCurrency(amount: string | number, currency = "ETB"): string {
   const num = typeof amount === "string" ? parseFloat(amount) : amount
   return new Intl.NumberFormat("en-US", {
     style: "currency",

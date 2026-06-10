@@ -37,7 +37,7 @@ export default function NewGuidePage() {
     service_type: "private_tour" as GuideServiceType,
     pricing_type: "daily" as GuidePricingType,
     price: "",
-    price_currency: "USD",
+    price_currency: "ETB",
     languages: [] as string[],
     min_group_size: 1,
     max_group_size: 8,
