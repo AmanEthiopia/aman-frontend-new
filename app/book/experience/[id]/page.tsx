@@ -40,7 +40,7 @@ import {
   AlertTriangle,
 } from "lucide-react"
 
-function formatCurrency(amount: string | number, currency = "USD"): string {
+function formatCurrency(amount: string | number, currency = "ETB"): string {
   const num = typeof amount === "string" ? parseFloat(amount) : amount
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -124,7 +124,7 @@ export default function BookExperiencePage() {
   const adultTotal = pricePerPerson * formData.numAdults
   const childTotal = childPrice * formData.numChildren
   const totalPrice = adultTotal + childTotal
-  const currency = pkg?.price_currency || "USD"
+  const currency = pkg?.price_currency || "ETB"
 
   const maxSeats = departure?.available_seats ?? Infinity
   const totalPax = formData.numAdults + formData.numChildren

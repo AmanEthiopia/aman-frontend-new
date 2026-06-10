@@ -60,7 +60,7 @@ const ITEM_TYPE_ICONS: Record<string, React.ReactNode> = {
   activity: <Activity className="h-4 w-4" />,
 }
 
-function formatCurrency(amount: string | number, currency = "USD"): string {
+function formatCurrency(amount: string | number, currency = "ETB"): string {
   const num = typeof amount === "string" ? parseFloat(amount) : amount
   return new Intl.NumberFormat("en-US", {
     style: "currency",
