@@ -11,6 +11,7 @@ import { getAttractions, type Attraction } from "@/lib/api/content"
 import { getMediaUrl } from "@/lib/utils/media"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
+import { toast } from "sonner"
 
 const categoryOptions = [
   { value: "historical", label: "Historical" },
@@ -54,6 +55,7 @@ function AttractionsContent() {
         setAttractions(data)
       } catch (error) {
         console.error("[v0] Failed to load attractions:", error)
+        toast.error("We couldn't load the attractions. Please refresh the page.")
         setAttractions([])
       } finally {
         setLoading(false)

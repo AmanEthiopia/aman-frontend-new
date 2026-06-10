@@ -12,6 +12,7 @@ import type { Transport } from "@/lib/types"
 import { getMediaUrl } from "@/lib/utils/media"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
+import { toast } from "sonner"
 
 const transportTypeOptions = [
   { value: "airport-pickup", label: "Airport Pickup" },
@@ -56,6 +57,7 @@ function TransportContent() {
         setTransport(data)
       } catch (error) {
         console.error("[v0] Failed to load transport:", error)
+        toast.error("We couldn't load transport options. Please refresh the page.")
         setTransport([])
       } finally {
         setLoading(false)

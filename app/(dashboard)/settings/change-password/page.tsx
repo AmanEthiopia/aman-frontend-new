@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { changePassword } from "@/lib/api/auth"
 import Link from "next/link"
+import { friendlyError } from "@/lib/utils/errors"
 
 export default function ChangePasswordPage() {
   const router = useRouter()
@@ -56,8 +57,7 @@ export default function ChangePasswordPage() {
         router.push("/settings")
       }, 2000)
     } catch (err: any) {
-      console.error("[v0] Change password error:", err)
-      setError(err.message || "Failed to change password")
+      setError(friendlyError(err, "Failed to change password. Please try again."))
     } finally {
       setLoading(false)
     }

@@ -11,6 +11,7 @@ import { getExperiences, type Package } from "@/lib/api/experiences"
 import { getMediaUrl } from "@/lib/utils/media"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
+import { toast } from "sonner"
 
 const categoryOptions = [
   { value: "city_tour", label: "City Tour" },
@@ -70,6 +71,7 @@ function ExperiencesContent() {
         setExperiences(data)
       } catch (error) {
         console.error("[v0] Failed to load experiences:", error)
+        toast.error("We couldn't load the experiences. Please refresh the page.")
         setExperiences([])
       } finally {
         setLoading(false)

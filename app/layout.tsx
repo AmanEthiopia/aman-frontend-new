@@ -6,6 +6,8 @@ import "./globals.css"
 import { AppProvider } from "@/lib/contexts/app-context"
 import { AuthProvider } from "@/contexts/auth-context"
 import { TestBanner } from "@/components/ui/test-banner"
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 const geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -70,12 +72,15 @@ export default function RootLayout({
           src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
           strategy="afterInteractive"
         />
-        <AppProvider>
-          <AuthProvider>
-            <TestBanner />
-            {children}
-          </AuthProvider>
-        </AppProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AppProvider>
+            <AuthProvider>
+              <TestBanner />
+              {children}
+            </AuthProvider>
+          </AppProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   )

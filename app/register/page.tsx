@@ -17,6 +17,7 @@ import { Mail, Lock, User, Phone, Loader2, Eye, EyeOff, Building2, AlertCircle, 
 import { register } from "@/lib/api/auth"
 import { useAuth } from "@/contexts/auth-context"
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google"
+import { friendlyError, actionError } from "@/lib/utils/errors"
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
 
@@ -82,7 +83,7 @@ function RegisterForm() {
         router.push(verifyUrl)
       }, 2000)
     } catch (err: any) {
-      setError(err.message || "Failed to create account. Please try again.")
+      setError(friendlyError(err, actionError("register")))
     } finally {
       setIsLoading(false)
     }
@@ -106,7 +107,7 @@ function RegisterForm() {
       // No email verification needed for Google users - they are auto-verified
       await registerWithGoogle(idToken, accountType, redirectParam)
     } catch (err: any) {
-      setError(err.message || "Failed to register with Google. Please try again.")
+      setError(friendlyError(err, "Failed to register with Google. Please try again."))
     } finally {
       setGoogleLoading(false)
     }
