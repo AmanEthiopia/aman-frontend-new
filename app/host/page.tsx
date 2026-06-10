@@ -19,6 +19,16 @@ import {
   CheckCircle2,
   ArrowRight,
   MapPin,
+  BarChart3,
+  FileText,
+  Scale,
+  Rocket,
+  MessageCircle,
+  Crown,
+  Car,
+  Compass,
+  Hotel,
+  Sparkles,
 } from "lucide-react"
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -86,8 +96,8 @@ const founders = [
     bio: "Builder of Aman Ethiopia. Passionate about unlocking Ethiopia's tourism potential through technology.",
     linkedin: "https://www.linkedin.com/in/mulubrhan-legesse/",
     portfolio: "https://v0-mulubrhan.vercel.app/",
-    email: "", // fill in
-    whatsapp: "", // fill in
+    email: "legesse.mulubrhan@gmail.com",
+    whatsapp: "+251708029422",
     initials: "ML",
   },
   {
@@ -96,9 +106,93 @@ const founders = [
     bio: "Driving partnerships and growth at Aman Ethiopia. Committed to creating world-class travel experiences rooted in Ethiopian culture.",
     linkedin: "https://www.linkedin.com/in/fitsum-getachew/",
     portfolio: "",
-    email: "fitsumgeta2021@gmail.com",
-    whatsapp: "", // fill in
+    email: "fitsumgetachewtola@gmail.com",
+    whatsapp: "+251709192541",
     initials: "FG",
+  },
+]
+
+const marketEntryServices = [
+  {
+    icon: BarChart3,
+    title: "Local Market Analysis",
+    body: "In-depth research on the Ethiopian consumer landscape, competitive environment, demand patterns, and sector-specific opportunities — with a focus on fintech, hospitality, and trade.",
+  },
+  {
+    icon: FileText,
+    title: "Documentation Support",
+    body: "End-to-end guidance on the paperwork required to operate in Ethiopia: business registration, tax identification, foreign investment permits, and sector-specific licenses.",
+  },
+  {
+    icon: Scale,
+    title: "Legal & Compliance Advisory",
+    body: "Navigate Ethiopia's regulatory framework with confidence. We connect you with trusted local legal counsel and walk you through the compliance requirements for your industry.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Cost & Financial Modeling",
+    body: "Realistic cost-of-entry estimates — office setup, staffing, regulatory fees, and operational overhead — so you can plan your budget before committing capital.",
+  },
+  {
+    icon: Shield,
+    title: "Risk Assessment",
+    body: "Candid analysis of market risks: currency exposure, regulatory uncertainty, infrastructure gaps, and cultural nuances that affect business outcomes.",
+  },
+  {
+    icon: Rocket,
+    title: "Scaling Strategy",
+    body: "A phased growth roadmap tailored to your model — from pilot launch to national expansion — including local partnership identification and distribution channel mapping.",
+  },
+]
+
+const premiumTiers = [
+  {
+    name: "Essential",
+    price: "$99",
+    badge: null,
+    description: "Perfect for solo business travelers and short diplomatic visits.",
+    includes: [
+      "Airport pickup & drop-off",
+      "3-night hotel booking (selected properties)",
+      "Daily breakfast arrangement",
+      "City orientation briefing",
+      "24/7 WhatsApp support",
+    ],
+    cta: "Get Started",
+    highlight: false,
+  },
+  {
+    name: "Business",
+    price: "$199",
+    badge: "Most Popular",
+    description: "Ideal for corporate delegations and multi-day business trips.",
+    includes: [
+      "Everything in Essential",
+      "Up to 5 nights premium accommodation",
+      "Dedicated bilingual driver for the stay",
+      "2 curated city or cultural experiences",
+      "Meeting venue sourcing",
+      "Local SIM card & data package",
+    ],
+    cta: "Book Business",
+    highlight: true,
+  },
+  {
+    name: "Executive",
+    price: "$299",
+    badge: "White Glove",
+    description: "Full concierge service for executives and diplomatic delegations.",
+    includes: [
+      "Everything in Business",
+      "Up to 7 nights luxury hotel",
+      "Private guided trip (1–3 days)",
+      "Personal concierge on-call throughout stay",
+      "Restaurant reservations & private dining",
+      "Custom itinerary built around your goals",
+      "Post-trip summary & local contacts dossier",
+    ],
+    cta: "Book Executive",
+    highlight: false,
   },
 ]
 
@@ -286,6 +380,17 @@ export default function PartnerWithUsPage() {
                           LinkedIn Profile
                         </a>
                       )}
+                      {f.whatsapp && (
+                        <a
+                          href={`https://wa.me/${f.whatsapp.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <MessageCircle className="h-4 w-4 flex-shrink-0 text-[#25D366]" />
+                          WhatsApp: {f.whatsapp}
+                        </a>
+                      )}
                       {f.portfolio && (
                         <a
                           href={f.portfolio}
@@ -306,6 +411,135 @@ export default function PartnerWithUsPage() {
             {/* Business card note */}
             <p className="mt-8 text-center text-sm text-muted-foreground">
               Prefer a formal introduction? Ask us for our digital business card.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Market Entry Advisory ── */}
+        <section id="market-entry" className="py-20">
+          <div className="container mx-auto max-w-5xl px-4">
+            <div className="mb-4 flex justify-center">
+              <Badge className="bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1">For Businesses Expanding to Ethiopia</Badge>
+            </div>
+            <div className="mb-12 text-center">
+              <h2 className="text-3xl font-bold">Ethiopia Market Entry Advisory</h2>
+              <p className="mt-3 max-w-2xl mx-auto text-muted-foreground">
+                Planning to enter the Ethiopian market — especially in fintech, hospitality, or trade? We provide the on-the-ground intelligence and connections you need to move from idea to operations with confidence.
+              </p>
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-12">
+              {marketEntryServices.map((s) => (
+                <div key={s.title} className="rounded-xl border bg-card p-5 hover:shadow-md transition-shadow">
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <s.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="mb-1.5 font-semibold">{s.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Callout */}
+            <div className="rounded-2xl border bg-gradient-to-r from-primary/5 to-primary/10 p-8 text-center">
+              <p className="text-lg font-semibold mb-2">Ready to explore the Ethiopian market?</p>
+              <p className="text-muted-foreground mb-6 max-w-xl mx-auto text-sm">
+                Book a free 30-minute discovery call with our founders. We'll help you understand what's realistic, what the path looks like, and how Aman Ethiopia can support your expansion.
+              </p>
+              <a href="#contact">
+                <Button size="lg" className="px-8">
+                  Book a Discovery Call
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Premium Concierge Packages ── */}
+        <section id="premium" className="bg-muted/30 py-20">
+          <div className="container mx-auto max-w-5xl px-4">
+            <div className="mb-4 flex justify-center">
+              <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 px-3 py-1">
+                <Crown className="mr-1.5 h-3.5 w-3.5 inline" />
+                Premium Concierge
+              </Badge>
+            </div>
+            <div className="mb-4 text-center">
+              <h2 className="text-3xl font-bold">We Arrange Everything. You Just Arrive.</h2>
+              <p className="mt-3 max-w-2xl mx-auto text-muted-foreground">
+                For diplomats, executives, and business delegations visiting Ethiopia. One flat fee — hotels, transport, experiences, and a personal concierge — all coordinated by our team so you can focus on what matters.
+              </p>
+            </div>
+
+            {/* What's included visually */}
+            <div className="mb-10 flex flex-wrap justify-center gap-3 text-sm text-muted-foreground">
+              {[
+                { icon: Hotel, label: "Hotel Booking" },
+                { icon: Car, label: "Private Transport" },
+                { icon: Compass, label: "Guided Experiences" },
+                { icon: Sparkles, label: "Personal Concierge" },
+              ].map((item) => (
+                <span key={item.label} className="flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5">
+                  <item.icon className="h-4 w-4 text-primary" />
+                  {item.label}
+                </span>
+              ))}
+            </div>
+
+            {/* Pricing tiers */}
+            <div className="grid gap-6 md:grid-cols-3">
+              {premiumTiers.map((tier) => (
+                <div
+                  key={tier.name}
+                  className={`relative flex flex-col rounded-2xl border p-6 transition-shadow hover:shadow-lg ${
+                    tier.highlight
+                      ? "border-primary bg-primary text-primary-foreground shadow-lg"
+                      : "bg-card"
+                  }`}
+                >
+                  {tier.badge && (
+                    <span className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-0.5 text-xs font-semibold ${
+                      tier.highlight ? "bg-white text-primary" : "bg-amber-400 text-amber-900"
+                    }`}>
+                      {tier.badge}
+                    </span>
+                  )}
+
+                  <div className="mb-4">
+                    <p className={`text-sm font-medium mb-1 ${tier.highlight ? "text-white/70" : "text-muted-foreground"}`}>
+                      {tier.name}
+                    </p>
+                    <p className="text-4xl font-bold">{tier.price}</p>
+                    <p className={`mt-1 text-sm ${tier.highlight ? "text-white/70" : "text-muted-foreground"}`}>
+                      {tier.description}
+                    </p>
+                  </div>
+
+                  <ul className="mb-6 flex-1 space-y-2">
+                    {tier.includes.map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-sm">
+                        <CheckCircle2 className={`mt-0.5 h-4 w-4 flex-shrink-0 ${tier.highlight ? "text-white/80" : "text-primary"}`} />
+                        <span className={tier.highlight ? "text-white/90" : ""}>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <a href="#contact">
+                    <Button
+                      className={`w-full ${tier.highlight ? "bg-white text-primary hover:bg-white/90" : ""}`}
+                      variant={tier.highlight ? "default" : "outline"}
+                    >
+                      {tier.cta}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </a>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-8 text-center text-sm text-muted-foreground">
+              All packages are tailored to your schedule. Prices are indicative — final quote provided after a brief consultation.
             </p>
           </div>
         </section>
