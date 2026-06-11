@@ -60,10 +60,10 @@ function HotelFeatureCard({ hotel }: { hotel: HotelType }) {
             {[hotel.area, (hotel as any).city?.name].filter(Boolean).join(", ")}
           </div>
         )}
-        {hotel.average_rating != null && hotel.average_rating > 0 && (
+        {hotel.average_rating != null && Number(hotel.average_rating) > 0 && (
           <div className="mt-1 flex items-center gap-1 text-xs text-yellow-300">
             <Star className="h-3 w-3 fill-yellow-300" />
-            {hotel.average_rating.toFixed(1)}
+            {Number(hotel.average_rating).toFixed(1)}
             {hotel.review_count != null && hotel.review_count > 0 && (
               <span className="text-white/70 ml-0.5">({hotel.review_count})</span>
             )}
