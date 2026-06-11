@@ -233,7 +233,7 @@ function exportToPDF(
     </tbody>
   </table>
 
-  <div class="footer">Aman Ethiopia · Alga Ale Provider Dashboard</div>
+  <div class="footer">Alga Ale Provider Dashboard</div>
 </body>
 </html>`
 

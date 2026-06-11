@@ -1,9 +1,9 @@
 export const FEATURES = {
-  AI_CONCIERGE: false,
+  AI_CONCIERGE: true,
   AI_PLANNER: true,
 
   PAYMENTS: false,
-  BUSINESS_MODE: false,
+  BUSINESS_MODE: true,
 
   PROVIDER_PORTAL: true,
   MESSAGING: true,

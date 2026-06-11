@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import Link from "next/link"
-import { Compass, Loader2, AlertCircle, Hotel, Utensils, Map } from "lucide-react"
+import { Compass, Loader2, AlertCircle, Hotel, Utensils, Map, Search } from "lucide-react"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { getCities, type City } from "@/lib/api/content"
 import { searchHotels } from "@/lib/api/hotels"
 import { getRestaurantsPaginated } from "@/lib/api/restaurants"
@@ -41,10 +42,22 @@ function shuffleArray<T>(arr: T[]): T[] {
 
 export default function CitiesPage() {
   const [cities, setCities] = useState<City[]>([])
+  const [query, setQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [liveCounts, setLiveCounts] = useState<Record<string, CityCounts>>({})
   const rawCities = useRef<City[]>([])
+
+  const filteredCities = query.trim()
+    ? cities.filter((c) => {
+        const q = query.toLowerCase()
+        return (
+          c.name.toLowerCase().includes(q) ||
+          (c.nickname ?? "").toLowerCase().includes(q) ||
+          (c.country ?? "").toLowerCase().includes(q)
+        )
+      })
+    : cities
 
   const fetchCityCounts = useCallback(async (city: City) => {
     const citySlug = city.slug
@@ -114,17 +127,30 @@ export default function CitiesPage() {
       <Header />
       <main className="flex-1">
         <section className="bg-gradient-to-b from-primary/5 to-background py-12">
-          <div className="container mx-auto px-4 flex items-end justify-between">
-            <div>
-              <h1 className="mb-2 text-3xl font-bold tracking-tight md:text-4xl">Explore Ethiopian Cities</h1>
-              <p className="text-muted-foreground">
-                Discover hotels, restaurants, guides, and experiences in Ethiopia&apos;s most popular destinations
-              </p>
+          <div className="container mx-auto px-4">
+            <div className="flex items-end justify-between mb-6">
+              <div>
+                <h1 className="mb-2 text-3xl font-bold tracking-tight md:text-4xl">Explore Ethiopian Cities</h1>
+                <p className="text-muted-foreground">
+                  Discover hotels, restaurants, guides, and experiences in Ethiopia&apos;s most popular destinations
+                </p>
+              </div>
+              {!loading && cities.length > 0 && (
+                <Button variant="outline" size="sm" onClick={reshuffle} className="shrink-0">
+                  Shuffle
+                </Button>
+              )}
             </div>
             {!loading && cities.length > 0 && (
-              <Button variant="outline" size="sm" onClick={reshuffle} className="shrink-0">
-                Shuffle
-              </Button>
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search cities..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             )}
           </div>
         </section>
@@ -153,9 +179,17 @@ export default function CitiesPage() {
                   <p className="text-sm text-muted-foreground">Cities will appear here once added by admin</p>
                 </div>
               </div>
+            ) : filteredCities.length === 0 ? (
+              <div className="flex min-h-[300px] items-center justify-center">
+                <div className="text-center">
+                  <Search className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+                  <h3 className="mb-1 text-lg font-semibold">No cities match &ldquo;{query}&rdquo;</h3>
+                  <p className="text-sm text-muted-foreground">Try a different name or clear the search</p>
+                </div>
+              </div>
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {cities.map((city) => {
+                {filteredCities.map((city) => {
                   const counts = liveCounts[city.slug]
                   return (
                     <Link
