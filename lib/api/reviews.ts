@@ -106,6 +106,19 @@ export async function getReviews(filters: ReviewFilters): Promise<ReviewsRespons
 }
 
 /**
+ * Get featured reviews across all listings (public) for the landing page.
+ * Returns [] when nothing is featured yet — never throws.
+ */
+export async function getFeaturedReviews(limit = 12): Promise<Review[]> {
+  try {
+    const raw = await apiGet<any>(`/reviews/featured/?limit=${limit}`)
+    return (raw?.data ?? raw?.results ?? raw ?? []) as Review[]
+  } catch {
+    return []
+  }
+}
+
+/**
  * Provider: Get all reviews across my properties
  * GET /reviews/provider/?type=hotel&id=uuid&rating=5
  */
