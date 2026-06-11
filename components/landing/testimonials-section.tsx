@@ -1,12 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Star, Quote, MessageSquarePlus, CheckCircle2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { getFeaturedReviews } from "@/lib/api/reviews"
+import { submitInquiry } from "@/lib/api/inquiries"
+import { friendlyError } from "@/lib/utils/errors"
 
 interface Testimonial {
   name: string
@@ -15,37 +18,51 @@ interface Testimonial {
   rating: number
 }
 
-// Starts empty — will be populated once real submissions come through
-const LIVE_TESTIMONIALS: Testimonial[] = []
-
-const STORAGE_KEY = "algaale_testimonials"
-
 export function TestimonialsSection() {
   const { toast } = useToast()
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [rating, setRating] = useState(0)
   const [hovered, setHovered] = useState(0)
   const [form, setForm] = useState({ name: "", role: "", message: "" })
 
-  function handleSubmit(e: React.FormEvent) {
+  // Load admin-featured real reviews for the rotating carousel.
+  useEffect(() => {
+    getFeaturedReviews(12).then((reviews) => {
+      setTestimonials(
+        reviews.map((r) => ({
+          name: r.author?.name || "Verified traveler",
+          role: r.is_verified_stay ? "Verified stay" : "Traveler",
+          content: r.comment,
+          rating: r.rating,
+        }))
+      )
+    })
+  }, [])
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!rating) {
       toast({ title: "Please select a star rating", variant: "destructive" })
       return
     }
+    setSubmitting(true)
     try {
-      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")
-      existing.unshift({
+      await submitInquiry({
+        inquiry_type: "general",
         name: form.name,
-        role: form.role,
-        content: form.message,
-        rating,
-        submittedAt: new Date().toISOString(),
+        email: "no-reply@algaale.com",
+        organization: form.role,
+        message: `Testimonial (${rating}★ about Alga Ale):\n\n${form.message}`,
       })
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing.slice(0, 50)))
-    } catch {}
-    setSubmitted(true)
-    toast({ title: "Thank you for sharing your experience!" })
+      setSubmitted(true)
+      toast({ title: "Thank you for sharing your experience!" })
+    } catch (err) {
+      toast({ title: friendlyError(err, "Couldn't submit right now. Please try again."), variant: "destructive" })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function resetForm() {
@@ -71,12 +88,12 @@ export function TestimonialsSection() {
           </p>
         </div>
 
-        {/* ── Rotating carousel — only rendered when we have live testimonials ── */}
-        {LIVE_TESTIMONIALS.length > 0 && (
+        {/* ── Rotating carousel — only rendered when we have featured reviews ── */}
+        {testimonials.length > 0 && (
           <div className="mt-12 overflow-hidden">
             {/* Double the items for a seamless infinite loop */}
             <div className="testimonials-track flex gap-6" style={{ width: "max-content" }}>
-              {[...LIVE_TESTIMONIALS, ...LIVE_TESTIMONIALS].map((t, i) => (
+              {[...testimonials, ...testimonials].map((t, i) => (
                 <Card key={i} className="w-80 flex-shrink-0 shadow-sm">
                   <CardContent className="p-6">
                     <Quote className="mb-3 h-7 w-7 text-primary/20" />
@@ -187,8 +204,8 @@ export function TestimonialsSection() {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full" size="lg">
-                    Submit Testimonial
+                  <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                    {submitting ? "Submitting…" : "Submit Testimonial"}
                   </Button>
                 </form>
               </CardContent>

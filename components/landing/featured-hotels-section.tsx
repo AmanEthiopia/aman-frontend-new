@@ -7,15 +7,33 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { searchHotels } from "@/lib/api/hotels"
 import { getMediaUrl } from "@/lib/utils/media"
-import type { Hotel as HotelType } from "@/lib/types"
 
-function HotelFeatureCard({ hotel }: { hotel: HotelType }) {
-  const primaryImage = hotel.images?.[0]?.image_url
-  const imgSrc = getMediaUrl(primaryImage) || "/placeholder.svg?height=280&width=400"
+// Shape returned by the public /hotels/ list endpoint (snake_case).
+interface ApiHotel {
+  id: string
+  slug?: string
+  name: string
+  area?: string
+  city_name?: string
+  cover_photo?: string
+  images?: { url?: string; photo_url?: string }[]
+  average_rating?: string | number
+  review_count?: number
+  price_min?: number
+  is_verified?: boolean
+  is_featured?: boolean
+}
+
+function HotelFeatureCard({ hotel }: { hotel: ApiHotel }) {
+  const imgSrc =
+    getMediaUrl(hotel.cover_photo) ||
+    getMediaUrl(hotel.images?.[0]?.url) ||
+    getMediaUrl((hotel.images?.[0] as any)?.photo_url) ||
+    "/placeholder.svg?height=280&width=400"
 
   return (
     <Link
-      href={`/hotels/${hotel.id}`}
+      href={`/hotels/${hotel.slug || hotel.id}`}
       className="group relative overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-xl"
     >
       <div className="aspect-[16/10] overflow-hidden">
@@ -54,10 +72,10 @@ function HotelFeatureCard({ hotel }: { hotel: HotelType }) {
         <h3 className="font-bold text-white line-clamp-1 text-base group-hover:underline">
           {hotel.name}
         </h3>
-        {(hotel.area || (hotel as any).city?.name) && (
+        {(hotel.area || hotel.city_name || (hotel as any).city?.name) && (
           <div className="mt-1 flex items-center gap-1 text-xs text-white/80">
             <MapPin className="h-3 w-3 flex-shrink-0" />
-            {[hotel.area, (hotel as any).city?.name].filter(Boolean).join(", ")}
+            {[hotel.area, hotel.city_name || (hotel as any).city?.name].filter(Boolean).join(", ")}
           </div>
         )}
         {hotel.average_rating != null && Number(hotel.average_rating) > 0 && (
@@ -75,14 +93,14 @@ function HotelFeatureCard({ hotel }: { hotel: HotelType }) {
 }
 
 export function FeaturedHotelsSection() {
-  const [hotels, setHotels] = useState<HotelType[]>([])
+  const [hotels, setHotels] = useState<ApiHotel[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     searchHotels({ page_size: 6 })
       .then((res) => {
         // Sort: featured first, then verified, then rest
-        const sorted = [...res.results].sort((a, b) => {
+        const sorted = [...(res.results as unknown as ApiHotel[])].sort((a, b) => {
           if (a.is_featured && !b.is_featured) return -1
           if (!a.is_featured && b.is_featured) return 1
           if (a.is_verified && !b.is_verified) return -1

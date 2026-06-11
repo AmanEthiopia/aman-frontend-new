@@ -21,6 +21,7 @@ import {
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
 import { Button } from "@/components/ui/button"
+import { ShareButton } from "@/components/shared/share-button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ContactDialog } from "@/components/messaging/contact-dialog"
@@ -146,6 +147,9 @@ export default function TransportDetailPage({ params }: { params: Promise<{ id: 
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
+          </div>
+          <div className="absolute right-4 top-4">
+            <ShareButton title={transport.name} variant="ghost" className="bg-black/40 text-white hover:bg-black/60" iconOnly />
           </div>
         </div>
 

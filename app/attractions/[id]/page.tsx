@@ -35,6 +35,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
+import { ShareButton } from "@/components/shared/share-button"
 
 export default function AttractionDetailPage() {
   const params = useParams()
@@ -160,6 +161,7 @@ export default function AttractionDetailPage() {
               >
                 <Heart className={`h-4 w-4 ${isSaved ? "fill-current text-red-500" : ""}`} />
               </Button>
+              <ShareButton title={attraction.name} />
               <AddToItineraryButton
                 itemType="attraction"
                 itemId={attraction.id}

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
+import { ShareButton } from "@/components/shared/share-button"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -561,6 +562,7 @@ export default function RestaurantDetailPage() {
               <Button variant="outline" size="icon" onClick={() => toggleSavedItem(`restaurant-${restaurant.id}`)}>
                 <Heart className={`h-4 w-4 ${isSaved ? "fill-current text-red-500" : ""}`} />
               </Button>
+              <ShareButton title={restaurant.name} />
               <AddToItineraryButton itemType="restaurant" itemId={restaurant.id} itemName={restaurant.name} />
             </div>
           </div>

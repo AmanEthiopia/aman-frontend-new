@@ -31,7 +31,11 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Loader2, AlertCircle } from "lucide-react"
 import { useState } from "react"
+import { submitInquiry } from "@/lib/api/inquiries"
+import { friendlyError } from "@/lib/utils/errors"
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -142,6 +146,38 @@ const founders = [
 
 export default function BusinessPage() {
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    organization: "",
+    org_type: "",
+    travelers: "",
+    message: "",
+    company_website: "", // honeypot
+  })
+
+  const setField = (key: keyof typeof form) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => setForm((prev) => ({ ...prev, [key]: e.target.value }))
+
+  const handleSubmit = async () => {
+    setFormError(null)
+    if (!form.name.trim() || !form.email.trim()) {
+      setFormError("Please enter your name and work email.")
+      return
+    }
+    setSubmitting(true)
+    try {
+      await submitInquiry({ ...form, inquiry_type: "business" })
+      setSubmitted(true)
+    } catch (err) {
+      setFormError(friendlyError(err, "We couldn't send your inquiry. Please try again or email us directly."))
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -377,24 +413,40 @@ export default function BusinessPage() {
                   </div>
                 ) : (
                   <>
+                    {formError && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{formError}</AlertDescription>
+                      </Alert>
+                    )}
+                    {/* Honeypot — visually hidden, ignored by humans, filled by bots */}
+                    <input
+                      type="text"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      value={form.company_website}
+                      onChange={setField("company_website")}
+                      className="hidden"
+                    />
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="name">Your Name</Label>
-                        <Input id="name" placeholder="John Smith" />
+                        <Input id="name" placeholder="John Smith" value={form.name} onChange={setField("name")} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">Work Email</Label>
-                        <Input id="email" type="email" placeholder="john@organization.org" />
+                        <Input id="email" type="email" placeholder="john@organization.org" value={form.email} onChange={setField("email")} />
                       </div>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="org">Organization</Label>
-                        <Input id="org" placeholder="Organization name" />
+                        <Input id="org" placeholder="Organization name" value={form.organization} onChange={setField("organization")} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="type">Organization Type</Label>
-                        <select id="type" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                        <select id="type" value={form.org_type} onChange={setField("org_type")} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                           <option value="">Select type...</option>
                           <option value="corporate">Corporate / Business</option>
                           <option value="diplomatic">Diplomatic Mission</option>
@@ -406,7 +458,7 @@ export default function BusinessPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="travelers">Estimated Monthly Travelers</Label>
-                      <select id="travelers" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                      <select id="travelers" value={form.travelers} onChange={setField("travelers")} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                         <option value="">Select range...</option>
                         <option value="1-10">1–10 travelers</option>
                         <option value="11-50">11–50 travelers</option>
@@ -420,15 +472,21 @@ export default function BusinessPage() {
                         id="message"
                         placeholder="Describe your travel requirements, expansion goals, destinations, and any specific needs..."
                         className="min-h-[100px]"
+                        value={form.message}
+                        onChange={setField("message")}
                       />
                     </div>
                     <Button
                       className="w-full"
                       size="lg"
-                      onClick={() => setSubmitted(true)}
+                      onClick={handleSubmit}
+                      disabled={submitting}
                     >
-                      <Mail className="mr-2 h-5 w-5" />
-                      Submit Inquiry
+                      {submitting ? (
+                        <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Sending…</>
+                      ) : (
+                        <><Mail className="mr-2 h-5 w-5" /> Submit Inquiry</>
+                      )}
                     </Button>
                     <p className="text-center text-sm text-muted-foreground">Our team will respond within 24 hours</p>
                   </>
