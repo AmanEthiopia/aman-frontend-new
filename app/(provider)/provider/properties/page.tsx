@@ -244,7 +244,7 @@ function ProviderPropertiesContent() {
       setProperties(Array.isArray(response) ? response : (response?.results ?? []))
     } catch (error) {
       console.error("[v0] Failed to load properties:", error)
-      // For demo, use empty array - in production this would show an error
+      toast.error("We couldn't load your properties. Please refresh the page.")
       setProperties([])
     } finally {
       setIsLoading(false)

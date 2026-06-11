@@ -29,6 +29,7 @@ import { getCities, type City } from "@/lib/api/content"
 import { SafeCardImage } from "@/components/ui/safe-image"
 import { formatRating, toNumber } from "@/lib/utils"
 import { WishlistButton } from "@/components/wishlist-button"
+import { toast } from "sonner"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -259,6 +260,7 @@ function GuidesContent() {
         setCities(citiesData)
       } catch (error) {
         console.error("Failed to load guides:", error)
+        toast.error("We couldn't load the guides. Please refresh the page.")
       } finally {
         setLoading(false)
       }

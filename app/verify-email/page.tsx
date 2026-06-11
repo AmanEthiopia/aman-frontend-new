@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, Loader2, AlertCircle, CheckCircle, Clock } from "lucide-react"
 import { verifyEmail, resendVerification } from "@/lib/api/auth"
+import { friendlyError } from "@/lib/utils/errors"
 
 function VerifyEmailForm() {
   const router = useRouter()
@@ -50,15 +51,7 @@ function VerifyEmailForm() {
         router.push(loginUrl)
       }, 2000)
     } catch (err: any) {
-      console.error("[v0] Verification error:", err)
-
-      if (err.message.includes("expired") || err.message.includes("410")) {
-        setError("Your verification code has expired. Please request a new one below.")
-      } else if (err.message.includes("Invalid") || err.message.includes("400")) {
-        setError("Invalid verification code. Please check and try again.")
-      } else {
-        setError(err.message || "Verification failed. Please try again.")
-      }
+      setError(friendlyError(err, "Verification failed. Please check the code and try again."))
     } finally {
       setIsLoading(false)
     }
@@ -82,15 +75,7 @@ function VerifyEmailForm() {
         setResendSuccess(false)
       }, 5000)
     } catch (err: any) {
-      console.error("[v0] Resend error:", err)
-
-      if (err.message.includes("already verified") || err.message.includes("400")) {
-        setError("This email is already verified. Please try logging in.")
-      } else if (err.message.includes("not found") || err.message.includes("404")) {
-        setError("Email not found. Please check your email address.")
-      } else {
-        setError(err.message || "Failed to resend code. Please try again.")
-      }
+      setError(friendlyError(err, "Failed to resend verification code. Please try again."))
     } finally {
       setIsResending(false)
     }

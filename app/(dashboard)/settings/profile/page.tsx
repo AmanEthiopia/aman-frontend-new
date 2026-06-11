@@ -18,6 +18,7 @@ import { updateMyProfile, uploadProfilePhoto, deleteProfilePhoto, type UpdatePro
 import { sendPhoneOTP, verifyPhoneOTP } from "@/lib/api/auth"
 import { useApp } from "@/lib/contexts/app-context"
 import { toast } from "sonner"
+import { friendlyError } from "@/lib/utils/errors"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -229,24 +230,9 @@ export default function ProfileEditPage() {
       toast.success("Profile updated successfully")
       router.push("/settings")
     } catch (err: any) {
-      // Parse backend validation errors for better display
-      let errorMessage = "Failed to update profile"
-      if (err.message) {
-        try {
-          // Backend may return field-specific errors
-          const parsed = JSON.parse(err.message)
-          if (typeof parsed === 'object') {
-            const fieldErrors = Object.entries(parsed)
-              .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
-              .join('; ')
-            errorMessage = fieldErrors || err.message
-          }
-        } catch {
-          errorMessage = err.message
-        }
-      }
+      const errorMessage = friendlyError(err, "Failed to update profile. Please try again.")
       setError(errorMessage)
-      toast.error("Failed to update profile")
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -272,8 +258,9 @@ export default function ProfileEditPage() {
       await refreshUser()
       toast.success("Profile photo updated")
     } catch (err: any) {
-      setError(err.message || "Failed to upload photo")
-      toast.error("Failed to upload photo")
+      const msg = friendlyError(err, "Failed to upload photo. Please try again.")
+      setError(msg)
+      toast.error(msg)
     } finally {
       setIsUploadingPhoto(false)
     }
@@ -286,8 +273,9 @@ export default function ProfileEditPage() {
       await refreshUser()
       toast.success("Profile photo removed")
     } catch (err: any) {
-      setError(err.message || "Failed to remove photo")
-      toast.error("Failed to remove photo")
+      const msg = friendlyError(err, "Failed to remove photo. Please try again.")
+      setError(msg)
+      toast.error(msg)
     } finally {
       setIsUploadingPhoto(false)
     }
@@ -298,15 +286,16 @@ export default function ProfileEditPage() {
       setError("Please enter a phone number")
       return
     }
-    
+
     setIsSendingOtp(true)
     try {
       await sendPhoneOTP(formData.phone)
       setShowPhoneVerification(true)
       toast.success("Verification code sent to your phone")
     } catch (err: any) {
-      setError(err.message || "Failed to send verification code")
-      toast.error("Failed to send verification code")
+      const msg = friendlyError(err, "Failed to send verification code. Please try again.")
+      setError(msg)
+      toast.error(msg)
     } finally {
       setIsSendingOtp(false)
     }
@@ -317,7 +306,7 @@ export default function ProfileEditPage() {
       setError("Please enter the verification code")
       return
     }
-    
+
     setIsVerifyingPhone(true)
     try {
       await verifyPhoneOTP(formData.phone, phoneOtp)
@@ -326,8 +315,9 @@ export default function ProfileEditPage() {
       setPhoneOtp("")
       toast.success("Phone number verified successfully")
     } catch (err: any) {
-      setError(err.message || "Failed to verify phone number")
-      toast.error("Failed to verify phone number")
+      const msg = friendlyError(err, "Failed to verify phone number. Please try again.")
+      setError(msg)
+      toast.error(msg)
     } finally {
       setIsVerifyingPhone(false)
     }

@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, CheckCircle, Clock } from "lucide-react"
 import { resetPassword } from "@/lib/api/auth"
+import { friendlyError } from "@/lib/utils/errors"
 
 function ResetPasswordForm() {
   const router = useRouter()
@@ -63,15 +64,7 @@ function ResetPasswordForm() {
         router.push(`/login?email=${encodeURIComponent(formData.email)}`)
       }, 2000)
     } catch (err: any) {
-      console.error("[v0] Reset password error:", err)
-
-      if (err.message.includes("expired") || err.message.includes("410")) {
-        setError("Your reset code has expired. Please request a new one.")
-      } else if (err.message.includes("Invalid") || err.message.includes("400")) {
-        setError("Invalid reset code. Please check and try again.")
-      } else {
-        setError(err.message || "Failed to reset password. Please try again.")
-      }
+      setError(friendlyError(err, "Failed to reset your password. Please check the code and try again."))
     } finally {
       setIsLoading(false)
     }

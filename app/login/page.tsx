@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/auth-context"
 
 import { Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, Info } from "lucide-react"
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google"
+import { friendlyError, actionError } from "@/lib/utils/errors"
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
 
@@ -49,20 +50,12 @@ function LoginForm() {
     try {
       await login(formData.email, formData.password, redirectParam)
     } catch (err: any) {
-      if (
-        err.message.includes("Email not verified") ||
-        err.message.includes("not verified") ||
-        err.message.includes("403")
-      ) {
+      const msg = err?.message?.toLowerCase() ?? ""
+      if (msg.includes("not verified") || msg.includes("verify your email")) {
         router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`)
         return
-      } else if (err.message.includes("Invalid credentials") || err.message.includes("401")) {
-        setError("Invalid email or password. Please try again.")
-      } else if (err.message.includes("inactive") || err.message.includes("403")) {
-        setError("Your account is inactive. Please contact support.")
-      } else {
-        setError(err.message || "Failed to sign in. Please check your credentials.")
       }
+      setError(friendlyError(err, actionError("login")))
     }
   }
 
@@ -83,7 +76,7 @@ function LoginForm() {
       // Send ID token to backend - backend verifies with Google and returns JWT tokens
       await loginWithGoogle(idToken, redirectParam)
     } catch (err: any) {
-      setError(err.message || "Failed to sign in with Google. Please try again.")
+      setError(friendlyError(err, "Failed to sign in with Google. Please try again."))
     } finally {
       setGoogleLoading(false)
     }

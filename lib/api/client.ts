@@ -4,6 +4,7 @@
  */
 
 import { getAuthCookie, setAuthCookie, clearAuthCookies, getRefreshCookie } from "@/lib/utils/cookies"
+import { flattenErrors, STATUS_MESSAGES } from "@/lib/utils/errors"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.aman.yichalal.ai/api/v1"
 const MEDIA_HOST = API_BASE_URL.replace(/\/api\/v1\/?$/, "")
@@ -175,8 +176,18 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
     if (!response.ok) {
       const errorData: APIResponse = isJson ? await response.json() : { success: false, message: response.statusText }
 
-      // Throw error with message from envelope
-      throw new APIError(errorData.message || errorData.error || "Request failed", response.status, errorData.error)
+      // Build a user-friendly message:
+      // 1. Try to flatten DRF validation errors from the error object
+      // 2. Fall back to the envelope message
+      // 3. Fall back to status-code table
+      const flatValidation = errorData.error ? flattenErrors(errorData.error) : null
+      const friendlyMsg =
+        flatValidation ||
+        errorData.message ||
+        STATUS_MESSAGES[response.status] ||
+        "Something went wrong. Please try again."
+
+      throw new APIError(friendlyMsg, response.status, errorData.error)
     }
 
     // Return parsed JSON or empty object for 204 No Content
@@ -188,7 +199,13 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
 
     // Check success flag
     if (envelope.success === false) {
-      throw new APIError(envelope.message || envelope.error || "Request failed", response.status, envelope.error)
+      const flatValidation = envelope.error ? flattenErrors(envelope.error) : null
+      const friendlyMsg =
+        flatValidation ||
+        envelope.message ||
+        STATUS_MESSAGES[response.status] ||
+        "Something went wrong. Please try again."
+      throw new APIError(friendlyMsg, response.status, envelope.error)
     }
 
     // Return the data field from the envelope
@@ -199,7 +216,13 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
     }
 
     // Network or other errors
-    throw new APIError(error instanceof Error ? error.message : "Network error", 0)
+    const msg =
+      error instanceof Error && error.message.toLowerCase().includes("fetch")
+        ? STATUS_MESSAGES[0]
+        : error instanceof Error
+        ? error.message
+        : STATUS_MESSAGES[0]
+    throw new APIError(msg, 0)
   }
 }
 
