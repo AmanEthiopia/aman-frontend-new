@@ -75,6 +75,15 @@ export interface DashboardTotals {
   total_reviews: number
 }
 
+export interface DashboardVerification {
+  total: number
+  published: number
+  unpublished: number
+  verified: number
+  unverified: number       // published but not yet verified
+  pending_requests: number
+}
+
 export interface ProviderDashboardData {
   alert: DashboardAlert
   stats: DashboardStats
@@ -82,6 +91,7 @@ export interface ProviderDashboardData {
   performance: DashboardPerformance
   recent_reviews: DashboardReview[]
   totals: DashboardTotals
+  verification?: DashboardVerification
 }
 
 export async function getProviderDashboard(): Promise<ProviderDashboardData> {
@@ -133,6 +143,12 @@ export interface EarningsMetricRevenue {
 
 export interface EarningsMetrics {
   total_revenue: EarningsMetricRevenue
+  /** Gross collected directly by the provider from guests */
+  gross_revenue?: EarningsMetricRevenue
+  /** Commission the provider owes Alga Ale (e.g. 10%) */
+  commission_owed?: EarningsMetricRevenue
+  /** What the provider keeps after commission */
+  net_earnings?: EarningsMetricRevenue
   total_bookings: EarningsMetricValue
   avg_nightly_rate: EarningsMetricRevenue
   occupancy_rate: EarningsMetricValue
@@ -153,6 +169,8 @@ export interface ProviderEarningsData {
   period: string
   period_start: string
   period_end: string
+  /** Commission percentage Alga Ale charges (e.g. 10) */
+  commission_pct?: number
   metrics: EarningsMetrics
   transactions: EarningsTransaction[]
 }

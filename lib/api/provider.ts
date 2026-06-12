@@ -24,6 +24,8 @@ export interface PropertyBase {
   is_verified: boolean
   is_active: boolean      // normalized from is_published on load
   is_published?: boolean  // raw API field — same as is_active
+  // verified | pending | in_review | change_requested | rejected | unverified
+  verification_status?: string
   created_at: string
   updated_at: string
   cover_photo_url?: string
@@ -67,6 +69,31 @@ function normalizeProp<T extends Record<string, any>>(raw: T): T {
     photos,
     ...(raw.rooms !== undefined ? { rooms } : {}),
   }
+}
+
+// Maps a provider property category to the unified verification entity_type.
+const CATEGORY_TO_ENTITY: Record<string, string> = {
+  hotel: "hotel",
+  restaurant: "restaurant",
+  trip: "package",
+  driver: "driver",
+  tour_guide: "guide",
+}
+
+/**
+ * Request verification for a published listing. Simple flow (no documents) —
+ * flags the listing to the Alga Ale team and sets its status to "pending".
+ */
+export async function requestVerification(
+  category: PropertyCategory,
+  id: string,
+  note?: string,
+): Promise<{ id: string; status: string }> {
+  const entityType = CATEGORY_TO_ENTITY[category] ?? category
+  return apiPost<{ id: string; status: string }>(
+    `/admin/verifications/submit/?entity_type=${entityType}&entity_id=${id}`,
+    { documents: [], submitter_notes: note ?? "" },
+  )
 }
 
 // Amenity as returned by GET /hotels/provider/<id>/ — objects, not strings

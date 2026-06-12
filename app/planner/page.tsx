@@ -34,6 +34,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FEATURES } from "@/lib/config/features"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
+import { generateItinerary, type ItineraryRequest } from "@/lib/api/ai"
+import { friendlyError } from "@/lib/utils/errors"
+import { toast } from "sonner"
 
 interface GeneratedDay {
   day: number
@@ -65,8 +68,6 @@ const travelStyles = [
   { value: "luxury", label: "Luxury", description: "> $150/day" },
 ]
 
-const mockGeneratedItinerary: GeneratedDay[] = []
-
 const activityTypeConfig = {
   hotel: { icon: Building2, color: "bg-blue-500/10 text-blue-600" },
   restaurant: { icon: UtensilsCrossed, color: "bg-orange-500/10 text-orange-600" },
@@ -74,13 +75,27 @@ const activityTypeConfig = {
   transport: { icon: Car, color: "bg-green-500/10 text-green-600" },
 }
 
-function PlannerForm({ onGenerate }: { onGenerate: () => void }) {
+function PlannerForm({ onGenerate }: { onGenerate: (payload: ItineraryRequest) => void }) {
   const [selectedInterests, setSelectedInterests] = useState<string[]>(["history", "food"])
   const [duration, setDuration] = useState([5])
   const [travelers, setTravelers] = useState("2")
   const [budget, setBudget] = useState("comfort")
   const [destination, setDestination] = useState("")
   const [notes, setNotes] = useState("")
+
+  const submit = () => {
+    const interestLabels = selectedInterests.map(
+      (id) => interests.find((i) => i.id === id)?.label ?? id,
+    )
+    onGenerate({
+      destination: !destination || destination === "ai-suggest" ? "" : destination.replace(/-/g, " "),
+      days: duration[0],
+      travelers,
+      budget,
+      interests: interestLabels,
+      notes,
+    })
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -90,7 +105,7 @@ function PlannerForm({ onGenerate }: { onGenerate: () => void }) {
         </div>
         <div className="flex items-center justify-center gap-2 mb-2">
           <h1 className="text-3xl font-bold">AI Trip Planner</h1>
-          <Badge variant="secondary">Preview</Badge>
+          <Badge variant="secondary">Beta</Badge>
         </div>
         <p className="mt-2 text-muted-foreground">
           Tell us about your dream Ethiopian adventure and we'll create a personalized itinerary
@@ -250,9 +265,9 @@ function PlannerForm({ onGenerate }: { onGenerate: () => void }) {
         </CardContent>
       </Card>
 
-      <Button onClick={onGenerate} size="lg" className="w-full">
+      <Button onClick={submit} size="lg" className="w-full">
         <Sparkles className="mr-2 h-5 w-5" />
-        Generate My Itinerary (Demo)
+        Generate My Itinerary
       </Button>
     </div>
   )
@@ -336,9 +351,11 @@ function GeneratedItinerary({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">Your Ethiopian Adventure</h1>
-            <Badge variant="secondary">Demo</Badge>
+            <Badge variant="secondary">AI-generated</Badge>
           </div>
-          <p className="text-muted-foreground">3 days - 2 cities - Customized for you</p>
+          <p className="text-muted-foreground">
+            {itinerary.length} {itinerary.length === 1 ? "day" : "days"} · {new Set(itinerary.map((d) => d.city)).size} cities · Customized for you
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={onRegenerate}>
@@ -463,7 +480,7 @@ function GeneratedItinerary({
           <div>
             <h3 className="font-semibold text-green-800 dark:text-green-200">Ready to book?</h3>
             <p className="text-sm text-green-700 dark:text-green-300">
-              Save this itinerary and start booking individual items (demo only)
+              Save this itinerary and start booking individual items
             </p>
           </div>
           <Button className="bg-green-600 hover:bg-green-700">
@@ -481,22 +498,26 @@ export default function PlannerPage() {
   const [progress, setProgress] = useState(0)
   const [generatedItinerary, setGeneratedItinerary] = useState<GeneratedDay[]>([])
 
-  const handleGenerate = () => {
+  const handleGenerate = async (payload: ItineraryRequest) => {
     setStage("generating")
     setProgress(0)
 
-    // Simulate AI generation with progress updates
+    // Animate progress up to ~92% while the real request runs.
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setGeneratedItinerary(mockGeneratedItinerary)
-          setStage("results")
-          return 100
-        }
-        return prev + Math.random() * 15 + 5
-      })
+      setProgress((prev) => Math.min(prev + Math.random() * 12 + 3, 92))
     }, 500)
+
+    try {
+      const result = await generateItinerary(payload)
+      setGeneratedItinerary((result.itinerary ?? []) as GeneratedDay[])
+      setProgress(100)
+      setStage("results")
+    } catch (err) {
+      toast.error(friendlyError(err, "Couldn't generate your itinerary. Please try again."))
+      setStage("form")
+    } finally {
+      clearInterval(interval)
+    }
   }
 
   const handleRegenerate = () => {

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Shield, Phone, AlertTriangle, Briefcase } from "lucide-react"
+import { Shield, Phone, AlertTriangle, Briefcase, Crown } from "lucide-react"
 import { AmanWordmark } from "@/components/brand/aman-logo"
 
 export function Footer() {
@@ -51,6 +51,10 @@ export function Footer() {
               </Link>
               <Link href="/planner" className="text-sm text-muted-foreground hover:text-foreground">
                 AI Travel Planner
+              </Link>
+              <Link href="/#premium" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                <Crown className="h-3 w-3" />
+                Premium Concierge
               </Link>
             </nav>
           </div>

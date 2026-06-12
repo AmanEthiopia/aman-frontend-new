@@ -27,6 +27,7 @@ import {
   LogOut,
   Map,
   MapPin,
+  Crown,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
@@ -48,7 +49,7 @@ export function Header() {
   const userName = [userProfile?.user?.first_name, userProfile?.user?.last_name].filter(Boolean).join(" ") || "User"
   const isProvider = userProfile?.role?.is_provider ?? false
 
-  const handleSetLanguage = (lang: string) => {
+  const handleSetLanguage = (lang: "en" | "am") => {
     setLanguage(lang)
     if (typeof window === "undefined") return
     if (lang === "en") {
@@ -120,6 +121,12 @@ export function Header() {
                 </Button>
               </Link>
             )}
+            <Link href="/#premium">
+              <Button variant="ghost" className="flex items-center gap-1">
+                <Crown className="h-4 w-4" />
+                Premium
+              </Button>
+            </Link>
             <Link href="/about">
               <Button variant="ghost">About</Button>
             </Link>
@@ -295,6 +302,14 @@ export function Header() {
                     AI Travel Planner
                   </Link>
                 )}
+                <Link
+                  href="/#premium"
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Crown className="h-4 w-4" />
+                  Premium Concierge
+                </Link>
                 <Link
                   href="/about"
                   className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"

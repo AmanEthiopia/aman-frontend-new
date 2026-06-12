@@ -22,6 +22,8 @@ import {
   XCircle,
   MapPin,
   Loader2,
+  ShieldCheck,
+  Clock,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -86,22 +88,75 @@ const propertyTypeConfig: Record<PropertyCategory, {
   },
 }
 
+function VerificationBadge({ property }: { property: PropertyBase }) {
+  const status = property.is_verified ? "verified" : property.verification_status || "unverified"
+
+  if (status === "verified") {
+    return (
+      <Badge className="bg-green-100 text-green-700 border-0 dark:bg-green-950 dark:text-green-400">
+        <CheckCircle2 className="mr-1 h-3 w-3" />
+        Verified
+      </Badge>
+    )
+  }
+  if (status === "pending" || status === "in_review") {
+    return (
+      <Badge className="bg-blue-100 text-blue-700 border-0 dark:bg-blue-950 dark:text-blue-300">
+        <Clock className="mr-1 h-3 w-3" />
+        {status === "in_review" ? "In review" : "Pending review"}
+      </Badge>
+    )
+  }
+  if (status === "change_requested") {
+    return (
+      <Badge className="bg-orange-100 text-orange-800 border-0 dark:bg-orange-900/30 dark:text-orange-300">
+        Changes requested
+      </Badge>
+    )
+  }
+  if (status === "rejected") {
+    return (
+      <Badge className="bg-red-100 text-red-700 border-0 dark:bg-red-950 dark:text-red-300">
+        <XCircle className="mr-1 h-3 w-3" />
+        Rejected
+      </Badge>
+    )
+  }
+  return (
+    <Badge className="bg-yellow-100 text-yellow-800 border-0 dark:bg-yellow-900/30 dark:text-yellow-300">
+      <XCircle className="mr-1 h-3 w-3" />
+      Unverified
+    </Badge>
+  )
+}
+
 function PropertyCard({
   property,
   onView,
   onEdit,
   onDelete,
+  onRequestVerification,
+  requesting,
 }: {
   property: PropertyBase
   onView: () => void
   onEdit: () => void
   onDelete: () => void
+  onRequestVerification: () => void
+  requesting: boolean
 }) {
   const config = propertyTypeConfig[property.category]
   const Icon = config.icon
 
+  const status = property.is_verified ? "verified" : property.verification_status || "unverified"
+  const isPublished = property.is_active
+  const awaitingReview = status === "pending" || status === "in_review"
+
   return (
-    <Card className="overflow-hidden transition-shadow hover:shadow-md">
+    <Card
+      onClick={onView}
+      className="group cursor-pointer overflow-hidden transition-shadow hover:shadow-md hover:ring-1 hover:ring-primary/30"
+    >
       <div className="relative aspect-[16/10]">
         {property.cover_photo_url ? (
           <img
@@ -119,22 +174,12 @@ function PropertyCard({
             <Icon className="mr-1 h-3 w-3" />
             {config.label}
           </Badge>
-          {property.is_verified ? (
-            <Badge className="bg-green-100 text-green-700 border-0 dark:bg-green-950 dark:text-green-400">
-              <CheckCircle2 className="mr-1 h-3 w-3" />
-              Verified
-            </Badge>
-          ) : (
-            <Badge className="bg-yellow-100 text-yellow-800 border-0 dark:bg-yellow-900/30 dark:text-yellow-300">
-              <XCircle className="mr-1 h-3 w-3" />
-              Unverified
-            </Badge>
-          )}
+          <VerificationBadge property={property} />
         </div>
         {!property.is_active && (
           <div className="absolute right-2 top-2">
             <Badge variant="secondary" className="bg-gray-900/70 text-white">
-              Inactive
+              Unpublished
             </Badge>
           </div>
         )}
@@ -153,11 +198,16 @@ function PropertyCard({
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex-shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
               <DropdownMenuItem onClick={onView}>
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
@@ -188,6 +238,41 @@ function PropertyCard({
                 {property.review_count} review{property.review_count !== 1 ? "s" : ""}
               </span>
             )}
+          </div>
+        )}
+
+        {/* Verification action */}
+        {isPublished && status !== "verified" && (
+          <div className="mt-3 border-t pt-3">
+            {awaitingReview ? (
+              <p className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400">
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+                Verification requested — under review
+              </p>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRequestVerification()
+                }}
+                disabled={requesting}
+              >
+                {requesting ? (
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ShieldCheck className="mr-2 h-3.5 w-3.5" />
+                )}
+                Request Verification
+              </Button>
+            )}
+          </div>
+        )}
+        {!isPublished && (
+          <div className="mt-3 border-t pt-3">
+            <p className="text-xs text-muted-foreground">Publish this listing to request verification.</p>
           </div>
         )}
       </CardContent>
@@ -226,6 +311,7 @@ function ProviderPropertiesContent() {
   })
   const [deleteProperty, setDeleteProperty] = useState<PropertyBase | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [requestingId, setRequestingId] = useState<string | null>(null)
 
   useEffect(() => {
     loadProperties()
@@ -290,6 +376,23 @@ function ProviderPropertiesContent() {
     } finally {
       setIsDeleting(false)
       setDeleteProperty(null)
+    }
+  }
+
+  const handleRequestVerification = async (property: PropertyBase) => {
+    setRequestingId(property.id)
+    try {
+      const res = await providerAPI.requestVerification(property.category, property.id)
+      setProperties((prev) =>
+        prev.map((p) =>
+          p.id === property.id ? { ...p, verification_status: res.status || "pending" } : p,
+        ),
+      )
+      toast.success("Verification requested — our team will review your listing.")
+    } catch {
+      toast.error("Couldn't request verification. Please try again.")
+    } finally {
+      setRequestingId(null)
     }
   }
 
@@ -396,6 +499,8 @@ function ProviderPropertiesContent() {
                   onView={() => handleView(property)}
                   onEdit={() => handleEdit(property)}
                   onDelete={() => setDeleteProperty(property)}
+                  onRequestVerification={() => handleRequestVerification(property)}
+                  requesting={requestingId === property.id}
                 />
               ))}
               {/* Add property card for current tab */}

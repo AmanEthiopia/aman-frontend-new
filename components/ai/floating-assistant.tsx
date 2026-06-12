@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { X, Send, Loader2, User, Minimize2 } from "lucide-react"
 import { useApp } from "@/lib/contexts/app-context"
-import { sendAIQuery } from "@/lib/api/mock-api"
+import { sendAIQuery } from "@/lib/api/ai"
+import { friendlyError } from "@/lib/utils/errors"
 import { FEATURES } from "@/lib/config/features"
 import { AmanZigzag, AmanZigzagLoader } from "@/components/brand/aman-logo"
 
@@ -45,25 +46,22 @@ export function FloatingAIAssistant() {
     if (!query.trim() || isLoading) return
 
     const userMessage: Message = { role: "user", content: query }
+    const history = messages.slice(-6).map((m) => ({ role: m.role, content: m.content }))
     setMessages((prev) => [...prev, userMessage])
     setInput("")
     setIsLoading(true)
 
     try {
-      const response = await sendAIQuery(query)
-      if (response.data) {
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: response.data.response,
-        }
-        setMessages((prev) => [...prev, assistantMessage])
-      }
-    } catch {
-      const errorMessage: Message = {
-        role: "assistant",
-        content: "I apologize, but I encountered an error. Please try again.",
-      }
-      setMessages((prev) => [...prev, errorMessage])
+      const result = await sendAIQuery(query, {
+        history,
+        context: typeof window !== "undefined" ? { page: window.location.pathname } : undefined,
+      })
+      setMessages((prev) => [...prev, { role: "assistant", content: result.response }])
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: friendlyError(err, "I couldn't answer that right now. Please try again.") },
+      ])
     } finally {
       setIsLoading(false)
     }
@@ -106,7 +104,7 @@ export function FloatingAIAssistant() {
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold">Alga Ale AI Assistant</h3>
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                Demo
+                Beta
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">Ask anything about Ethiopia</p>
