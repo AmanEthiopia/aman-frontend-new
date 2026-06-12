@@ -21,6 +21,7 @@ import {
   MessageSquare,
   RefreshCcw,
   Sparkles,
+  ShieldCheck,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -269,6 +270,7 @@ export default function ProviderDashboard() {
   const stats = data?.stats
   const performance = data?.performance
   const totals = data?.totals
+  const verification = data?.verification
   const recentReviews = data?.recent_reviews ?? []
 
   const currency = stats?.this_month_revenue?.currency ?? "ETB"
@@ -310,6 +312,36 @@ export default function ProviderDashboard() {
           </CardContent>
         </Card>
       ) : null}
+
+      {/* Verification nudge */}
+      {verification && (verification.unverified > 0 || verification.unpublished > 0) && (
+        <Card className="border-primary/30 bg-primary/[0.04]">
+          <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
+            <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
+            <p className="flex-1 text-sm">
+              {verification.unverified > 0 && (
+                <>
+                  You have <strong>{verification.unverified}</strong> published{" "}
+                  {verification.unverified === 1 ? "listing" : "listings"} that{" "}
+                  {verification.unverified === 1 ? "isn't" : "aren't"} verified yet. Verified listings
+                  earn traveler trust and get more bookings.{" "}
+                </>
+              )}
+              {verification.unpublished > 0 && (
+                <>
+                  You also have <strong>{verification.unpublished}</strong> unpublished{" "}
+                  {verification.unpublished === 1 ? "listing" : "listings"} — publish to start receiving bookings.
+                </>
+              )}
+            </p>
+            <Link href="/provider/properties">
+              <Button size="sm" variant="outline" className="shrink-0 bg-transparent">
+                Review Listings
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* No properties onboarding */}
       {totals?.total_properties === 0 && (
@@ -357,6 +389,19 @@ export default function ProviderDashboard() {
           icon={Star}
         />
       </div>
+
+      {/* Listing status */}
+      {verification && verification.total > 0 && (
+        <div>
+          <h2 className="mb-3 text-sm font-medium text-muted-foreground">Listing Status</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Published" value={verification.published} icon={CheckCircle2} />
+            <StatCard title="Unpublished" value={verification.unpublished} icon={XCircle} />
+            <StatCard title="Verified" value={verification.verified} icon={ShieldCheck} />
+            <StatCard title="Needs Verification" value={verification.unverified} icon={AlertCircle} />
+          </div>
+        </div>
+      )}
 
       {/* Two Column Layout */}
       <div className="grid gap-6 lg:grid-cols-2">

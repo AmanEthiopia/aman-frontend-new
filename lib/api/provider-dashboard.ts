@@ -75,6 +75,15 @@ export interface DashboardTotals {
   total_reviews: number
 }
 
+export interface DashboardVerification {
+  total: number
+  published: number
+  unpublished: number
+  verified: number
+  unverified: number       // published but not yet verified
+  pending_requests: number
+}
+
 export interface ProviderDashboardData {
   alert: DashboardAlert
   stats: DashboardStats
@@ -82,6 +91,7 @@ export interface ProviderDashboardData {
   performance: DashboardPerformance
   recent_reviews: DashboardReview[]
   totals: DashboardTotals
+  verification?: DashboardVerification
 }
 
 export async function getProviderDashboard(): Promise<ProviderDashboardData> {
