@@ -150,12 +150,13 @@ function PropertyCard({
 
   const status = property.is_verified ? "verified" : property.verification_status || "unverified"
   const isPublished = property.is_active
-  // Can request when published, not verified, and not already awaiting review.
-  const canRequest = isPublished && !["verified", "pending", "in_review"].includes(status)
   const awaitingReview = status === "pending" || status === "in_review"
 
   return (
-    <Card className="overflow-hidden transition-shadow hover:shadow-md">
+    <Card
+      onClick={onView}
+      className="group cursor-pointer overflow-hidden transition-shadow hover:shadow-md hover:ring-1 hover:ring-primary/30"
+    >
       <div className="relative aspect-[16/10]">
         {property.cover_photo_url ? (
           <img
@@ -197,11 +198,16 @@ function PropertyCard({
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex-shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
               <DropdownMenuItem onClick={onView}>
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
@@ -248,7 +254,10 @@ function PropertyCard({
                 size="sm"
                 variant="outline"
                 className="w-full"
-                onClick={onRequestVerification}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRequestVerification()
+                }}
                 disabled={requesting}
               >
                 {requesting ? (
