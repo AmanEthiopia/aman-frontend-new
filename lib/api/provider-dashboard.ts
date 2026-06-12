@@ -133,6 +133,12 @@ export interface EarningsMetricRevenue {
 
 export interface EarningsMetrics {
   total_revenue: EarningsMetricRevenue
+  /** Gross collected directly by the provider from guests */
+  gross_revenue?: EarningsMetricRevenue
+  /** Commission the provider owes Alga Ale (e.g. 10%) */
+  commission_owed?: EarningsMetricRevenue
+  /** What the provider keeps after commission */
+  net_earnings?: EarningsMetricRevenue
   total_bookings: EarningsMetricValue
   avg_nightly_rate: EarningsMetricRevenue
   occupancy_rate: EarningsMetricValue
@@ -153,6 +159,8 @@ export interface ProviderEarningsData {
   period: string
   period_start: string
   period_end: string
+  /** Commission percentage Alga Ale charges (e.g. 10) */
+  commission_pct?: number
   metrics: EarningsMetrics
   transactions: EarningsTransaction[]
 }

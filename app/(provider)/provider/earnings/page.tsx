@@ -1,13 +1,12 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import {
   TrendingUp,
   DollarSign,
   Calendar,
   Clock,
-  Download,
   Loader2,
   RefreshCcw,
   ArrowUpRight,
@@ -15,6 +14,11 @@ import {
   Building2,
   Receipt,
   FileText,
+  Wallet,
+  Landmark,
+  PiggyBank,
+  CalendarClock,
+  Info,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -133,7 +137,7 @@ function TransactionRow({ tx, currency }: { tx: EarningsTransaction; currency: s
       </div>
       <div className="flex items-center gap-3 shrink-0">
         {isFee && (
-          <Badge variant="outline" className="text-xs text-orange-600 border-orange-200">Fee</Badge>
+          <Badge variant="outline" className="text-xs text-orange-600 border-orange-200">Commission</Badge>
         )}
         <p className={`text-base font-semibold whitespace-nowrap ${isCredit ? "text-green-600" : "text-muted-foreground"}`}>
           {isCredit ? "+" : "−"}{currency} {tx.amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
@@ -156,11 +160,15 @@ function exportToPDF(
   const fmt = (n: number) => `${currency} ${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
   const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
   const metrics = data.metrics
+  const pct = data.commission_pct ?? 10
+  const gross = (metrics.gross_revenue ?? metrics.total_revenue)?.value ?? 0
+  const commission = metrics.commission_owed?.value ?? Math.round(gross * (pct / 100) * 100) / 100
+  const net = metrics.net_earnings?.value ?? Math.round((gross - commission) * 100) / 100
 
   const rows = transactions.map((t) => `
     <tr>
       <td>${fmtDate(t.date)}</td>
-      <td>${t.type === "service_fee" ? "Service Fee" : "Booking"}</td>
+      <td>${t.type === "service_fee" ? "Commission" : "Booking"}</td>
       <td>${t.description}</td>
       <td>${t.property_name}</td>
       <td style="text-align:right; color:${t.is_credit ? "#16a34a" : "#9ca3af"}">
@@ -201,20 +209,20 @@ function exportToPDF(
 
   <div class="metrics">
     <div class="metric">
-      <div class="metric-label">Total Revenue</div>
-      <div class="metric-value">${fmt(metrics.total_revenue.value)}</div>
+      <div class="metric-label">Gross Revenue (paid to you)</div>
+      <div class="metric-value">${fmt(gross)}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Commission to Alga Ale (${pct}%)</div>
+      <div class="metric-value">${fmt(commission)}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Net Earnings (you keep)</div>
+      <div class="metric-value">${fmt(net)}</div>
     </div>
     <div class="metric">
       <div class="metric-label">Total Bookings</div>
       <div class="metric-value">${metrics.total_bookings.value}</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Avg. Nightly Rate</div>
-      <div class="metric-value">${fmt(metrics.avg_nightly_rate.value)}</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Occupancy Rate</div>
-      <div class="metric-value">${metrics.occupancy_rate.value}%</div>
     </div>
   </div>
 
@@ -254,6 +262,8 @@ function exportToPDF(
 // Page
 // ============================================================================
 
+type PayoutSchedule = "weekly" | "biweekly" | "monthly"
+
 export default function ProviderEarningsPage() {
   const [period, setPeriod] = useState<EarningsPeriod>("this_month")
   const [txType, setTxType] = useState<EarningsType>("all")
@@ -262,6 +272,7 @@ export default function ProviderEarningsPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
+  const [payoutSchedule, setPayoutSchedule] = useState<PayoutSchedule>("monthly")
 
   const load = useCallback(async (showRefreshing = false) => {
     if (period === "custom" && (!dateFrom || !dateTo)) return
@@ -302,6 +313,27 @@ export default function ProviderEarningsPage() {
   const metrics = data?.metrics
   const transactions = data?.transactions ?? []
   const currency = metrics?.total_revenue?.currency ?? "ETB"
+  const commissionPct = data?.commission_pct ?? 10
+
+  // Money flow: guests pay the provider gross; provider owes Alga Ale commission.
+  // Prefer backend-computed values, fall back to deriving from gross for safety.
+  const grossMetric = metrics?.gross_revenue ?? metrics?.total_revenue
+  const grossValue = grossMetric?.value ?? 0
+  const commissionValue =
+    metrics?.commission_owed?.value ?? Math.round(grossValue * (commissionPct / 100) * 100) / 100
+  const netValue =
+    metrics?.net_earnings?.value ?? Math.round((grossValue - commissionValue) * 100) / 100
+
+  const nextPayoutDate = useMemo(() => {
+    const d = new Date()
+    if (payoutSchedule === "weekly") d.setDate(d.getDate() + 7)
+    else if (payoutSchedule === "biweekly") d.setDate(d.getDate() + 14)
+    else {
+      d.setMonth(d.getMonth() + 1)
+      d.setDate(1)
+    }
+    return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+  }, [payoutSchedule])
 
   const filtered = txType === "all"
     ? transactions
@@ -315,7 +347,7 @@ export default function ProviderEarningsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold">Earnings</h1>
-          <p className="text-muted-foreground">Track your revenue and payouts</p>
+          <p className="text-muted-foreground">Guests pay you directly — track your revenue and the commission you owe Alga Ale</p>
         </div>
         <div className="flex gap-2 flex-wrap items-end">
           <Button variant="ghost" size="icon" onClick={() => load(true)} disabled={refreshing || (period === "custom" && (!dateFrom || !dateTo))}>
@@ -397,13 +429,27 @@ export default function ProviderEarningsPage() {
         </Card>
       )}
 
-      {/* Metric Cards */}
+      {/* Money-flow metric cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          title="Total Revenue"
-          value={loading ? "—" : `${currency} ${(metrics?.total_revenue?.value ?? 0).toLocaleString()}`}
-          changePct={metrics?.total_revenue?.vs_last_period_pct}
-          icon={DollarSign}
+          title="Gross Revenue (paid to you)"
+          value={loading ? "—" : `${currency} ${grossValue.toLocaleString()}`}
+          changePct={grossMetric?.vs_last_period_pct}
+          icon={Wallet}
+          loading={loading}
+        />
+        <MetricCard
+          title={`Commission to Alga Ale (${commissionPct}%)`}
+          value={loading ? "—" : `${currency} ${commissionValue.toLocaleString()}`}
+          changePct={metrics?.commission_owed?.vs_last_period_pct}
+          icon={Landmark}
+          loading={loading}
+        />
+        <MetricCard
+          title="Net Earnings (you keep)"
+          value={loading ? "—" : `${currency} ${netValue.toLocaleString()}`}
+          changePct={metrics?.net_earnings?.vs_last_period_pct}
+          icon={PiggyBank}
           loading={loading}
         />
         <MetricCard
@@ -413,6 +459,59 @@ export default function ProviderEarningsPage() {
           icon={Calendar}
           loading={loading}
         />
+      </div>
+
+      {/* Commission payout to Alga Ale */}
+      <Card className="border-primary/30 bg-primary/[0.03]">
+        <CardContent className="py-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-primary/10 p-2.5 shrink-0">
+                <CalendarClock className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold">Commission payout to Alga Ale</p>
+                <p className="text-sm text-muted-foreground max-w-xl">
+                  Guests pay you directly for every booking. You remit Alga Ale&apos;s {commissionPct}% commission on a
+                  schedule that suits you — we&apos;ll send a reminder and statement each cycle.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Commission due this period</p>
+                <p className="text-2xl font-bold text-primary">
+                  {loading ? "—" : `${currency} ${commissionValue.toLocaleString()}`}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Payout schedule</Label>
+                <Select value={payoutSchedule} onValueChange={(v) => setPayoutSchedule(v as PayoutSchedule)}>
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="biweekly">Every 2 weeks</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 flex items-start gap-2 rounded-md bg-background/60 p-3 text-xs text-muted-foreground">
+            <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span>
+              Your next {payoutSchedule === "monthly" ? "monthly" : payoutSchedule === "biweekly" ? "bi-weekly" : "weekly"} commission
+              statement is due on <span className="font-medium text-foreground">{nextPayoutDate}</span>. Net earnings shown above are
+              what you keep after this commission.
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Operational metrics */}
+      <div className="grid gap-4 sm:grid-cols-2">
         <MetricCard
           title="Avg. Nightly Rate"
           value={loading ? "—" : `${currency} ${(metrics?.avg_nightly_rate?.value ?? 0).toLocaleString()}`}
@@ -454,7 +553,7 @@ export default function ProviderEarningsPage() {
                 Bookings ({transactions.filter((t) => t.type === "booking").length})
               </TabsTrigger>
               <TabsTrigger value="service_fee">
-                Fees ({transactions.filter((t) => t.type === "service_fee").length})
+                Commission ({transactions.filter((t) => t.type === "service_fee").length})
               </TabsTrigger>
             </TabsList>
 

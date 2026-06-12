@@ -8,7 +8,7 @@ const premiumTiers = [
   {
     name: "Essential",
     price: "$99",
-    period: "/month",
+    period: "one-time",
     badge: null,
     description: "For independent travelers who want a smoother Ethiopia experience.",
     features: [
@@ -25,7 +25,7 @@ const premiumTiers = [
   {
     name: "Business",
     price: "$199",
-    period: "/month",
+    period: "one-time",
     badge: "Most Popular",
     description: "For business travelers, delegations, and frequent Ethiopia visitors.",
     features: [
@@ -43,7 +43,7 @@ const premiumTiers = [
   {
     name: "Executive",
     price: "$299",
-    period: "/month",
+    period: "one-time",
     badge: "VIP",
     description: "White-glove service for executives, diplomats, and VIP delegations.",
     features: [
@@ -62,7 +62,7 @@ const premiumTiers = [
 
 export function ConciergeSection() {
   return (
-    <section className="py-20 bg-gradient-to-b from-muted/30 to-background">
+    <section id="premium" className="scroll-mt-20 py-20 bg-gradient-to-b from-muted/30 to-background">
       <div className="container mx-auto max-w-6xl px-4">
         <div className="mb-12 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
@@ -74,6 +74,9 @@ export function ConciergeSection() {
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
             Our concierge team handles every detail — from airport arrival to your last meeting. Choose the level of support that fits your journey.
+          </p>
+          <p className="mx-auto mt-2 text-sm font-medium text-primary">
+            One-time payment per trip — no subscription.
           </p>
         </div>
 
