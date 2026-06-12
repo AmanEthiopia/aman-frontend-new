@@ -144,6 +144,15 @@ function ItineraryDay({ day, dayNumber }: { day: PackageDay; dayNumber: number }
             {day.description && (
               <p className="mt-2 text-muted-foreground">{day.description}</p>
             )}
+            {(day as any).photo_url && (
+              <div className="mt-3 overflow-hidden rounded-lg">
+                <img
+                  src={getMediaUrl((day as any).photo_url)}
+                  alt={day.title}
+                  className="h-48 w-full max-w-lg object-cover"
+                />
+              </div>
+            )}
           </div>
           
           {/* Day items */}

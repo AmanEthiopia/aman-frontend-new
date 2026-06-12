@@ -43,6 +43,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { RequestVerificationButton } from "@/components/provider/request-verification-button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1092,6 +1093,12 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
               <Badge variant={hotel.is_active ? "default" : "secondary"}>
                 {hotel.is_active ? "Published" : "Unpublished"}
               </Badge>
+              <RequestVerificationButton
+                category="hotel"
+                propertyId={hotel.id}
+                isVerified={hotel.is_verified}
+                isPublished={hotel.is_active}
+              />
             </div>
             {hotel.nickname && (
               <p className="text-muted-foreground">{hotel.nickname}</p>

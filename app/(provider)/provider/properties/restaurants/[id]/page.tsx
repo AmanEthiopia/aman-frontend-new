@@ -56,6 +56,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
+import { RequestVerificationButton } from "@/components/provider/request-verification-button"
 import * as providerAPI from "@/lib/api/provider"
 import type { ProviderRestaurant, MenuItem } from "@/lib/api/provider"
 import { getMediaUrl } from "@/lib/utils/media"
@@ -632,6 +633,12 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
               <Badge variant={restaurant.is_active ? "default" : "secondary"}>
                 {restaurant.is_active ? "Published" : "Unpublished"}
               </Badge>
+              <RequestVerificationButton
+                category="restaurant"
+                propertyId={restaurant.id}
+                isVerified={restaurant.is_verified}
+                isPublished={restaurant.is_active}
+              />
             </div>
             {restaurant.nickname && (
               <p className="text-muted-foreground">{restaurant.nickname}</p>

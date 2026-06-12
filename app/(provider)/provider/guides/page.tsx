@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { RequestVerificationButton } from "@/components/provider/request-verification-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -38,6 +40,7 @@ function getMediaUrl(path: string | null | undefined): string {
 }
 
 export default function ProviderGuidesPage() {
+  const router = useRouter()
   const [guides, setGuides] = useState<Guide[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -130,7 +133,11 @@ export default function ProviderGuidesPage() {
             const cityNames = guide.cities?.map(c => c.city.name).join(", ") || "Not set"
             
             return (
-              <Card key={guide.id} className="overflow-hidden">
+              <Card
+                key={guide.id}
+                onClick={() => router.push(`/provider/guides/${guide.id}/edit`)}
+                className="cursor-pointer overflow-hidden transition-shadow hover:shadow-md hover:ring-1 hover:ring-primary/30"
+              >
                 <div className="relative h-40">
                   <img
                     src={getMediaUrl(photoUrl) || "/placeholder.svg?height=160&width=300&query=tour guide service"}
@@ -160,11 +167,16 @@ export default function ProviderGuidesPage() {
                     <h3 className="line-clamp-1 font-semibold">{guide.title}</h3>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenuItem asChild>
                           <Link href={`/provider/guides/${guide.id}/edit`}>
                             <Edit className="mr-2 h-4 w-4" />
@@ -226,6 +238,19 @@ export default function ProviderGuidesPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Verification action */}
+                  {guide.is_published && !guide.is_verified && (
+                    <div className="mt-3 border-t pt-3" onClick={(e) => e.stopPropagation()}>
+                      <RequestVerificationButton
+                        category="guide"
+                        propertyId={guide.id}
+                        isVerified={!!guide.is_verified}
+                        isPublished={!!guide.is_published}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )
