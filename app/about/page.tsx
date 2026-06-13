@@ -156,10 +156,10 @@ export default function AboutPage() {
               </p>
               <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <a
-                  href="mailto:info@algaale.com"
+                  href="mailto:team@yichalal.ai"
                   className="rounded-lg border border-border bg-card px-6 py-3 font-medium transition-shadow hover:shadow-lg"
                 >
-                  info@algaale.com
+                  team@yichalal.ai
                 </a>
                 <a
                   href="tel:+251911234567"
