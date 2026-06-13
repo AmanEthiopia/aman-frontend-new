@@ -27,6 +27,7 @@ import {
 import { SafeImage } from "@/components/ui/safe-image"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
+import { LocationMap } from "@/components/location/location-map"
 import { ContactDialog } from "@/components/messaging/contact-dialog"
 import { formatRating, toNumber } from "@/lib/utils"
 
@@ -386,6 +387,18 @@ export default function GuideDetailPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Location */}
+            {((guide as any).latitude != null && (guide as any).longitude != null) && (
+              <div className="lg:col-span-2 mt-8">
+                <h2 className="mb-3 text-xl font-semibold">Base Location</h2>
+                <LocationMap
+                  latitude={(guide as any).latitude}
+                  longitude={(guide as any).longitude}
+                  name={guide.title}
+                />
+              </div>
+            )}
 
             {/* Reviews Section */}
             <div className="lg:col-span-2 mt-8">

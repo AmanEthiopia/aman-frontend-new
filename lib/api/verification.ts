@@ -4,7 +4,7 @@ import { apiGet, apiPost, apiPut } from "./client"
 // Types
 // ============================================================================
 
-export type EntityType = "hotel" | "restaurant" | "experience" | "guide" | "package"
+export type EntityType = "hotel" | "restaurant" | "experience" | "guide" | "package" | "driver"
 export type VerificationStatus = "pending" | "in_review" | "approved" | "rejected" | "change_requested"
 
 export interface VerificationRequest {
@@ -202,6 +202,7 @@ export function getEntityTypeLabel(type: EntityType): string {
     experience: "Experience",
     guide: "Tour Guide",
     package: "Package",
+    driver: "Driver",
   }
   return labels[type] || type
 }

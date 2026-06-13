@@ -1,10 +1,21 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
-import type { User } from "@/lib/types"
 
-// Demo users for role switching
-const demoUsers: Record<string, User> = {
+// Demo users for role switching (legacy mock shape — kept loose intentionally)
+interface DemoUser {
+  id: string
+  email: string
+  name: string
+  role: string
+  isVerified: boolean
+  createdAt: string
+  avatar?: string
+  phone?: string
+  preferences: { language: string; currency: string; notifications: boolean }
+}
+
+const demoUsers: Record<string, DemoUser> = {
   guest: {
     id: "",
     email: "",
@@ -40,7 +51,7 @@ const demoUsers: Record<string, User> = {
 
 interface AppContextType {
   // User & Role
-  user: User
+  user: DemoUser
   isAuthenticated: boolean
   switchRole: (role: "guest" | "traveler" | "provider") => void
 
@@ -63,7 +74,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User>(demoUsers.guest)
+  const [user, setUser] = useState<DemoUser>(demoUsers.guest)
   const [language, setLanguage] = useState<"en" | "am">("en")
   const [currency, setCurrency] = useState<"USD" | "ETB">("USD")
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)

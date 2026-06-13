@@ -136,7 +136,9 @@ export default function ProfileEditPage() {
         travel_style: profile?.travel_style || "",
         interests: profile?.interests || [],
         dietary_restrictions: profile?.dietary_restrictions || [],
-        accessibility_needs: profile?.accessibility_needs || "",
+        accessibility_needs: Array.isArray(profile?.accessibility_needs)
+          ? profile.accessibility_needs.join(", ")
+          : (profile?.accessibility_needs || ""),
       }
       setFormData(initialData)
       setOriginalData(initialData)

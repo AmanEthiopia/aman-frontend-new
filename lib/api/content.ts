@@ -25,6 +25,8 @@ export interface CityDetail extends City {
   meta_title: string
   meta_description: string
   attractions_count: number
+  average_rating?: number | string
+  review_count?: number
   safety_info_summary: {
     total: number
     levels: {
@@ -53,6 +55,14 @@ export interface Attraction {
   display_order: number
   created_at: string
   updated_at: string
+  // Optional fields surfaced by detail/list endpoints
+  rating?: number
+  review_count?: number
+  best_time_to_visit?: string | null
+  contact_phone?: string | null
+  contact_email?: string | null
+  website?: string | null
+  distance_km?: number | null
 }
 
 export interface SafetyInfo {
@@ -163,11 +173,23 @@ export async function getCityDetail(slug: string): Promise<CityDetail> {
 /**
  * List attractions
  */
-export async function getAttractions(params?: { city?: string; category?: string; search?: string }): Promise<Attraction[]> {
+export async function getAttractions(params?: {
+  city?: string
+  category?: string
+  search?: string
+  latitude?: number
+  longitude?: number
+  radius_km?: number
+}): Promise<Attraction[]> {
   const query = new URLSearchParams()
   if (params?.city) query.append("city", params.city)
   if (params?.category) query.append("category", params.category)
   if (params?.search) query.append("search", params.search)
+  if (params?.latitude != null && params?.longitude != null) {
+    query.append("latitude", String(params.latitude))
+    query.append("longitude", String(params.longitude))
+    if (params.radius_km != null) query.append("radius_km", String(params.radius_km))
+  }
 
   return apiGet<Attraction[]>(`/content/attractions/${query.toString() ? `?${query}` : ""}`)
 }

@@ -15,6 +15,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, Loader2 } from "lucide-react"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
+import { NearMeButton } from "@/components/location/near-me-button"
+import type { Coords } from "@/lib/utils/geo"
+
+const NEAR_ME_RADIUS_KM = 25
 
 function HotelsLoading() {
   return (
@@ -50,10 +54,11 @@ function HotelsContent() {
   const [totalCount, setTotalCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [page, setPage] = useState(1)
-  const prevFilterRef = useRef([city, search, priceMin, priceMax, verified].join("|"))
+  const [coords, setCoords] = useState<Coords | null>(null)
+  const prevFilterRef = useRef([city, search, priceMin, priceMax, verified, ""].join("|"))
 
   useEffect(() => {
-    const filterStr = [city, search, priceMin, priceMax, verified].join("|")
+    const filterStr = [city, search, priceMin, priceMax, verified, coords ? `${coords.lat},${coords.lng}` : ""].join("|")
     const filtersChanged = filterStr !== prevFilterRef.current
     prevFilterRef.current = filterStr
 
@@ -78,6 +83,7 @@ function HotelsContent() {
           verified: verified === "true" ? true : undefined,
           page: filtersChanged ? 1 : page,
           page_size: 20,
+          ...(coords ? { latitude: coords.lat, longitude: coords.lng, radius_km: NEAR_ME_RADIUS_KM } : {}),
         }
 
         const response = await searchHotels(params)
@@ -114,7 +120,7 @@ function HotelsContent() {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [city, search, priceMin, priceMax, verified, page])
+  }, [city, search, priceMin, priceMax, verified, page, coords])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -129,7 +135,10 @@ function HotelsContent() {
 
         <section className="py-8">
           <div className="container mx-auto px-4">
-            <DiscoveryFilters basePath="/hotels" />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <DiscoveryFilters basePath="/hotels" />
+              <NearMeButton active={!!coords} onLocate={setCoords} className="shrink-0" />
+            </div>
 
             <CityStatsBar
               citySlug={searchParams.get("city")}
@@ -193,6 +202,7 @@ function HotelsContent() {
                           [hotel.category, hotel.star_rating ? `${hotel.star_rating} Star` : null].filter(Boolean)
                         }
                         safetyScore={hotel.safetyScore}
+                        distanceKm={hotel.distance_km}
                       />
                     ))}
                   </div>

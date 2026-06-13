@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { LocationPicker } from "@/components/location/location-picker"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
@@ -86,6 +87,8 @@ export default function EditHotelPage({ params }: { params: Promise<{ id: string
         category: "hotel",
         star_rating: hotelData.star_rating,
         address: hotelData.address,
+        latitude: (hotelData as any).latitude ?? null,
+        longitude: (hotelData as any).longitude ?? null,
         city_id: hotelData.city_id,
         check_in_time: hotelData.check_in_time,
         check_out_time: hotelData.check_out_time,
@@ -267,6 +270,16 @@ export default function EditHotelPage({ params }: { params: Promise<{ id: string
                 required
               />
             </div>
+
+            <LocationPicker
+              latitude={formData.latitude}
+              longitude={formData.longitude}
+              onChange={(c) => {
+                updateField("latitude", c.latitude)
+                updateField("longitude", c.longitude)
+              }}
+              label="Map location (helps travelers find you & 'Near me')"
+            />
           </CardContent>
         </Card>
 

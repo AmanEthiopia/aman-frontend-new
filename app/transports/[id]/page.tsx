@@ -22,6 +22,7 @@ import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
 import { Button } from "@/components/ui/button"
 import { ShareButton } from "@/components/shared/share-button"
+import { LocationMap } from "@/components/location/location-map"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ContactDialog } from "@/components/messaging/contact-dialog"
@@ -209,6 +210,23 @@ export default function TransportDetailPage({ params }: { params: Promise<{ id: 
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Location */}
+              {((transport as any).latitude != null && (transport as any).longitude != null) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Base Location</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <LocationMap
+                      latitude={(transport as any).latitude}
+                      longitude={(transport as any).longitude}
+                      name={transport.name}
+                      address={transport.address}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Services */}
               {services.length > 0 && (

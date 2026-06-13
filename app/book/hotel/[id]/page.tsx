@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { TrustBadge } from "@/components/shared/trust-badge"
 import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
-import { createHotelBooking, getMyHotelBookings, type GuestInfo, type HotelBooking } from "@/lib/api/bookings"
+import { createHotelBooking, getMyHotelBookings, type GuestInfo, type HotelBooking, type HotelBookingListItem } from "@/lib/api/bookings"
 import { useAuth } from "@/contexts/auth-context"
 import type { Hotel, Room } from "@/lib/types"
 import {
@@ -77,7 +77,7 @@ export default function BookHotelPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [bookingNumber, setBookingNumber] = useState<string | null>(null)
-  const [existingBookings, setExistingBookings] = useState<HotelBooking[]>([])
+  const [existingBookings, setExistingBookings] = useState<HotelBookingListItem[]>([])
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
 
   // Selected rooms: room_id → quantity

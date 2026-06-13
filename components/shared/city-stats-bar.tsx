@@ -50,7 +50,7 @@ interface CityStatsBarProps {
   /** The city slug from the active URL filter (e.g. "addis-ababa") */
   citySlug?: string | null
   /** Which stat to highlight as "current" (the page the user is on) */
-  activeStat?: "hotels" | "restaurants" | "experiences" | "transport" | "guides"
+  activeStat?: "hotels" | "restaurants" | "experiences" | "transport" | "guides" | "attractions"
   className?: string
 }
 

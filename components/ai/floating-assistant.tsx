@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { X, Send, Loader2, User, Minimize2 } from "lucide-react"
 import { useApp } from "@/lib/contexts/app-context"
+import { AIMessage } from "@/components/ai/ai-message"
 import { sendAIQuery } from "@/lib/api/ai"
 import { friendlyError } from "@/lib/utils/errors"
 import { FEATURES } from "@/lib/config/features"
@@ -156,7 +157,7 @@ export function FloatingAIAssistant() {
                       message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
                     }`}
                   >
-                    {message.content}
+                    {message.role === "assistant" ? <AIMessage content={message.content} /> : message.content}
                   </div>
                   {message.role === "user" && (
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted">

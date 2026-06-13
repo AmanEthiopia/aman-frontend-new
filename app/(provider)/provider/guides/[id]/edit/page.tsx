@@ -36,6 +36,7 @@ import {
 } from "@/lib/api/guides"
 import { getCities, type City } from "@/lib/api/content"
 import { toast } from "sonner"
+import { RequestVerificationButton } from "@/components/provider/request-verification-button"
 
 const API_BASE = "https://api.aman.yichalal.ai"
 
@@ -313,11 +314,23 @@ export default function EditGuidePage() {
       </div>
 
       {/* Status Badge */}
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Badge variant={guide.is_published ? "default" : "secondary"}>
           {guide.is_published ? "Published" : "Draft"}
         </Badge>
-        {guide.is_verified && <Badge variant="outline">Verified</Badge>}
+        {guide.is_verified ? (
+          <Badge variant="outline">Verified</Badge>
+        ) : (
+          <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+            Unverified
+          </Badge>
+        )}
+        <RequestVerificationButton
+          category="guide"
+          propertyId={guideId}
+          isVerified={!!guide.is_verified}
+          isPublished={!!guide.is_published}
+        />
       </div>
 
       <Tabs defaultValue="details">

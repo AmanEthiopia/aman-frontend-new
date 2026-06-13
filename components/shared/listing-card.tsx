@@ -3,16 +3,17 @@
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shield, MapPin, Star, Clock } from "lucide-react"
+import { Shield, MapPin, Star, Clock, Navigation } from "lucide-react"
 import { formatRating } from "@/lib/utils"
 import { SafeCardImage } from "@/components/ui/safe-image"
 import { WishlistButton } from "@/components/wishlist-button"
 import type { WishlistItemType } from "@/lib/api/wishlists"
+import { formatDistance } from "@/lib/utils/geo"
 
 interface ListingCardProps {
   id: string
   slug?: string
-  type: "hotel" | "restaurant" | "transport" | "experience"
+  type: "hotel" | "restaurant" | "transport" | "experience" | "attraction" | "guide"
   name: string
   imageUrl: string
   location: string
@@ -26,6 +27,7 @@ interface ListingCardProps {
   isFeatured?: boolean
   tags?: string[]
   safetyScore?: number
+  distanceKm?: number | null
 }
 
 const priceRangeLabels: Record<string, { label: string; color: string }> = {
@@ -56,9 +58,11 @@ export function ListingCard({
   isFeatured,
   tags,
   safetyScore,
+  distanceKm,
 }: ListingCardProps) {
   const priceInfo = priceRangeLabels[priceRange ?? ""] ?? DEFAULT_PRICE_INFO
   const href = `/${type}s/${slug || id}`
+  const distanceLabel = formatDistance(distanceKm)
   // Map listing type to wishlist item type
   const wishlistType: WishlistItemType =
     type === "transport" ? "driver" : (type as WishlistItemType)
@@ -92,6 +96,13 @@ export function ListingCard({
               <div className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-medium ${priceInfo.color}`}>
                 {priceInfo.label}
               </div>
+              {/* Distance (Near Me) */}
+              {distanceLabel && (
+                <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-background/90 px-2 py-1 text-xs font-medium text-foreground shadow-sm">
+                  <Navigation className="h-3 w-3 text-primary" />
+                  {distanceLabel}
+                </div>
+              )}
               {/* Safety Score */}
               {safetyScore && safetyScore >= 90 && (
                 <div className="absolute bottom-3 left-3 rounded-full bg-green-500/90 px-2 py-1 text-xs font-medium text-white">

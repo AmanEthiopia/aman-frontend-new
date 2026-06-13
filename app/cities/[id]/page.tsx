@@ -419,7 +419,7 @@ export default function CityDetailPage() {
             <ReviewsSection
               contentType="city"
               contentId={city.id}
-              averageRating={city.average_rating || 0}
+              averageRating={Number(city.average_rating) || 0}
               reviewCount={city.review_count || 0}
             />
           </div>

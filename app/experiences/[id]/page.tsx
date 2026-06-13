@@ -41,6 +41,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
+import { LocationMap } from "@/components/location/location-map"
 import { formatRating } from "@/lib/utils"
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -143,6 +144,15 @@ function ItineraryDay({ day, dayNumber }: { day: PackageDay; dayNumber: number }
             )}
             {day.description && (
               <p className="mt-2 text-muted-foreground">{day.description}</p>
+            )}
+            {(day as any).photo_url && (
+              <div className="mt-3 overflow-hidden rounded-lg">
+                <img
+                  src={getMediaUrl((day as any).photo_url)}
+                  alt={day.title}
+                  className="h-48 w-full max-w-lg object-cover"
+                />
+              </div>
             )}
           </div>
           
@@ -660,6 +670,19 @@ export default function ExperienceDetailPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Location */}
+            {((pkg as any).latitude != null && (pkg as any).longitude != null) && (
+              <div className="lg:col-span-2 mt-8">
+                <h2 className="mb-3 text-xl font-semibold">Meeting Point</h2>
+                <LocationMap
+                  latitude={(pkg as any).latitude}
+                  longitude={(pkg as any).longitude}
+                  name={pkg.title}
+                  address={(pkg as any).meeting_point}
+                />
+              </div>
+            )}
 
             {/* Reviews Section */}
             <div className="lg:col-span-2 mt-8">

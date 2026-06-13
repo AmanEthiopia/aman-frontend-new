@@ -13,6 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
+import { NearMeButton } from "@/components/location/near-me-button"
+import type { Coords } from "@/lib/utils/geo"
+
+const NEAR_ME_RADIUS_KM = 25
 
 const cuisineOptions = [
   { value: "ethiopian", label: "Ethiopian" },
@@ -54,10 +58,11 @@ function RestaurantsContent() {
   const [totalCount, setTotalCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [page, setPage] = useState(1)
-  const prevFilterRef = useRef([city, search, priceRange, cuisine].join("|"))
+  const [coords, setCoords] = useState<Coords | null>(null)
+  const prevFilterRef = useRef([city, search, priceRange, cuisine, ""].join("|"))
 
   useEffect(() => {
-    const filterStr = [city, search, priceRange, cuisine].join("|")
+    const filterStr = [city, search, priceRange, cuisine, coords ? `${coords.lat},${coords.lng}` : ""].join("|")
     const filtersChanged = filterStr !== prevFilterRef.current
     prevFilterRef.current = filterStr
 
@@ -80,6 +85,7 @@ function RestaurantsContent() {
           cuisine: cuisine || undefined,
           page: filtersChanged ? 1 : page,
           page_size: 20,
+          ...(coords ? { latitude: coords.lat, longitude: coords.lng, radius_km: NEAR_ME_RADIUS_KM } : {}),
         })
 
         if (!cancelled) {
@@ -108,7 +114,7 @@ function RestaurantsContent() {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [city, search, priceRange, cuisine, page])
+  }, [city, search, priceRange, cuisine, page, coords])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -125,10 +131,13 @@ function RestaurantsContent() {
 
         <section className="py-8">
           <div className="container mx-auto px-4">
-            <DiscoveryFilters
-              basePath="/restaurants"
-              additionalFilters={[{ name: "cuisine", label: "Cuisine Type", options: cuisineOptions }]}
-            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <DiscoveryFilters
+                basePath="/restaurants"
+                additionalFilters={[{ name: "cuisine", label: "Cuisine Type", options: cuisineOptions }]}
+              />
+              <NearMeButton active={!!coords} onLocate={setCoords} className="shrink-0" />
+            </div>
 
             <CityStatsBar
               citySlug={searchParams.get("city")}
@@ -184,6 +193,7 @@ function RestaurantsContent() {
                         isFeatured={restaurant.is_featured ?? restaurant.isFeatured ?? false}
                         tags={restaurant.cuisine_types || restaurant.cuisineTypes || []}
                         safetyScore={restaurant.safetyScore}
+                        distanceKm={restaurant.distance_km}
                       />
                     ))}
                   </div>

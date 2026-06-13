@@ -1,5 +1,6 @@
 import { apiFetch, apiPost, apiPatch, apiDelete } from "./client"
 import type { Hotel, Room, RoomUnit } from "@/lib/types"
+export type { Hotel, Room, RoomUnit } from "@/lib/types"
 
 const API_BASE_URL = "https://api.aman.yichalal.ai/api/v1"
 
@@ -13,6 +14,9 @@ export interface HotelSearchParams {
   limit?: number
   page?: number
   page_size?: number
+  latitude?: number
+  longitude?: number
+  radius_km?: number
 }
 
 export interface HotelSearchResponse {

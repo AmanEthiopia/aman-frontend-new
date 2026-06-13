@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { LocationPicker } from "@/components/location/location-picker"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -607,6 +608,8 @@ interface RestaurantFormData {
   cuisine_types: string[]
   price_range: "budget" | "moderate" | "expensive" | "fine_dining"
   address: string
+  latitude?: number | null
+  longitude?: number | null
   city_id: string
   seating_capacity: string
   has_delivery: boolean
@@ -657,6 +660,8 @@ export default function EditRestaurantPage({ params }: { params: Promise<{ id: s
         cuisine_types: restaurantData.cuisine_types || [],
         price_range: (restaurantData.price_range as any) || "moderate",
         address: restaurantData.address || "",
+        latitude: (restaurantData as any).latitude ?? null,
+        longitude: (restaurantData as any).longitude ?? null,
         city_id: restaurantData.city_id || "",
         seating_capacity: restaurantData.seating_capacity != null ? String(restaurantData.seating_capacity) : "",
         has_delivery: restaurantData.has_delivery || false,
@@ -843,6 +848,17 @@ export default function EditRestaurantPage({ params }: { params: Promise<{ id: s
                   onChange={(e) => updateField("address", e.target.value)}
                   placeholder="e.g., Bole Road, Addis Ababa"
                   required
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <LocationPicker
+                  latitude={formData.latitude}
+                  longitude={formData.longitude}
+                  onChange={(c) => {
+                    updateField("latitude", c.latitude)
+                    updateField("longitude", c.longitude)
+                  }}
+                  label="Map location (helps travelers find you & 'Near me')"
                 />
               </div>
               <div className="space-y-2">

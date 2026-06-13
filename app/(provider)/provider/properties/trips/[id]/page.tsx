@@ -36,6 +36,9 @@ import {
 import { toast } from "sonner"
 import * as providerAPI from "@/lib/api/provider"
 import type { ProviderTrip } from "@/lib/api/provider"
+import { RequestVerificationButton } from "@/components/provider/request-verification-button"
+import { PropertyPhotosCard } from "@/components/provider/property-photos-card"
+import { TripItineraryCard } from "@/components/provider/trip-itinerary-card"
 
 const tripTypeLabels: Record<string, string> = {
   day_trip: "Day Trip",
@@ -150,6 +153,12 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
               <Badge variant={trip.is_active ? "default" : "secondary"}>
                 {trip.is_active ? "Published" : "Unpublished"}
               </Badge>
+              <RequestVerificationButton
+                category="trip"
+                propertyId={trip.id}
+                isVerified={trip.is_verified}
+                isPublished={trip.is_active}
+              />
             </div>
             {trip.nickname && (
               <p className="text-muted-foreground">{trip.nickname}</p>
@@ -197,6 +206,12 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Info */}
         <div className="space-y-6 lg:col-span-2">
+          {/* Photos */}
+          <PropertyPhotosCard kind="trip" propertyId={trip.id} title="Trip Photos" />
+
+          {/* Itinerary (daily breakdown) */}
+          <TripItineraryCard tripId={trip.id} />
+
           {/* Overview */}
           <Card>
             <CardHeader>

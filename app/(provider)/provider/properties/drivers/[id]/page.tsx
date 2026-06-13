@@ -33,6 +33,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
+import { RequestVerificationButton } from "@/components/provider/request-verification-button"
+import { PropertyPhotosCard } from "@/components/provider/property-photos-card"
 import * as providerAPI from "@/lib/api/provider"
 import type { ProviderDriver } from "@/lib/api/provider"
 
@@ -156,6 +158,12 @@ export default function DriverDetailPage({ params }: { params: Promise<{ id: str
               <Badge variant={driver.is_active ? "default" : "secondary"}>
                 {driver.is_active ? "Published" : "Unpublished"}
               </Badge>
+              <RequestVerificationButton
+                category="driver"
+                propertyId={driver.id}
+                isVerified={driver.is_verified}
+                isPublished={driver.is_active}
+              />
             </div>
             {driver.nickname && (
               <p className="text-muted-foreground">{driver.nickname}</p>
@@ -193,6 +201,9 @@ export default function DriverDetailPage({ params }: { params: Promise<{ id: str
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Info */}
         <div className="space-y-6 lg:col-span-2">
+          {/* Photos */}
+          <PropertyPhotosCard kind="driver" propertyId={driver.id} title="Vehicle Photos" />
+
           {/* Vehicle Info */}
           <Card>
             <CardHeader>

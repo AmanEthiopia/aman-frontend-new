@@ -38,6 +38,24 @@ export interface Hotel {
   lastVerified?: string
   foreignTravelerCount?: number
   disputeFreeDays?: number
+  // ── API (snake_case) fields, present when sourced from the backend ──────────
+  slug?: string
+  city_name?: string
+  cover_photo?: string | null
+  cover_photo_url?: string | null
+  photos?: any[]
+  price_range?: string
+  price_min?: number
+  price_max?: number
+  is_verified?: boolean
+  is_featured?: boolean
+  review_count?: number
+  average_rating?: number | string
+  star_rating?: number
+  category?: string
+  latitude?: number | string | null
+  longitude?: number | string | null
+  distance_km?: number | null
 }
 
 export interface HotelImage {
@@ -45,6 +63,14 @@ export interface HotelImage {
   url: string
   alt: string
   isPrimary: boolean
+  // API (snake_case) fields
+  image_url?: string
+  photo_url?: string
+  alt_text?: string
+  is_primary?: boolean
+  hotel_id?: string
+  display_order?: number
+  created_at?: string
 }
 
 export interface Restaurant {
@@ -222,6 +248,9 @@ export interface User {
   is_email_verified: boolean
   is_phone_verified: boolean
   phone: string | null
+  // Optional convenience/derived fields used in some UI contexts
+  name?: string
+  role?: string
 }
 
 export interface UserProfile {
@@ -408,7 +437,6 @@ export type {
   CreateDriverPayload,
   CreateTripPayload,
   TripItineraryDay,
-  TripActivity,
   DriverService,
   City as APICity,
   Attraction as APIAttraction,
@@ -436,18 +464,15 @@ export type {
   ItemStatus,
 } from "@/lib/api/itinerary"
 
-// Re-export review types
+// Re-export review types (Review is declared locally above)
 export type {
-  Review,
   ReviewResponse,
   ReviewableType,
   ReviewsResponse,
 } from "@/lib/api/reviews"
 
-// Re-export messaging types
+// Re-export messaging types (Conversation/Message are declared locally above)
 export type {
-  Conversation,
-  Message,
   RelatedToType,
 } from "@/lib/api/messages"
 
