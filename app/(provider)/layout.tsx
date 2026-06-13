@@ -237,7 +237,7 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
       try {
         // Fetch pending bookings count
         const bookingsResponse = await getMyBookings({ status: "pending", page_size: 1 })
-        setPendingBookings(bookingsResponse?.meta?.pagination?.count || bookingsResponse?.count || 0)
+        setPendingBookings((bookingsResponse as any)?.meta?.pagination?.count || bookingsResponse?.count || 0)
       } catch {
         setPendingBookings(0)
       }

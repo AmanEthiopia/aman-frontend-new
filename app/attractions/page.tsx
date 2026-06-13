@@ -12,6 +12,10 @@ import { getMediaUrl } from "@/lib/utils/media"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CityStatsBar } from "@/components/shared/city-stats-bar"
 import { toast } from "sonner"
+import { NearMeButton } from "@/components/location/near-me-button"
+import type { Coords } from "@/lib/utils/geo"
+
+const NEAR_ME_RADIUS_KM = 25
 
 const categoryOptions = [
   { value: "historical", label: "Historical" },
@@ -43,6 +47,7 @@ function AttractionsContent() {
   const searchParams = useSearchParams()
   const [attractions, setAttractions] = useState<Attraction[]>([])
   const [loading, setLoading] = useState(true)
+  const [coords, setCoords] = useState<Coords | null>(null)
 
   useEffect(() => {
     async function loadAttractions() {
@@ -51,6 +56,7 @@ function AttractionsContent() {
         const data = await getAttractions({
           city: searchParams.get("city") || undefined,
           search: searchParams.get("search") || undefined,
+          ...(coords ? { latitude: coords.lat, longitude: coords.lng, radius_km: NEAR_ME_RADIUS_KM } : {}),
         })
         setAttractions(data)
       } catch (error) {
@@ -62,11 +68,14 @@ function AttractionsContent() {
       }
     }
     loadAttractions()
-  }, [searchParams])
+  }, [searchParams, coords])
 
   return (
     <>
-      <DiscoveryFilters basePath="/attractions" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <DiscoveryFilters basePath="/attractions" />
+        <NearMeButton active={!!coords} onLocate={setCoords} className="shrink-0" />
+      </div>
 
       <CityStatsBar
         citySlug={searchParams.get("city")}
@@ -104,6 +113,7 @@ function AttractionsContent() {
                   reviewCount={0}
                   isVerified={true}
                   tags={[attraction.category].filter(Boolean)}
+                  distanceKm={(attraction as any).distance_km}
                 />
               ))}
             </div>

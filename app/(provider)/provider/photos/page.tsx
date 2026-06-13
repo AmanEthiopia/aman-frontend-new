@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Upload, Trash2, GripVertical, Eye, Star, ImageIcon, Plus, Loader2, Building2, UtensilsCrossed, Car, Map, Package } from "lucide-react"
+import { Upload, Trash2, GripVertical, Eye, Star, ImageIcon, Plus, Loader2, Building2, UtensilsCrossed, Car, Map, Package as PackageIcon } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -29,7 +29,6 @@ import { toast } from "sonner"
 import { getMyProperties, type PropertyBase } from "@/lib/api/provider"
 import { getProviderGuides, type Guide } from "@/lib/api/guides"
 import { getProviderPackages, type Package } from "@/lib/api/experiences"
-import { getAuthCookie, getToken } from "@/lib/api/client"
 
 interface PropertyPhoto {
   id: string
@@ -66,7 +65,7 @@ const typeIcons = {
   driver: Car,
   trip: Map,
   guide: Map,
-  package: Package,
+  package: PackageIcon,
 }
 
 function PhotoCard({
@@ -149,8 +148,8 @@ export default function ProviderPhotosPage() {
         // Fetch properties
         try {
           const propertiesResponse = await getMyProperties({ page_size: 100 })
-          const propertiesList = propertiesResponse?.results || propertiesResponse || []
-          propertiesList.forEach((prop: PropertyBase) => {
+          const propertiesList = (propertiesResponse as any)?.results || propertiesResponse || []
+          propertiesList.forEach((prop: any) => {
             allProperties.push({
               id: prop.id,
               name: prop.name,
@@ -178,8 +177,8 @@ export default function ProviderPhotosPage() {
         // Fetch guides
         try {
           const guidesResponse = await getProviderGuides()
-          const guidesList = guidesResponse?.results || guidesResponse || []
-          guidesList.forEach((guide: Guide) => {
+          const guidesList = (guidesResponse as any)?.results || guidesResponse || []
+          guidesList.forEach((guide: any) => {
             allProperties.push({
               id: guide.id,
               name: guide.title || guide.name || "Guide Service",
@@ -206,8 +205,8 @@ export default function ProviderPhotosPage() {
         // Fetch packages
         try {
           const packagesResponse = await getProviderPackages()
-          const packagesList = packagesResponse?.results || packagesResponse || []
-          packagesList.forEach((pkg: Package) => {
+          const packagesList = (packagesResponse as any)?.results || packagesResponse || []
+          packagesList.forEach((pkg: any) => {
             allProperties.push({
               id: pkg.id,
               name: pkg.title,

@@ -24,7 +24,7 @@ const priceRangeLabels: Record<string, { label: string; color: string }> = {
 }
 
 export function HotelCard({ hotel }: HotelCardProps) {
-  const priceInfo = priceRangeLabels[hotel.price_range] || priceRangeLabels["mid-range"]
+  const priceInfo = priceRangeLabels[hotel.price_range ?? ""] || priceRangeLabels["mid-range"]
   const displayAmenities = hotel.amenities?.slice(0, 4) || []
 
   return (

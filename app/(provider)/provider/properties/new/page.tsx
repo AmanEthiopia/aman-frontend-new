@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { LocationPicker } from "@/components/location/location-picker"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
@@ -532,6 +533,16 @@ function HotelForm({
               required
             />
           </div>
+
+          <LocationPicker
+            latitude={formData.latitude}
+            longitude={formData.longitude}
+            onChange={(c) => {
+              updateField("latitude", c.latitude)
+              updateField("longitude", c.longitude)
+            }}
+            label="Map location (helps travelers find you & 'Near me')"
+          />
         </CardContent>
       </Card>
 
@@ -897,6 +908,17 @@ function RestaurantForm({
                 required
               />
             </div>
+            <div className="sm:col-span-2">
+              <LocationPicker
+                latitude={formData.latitude}
+                longitude={formData.longitude}
+                onChange={(c) => {
+                  updateField("latitude", c.latitude)
+                  updateField("longitude", c.longitude)
+                }}
+                label="Map location (helps travelers find you & 'Near me')"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="capacity">Seating Capacity</Label>
               <Input
@@ -1189,6 +1211,16 @@ function DriverForm({
               />
             </div>
           </div>
+
+          <LocationPicker
+            latitude={formData.latitude}
+            longitude={formData.longitude}
+            onChange={(c) => {
+              updateField("latitude", c.latitude)
+              updateField("longitude", c.longitude)
+            }}
+            label="Base map location (helps travelers find you & 'Near me')"
+          />
         </CardContent>
       </Card>
 

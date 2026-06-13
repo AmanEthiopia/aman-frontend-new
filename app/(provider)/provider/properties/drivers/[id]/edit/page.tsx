@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { LocationPicker } from "@/components/location/location-picker"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -67,6 +68,8 @@ interface DriverFormData {
   max_passengers: number
   city_id: string
   address: string
+  latitude?: number | null
+  longitude?: number | null
   languages: string[]
   services: string[]
   price_per_km: string
@@ -131,6 +134,8 @@ export default function EditDriverPage({ params }: { params: Promise<{ id: strin
         max_passengers: driverData.max_passengers || 4,
         city_id: driverData.city_id || "",
         address: driverData.address || "",
+        latitude: (driverData as any).latitude ?? null,
+        longitude: (driverData as any).longitude ?? null,
         languages: driverData.languages || [],
         services: driverData.services || [],
         price_per_km: driverData.price_per_km != null ? String(driverData.price_per_km) : "",
@@ -319,6 +324,16 @@ export default function EditDriverPage({ params }: { params: Promise<{ id: strin
                 />
               </div>
             </div>
+
+            <LocationPicker
+              latitude={formData.latitude}
+              longitude={formData.longitude}
+              onChange={(c) => {
+                updateField("latitude", c.latitude)
+                updateField("longitude", c.longitude)
+              }}
+              label="Base map location (helps travelers find you & 'Near me')"
+            />
           </CardContent>
         </Card>
 

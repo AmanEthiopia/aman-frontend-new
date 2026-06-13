@@ -86,6 +86,28 @@ const propertyTypeConfig: Record<PropertyCategory, {
     bgColor: "bg-purple-100 dark:bg-purple-950",
     href: "/provider/properties/trips",
   },
+  // Managed on dedicated pages; included so the config covers every PropertyCategory.
+  tour_guide: {
+    label: "Tour Guide",
+    icon: Map,
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-100 dark:bg-indigo-950",
+    href: "/provider/guides",
+  },
+  translator: {
+    label: "Translator",
+    icon: Map,
+    color: "text-teal-600",
+    bgColor: "bg-teal-100 dark:bg-teal-950",
+    href: "/provider/guides",
+  },
+  event: {
+    label: "Event",
+    icon: Map,
+    color: "text-pink-600",
+    bgColor: "bg-pink-100 dark:bg-pink-950",
+    href: "/provider/properties/trips",
+  },
 }
 
 function VerificationBadge({ property }: { property: PropertyBase }) {
@@ -410,6 +432,9 @@ function ProviderPropertiesContent() {
     restaurant: properties.filter((p) => p.category === "restaurant").length,
     driver: properties.filter((p) => p.category === "driver").length,
     trip: properties.filter((p) => p.category === "trip").length,
+    tour_guide: properties.filter((p) => p.category === "tour_guide").length,
+    translator: properties.filter((p) => p.category === "translator").length,
+    event: properties.filter((p) => p.category === "event").length,
   }
 
   return (

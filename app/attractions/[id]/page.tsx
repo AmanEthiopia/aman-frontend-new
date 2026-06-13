@@ -35,6 +35,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
+import { LocationMap } from "@/components/location/location-map"
 import { ShareButton } from "@/components/shared/share-button"
 
 export default function AttractionDetailPage() {
@@ -285,6 +286,19 @@ export default function AttractionDetailPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Location */}
+            {((attraction as any).latitude != null && (attraction as any).longitude != null) && (
+              <div className="lg:col-span-2 mt-8">
+                <h2 className="mb-3 text-xl font-semibold">Location</h2>
+                <LocationMap
+                  latitude={(attraction as any).latitude}
+                  longitude={(attraction as any).longitude}
+                  name={attraction.name}
+                  address={[attraction.address, attraction.city_name].filter(Boolean).join(", ")}
+                />
+              </div>
+            )}
 
             {/* Reviews Section */}
             <div className="lg:col-span-2 mt-8">

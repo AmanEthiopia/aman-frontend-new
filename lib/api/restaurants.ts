@@ -1,5 +1,6 @@
 import { apiFetch, apiGet } from "./client"
 import type { Restaurant } from "@/lib/types"
+export type { Restaurant } from "@/lib/types"
 
 // ============================================================================
 // Public Menu Types
@@ -38,6 +39,9 @@ export interface RestaurantFilters {
   search?: string
   page?: number
   page_size?: number
+  latitude?: number
+  longitude?: number
+  radius_km?: number
 }
 
 export interface PaginatedRestaurants {
@@ -79,6 +83,11 @@ export async function getRestaurantsPaginated(filters: RestaurantFilters = {}): 
   }
   if (filters.page_size) {
     params.append("page_size", String(filters.page_size))
+  }
+  if (filters.latitude != null && filters.longitude != null) {
+    params.append("latitude", String(filters.latitude))
+    params.append("longitude", String(filters.longitude))
+    if (filters.radius_km != null) params.append("radius_km", String(filters.radius_km))
   }
 
   const queryString = params.toString()

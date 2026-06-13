@@ -16,6 +16,7 @@ import { TrustBadge } from "@/components/shared/trust-badge"
 import { ShareButton } from "@/components/shared/share-button"
 import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
+import { LocationMap } from "@/components/location/location-map"
 import { ContactDialog } from "@/components/messaging/contact-dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
@@ -575,6 +576,19 @@ export default function HotelDetailPage() {
                       </div>
                     </CardContent>
                   </Card>
+                </div>
+              )}
+
+              {/* Location */}
+              {((hotel as any).latitude != null && (hotel as any).longitude != null) && (
+                <div className="mb-8">
+                  <h2 className="mb-3 text-xl font-semibold">Location</h2>
+                  <LocationMap
+                    latitude={(hotel as any).latitude}
+                    longitude={(hotel as any).longitude}
+                    name={hotel.name}
+                    address={[hotel.area, hotel.address, hotel.city?.name || hotel.city_name].filter(Boolean).join(", ")}
+                  />
                 </div>
               )}
 

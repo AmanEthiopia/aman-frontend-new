@@ -162,6 +162,8 @@ export interface CreateHotelPayload {
   category: "hotel"
   star_rating: 1 | 2 | 3 | 4 | 5
   address: string
+  latitude?: number | null
+  longitude?: number | null
   city_id: string
   check_in_time: string
   check_out_time: string
@@ -202,6 +204,8 @@ export interface CreateRestaurantPayload {
   cuisine_types: string[]
   price_range: "budget" | "moderate" | "expensive" | "fine_dining"
   address: string
+  latitude?: number | null
+  longitude?: number | null
   city_id: string
   opening_hours: Record<string, string>
   seating_capacity?: number
@@ -252,6 +256,8 @@ export interface CreateDriverPayload {
   services: DriverService[]
   city_id: string
   address: string
+  latitude?: number | null
+  longitude?: number | null
   price_per_km?: number
   price_per_hour?: number
   price_per_day?: number
@@ -376,6 +382,9 @@ export interface CreateTripPayload {
   end_city_id?: string
   city_id: string // Primary city for listing
   address: string
+  latitude?: number | null
+  longitude?: number | null
+  meeting_point?: string
   cities_covered: string[]
   price_per_person: number
   group_discount_percentage?: number

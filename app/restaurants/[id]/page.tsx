@@ -52,6 +52,7 @@ import {
 import { useApp } from "@/lib/contexts/app-context"
 import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
+import { LocationMap } from "@/components/location/location-map"
 import { toast } from "sonner"
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -719,6 +720,19 @@ export default function RestaurantDetailPage() {
                   <MenuSection slug={slug} />
                 </CardContent>
               </Card>
+
+              {/* Location */}
+              {((restaurant as any).latitude != null && (restaurant as any).longitude != null) && (
+                <div>
+                  <h2 className="mb-3 text-xl font-semibold">Location</h2>
+                  <LocationMap
+                    latitude={(restaurant as any).latitude}
+                    longitude={(restaurant as any).longitude}
+                    name={restaurant.name}
+                    address={[restaurant.address, restaurant.city_name].filter(Boolean).join(", ")}
+                  />
+                </div>
+              )}
 
               {/* Reviews */}
               <ReviewsSection
