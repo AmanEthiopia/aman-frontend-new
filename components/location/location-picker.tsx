@@ -8,6 +8,8 @@ import { Loader2, MapPin, Navigation, X } from "lucide-react"
 import { toast } from "sonner"
 import {
   type Coords,
+  GeoError,
+  geoHelpText,
   getCurrentPosition,
   isValidCoords,
   osmEmbedUrl,
@@ -53,12 +55,11 @@ export function LocationPicker({ latitude, longitude, onChange, label = "Locatio
       const c = await getCurrentPosition()
       apply(c)
       toast.success("Location set to your current position")
-    } catch (err: any) {
-      toast.error(
-        err?.code === 1
-          ? "Location permission denied. Paste a Google Maps link instead."
-          : "Couldn't get your location. Paste a Google Maps link instead.",
-      )
+    } catch (err) {
+      const reason = err instanceof GeoError ? err.reason : "unavailable"
+      // For the provider form there's always the paste fallback, so a toast is fine.
+      const suffix = reason === "denied" || reason === "insecure" ? " You can paste a Google Maps link instead." : ""
+      toast.error(geoHelpText(reason) + suffix)
     } finally {
       setLocating(false)
     }
