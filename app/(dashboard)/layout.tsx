@@ -14,7 +14,7 @@ import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useAuth } from "@/contexts/auth-context"
 import { getConversations } from "@/lib/api/messages"
 import { getUnreadCount } from "@/lib/api/notifications"
-import { AmanMark, AmanWordmark } from "@/components/brand/aman-logo"
+import { Footer } from "@/components/ui/footer"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -68,9 +68,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Top Navigation Bar */}
         <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
-            <Link href="/home" className="flex items-center gap-2" aria-label="Alga Ale home">
-              <AmanMark size={32} variant="stacked" className="rounded-md" />
-              <AmanWordmark height={22} className="hidden sm:block" />
+            <Link href="/" className="flex items-center gap-2" aria-label="Alga Ale home">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+                <span className="text-lg font-bold text-primary-foreground">A</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-lg font-bold leading-none text-foreground">Alga Ale</span>
+                <span className="text-xs text-muted-foreground">አልጋ አለ</span>
+              </div>
             </Link>
 
             <nav className="hidden items-center gap-1 md:flex">
@@ -152,7 +157,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </nav>
 
         {/* Main Content */}
-        <main className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-6 md:pb-6">{children}</main>
+        <main className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 pt-6">{children}</main>
+
+        {/* Footer — extra bottom padding on mobile so it clears the fixed bottom nav */}
+        <div className="pb-16 md:pb-0">
+          <Footer />
+        </div>
       </div>
     </ProtectedRoute>
   )
