@@ -67,8 +67,8 @@ export default function TermsOfServicePage() {
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     <span>
                       You must notify us immediately at{" "}
-                      <a href="mailto:support@algaale.com" className="text-primary hover:underline">
-                        support@algaale.com
+                      <a href="mailto:team@yichalal.ai" className="text-primary hover:underline">
+                        team@yichalal.ai
                       </a>{" "}
                       if you suspect unauthorised access to your account.
                     </span>

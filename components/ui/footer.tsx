@@ -75,7 +75,10 @@ export function Footer() {
               <Link href="/help" className="text-sm text-muted-foreground hover:text-foreground">
                 Help Center
               </Link>
-<Link
+              <Link href="/help#faq" className="text-sm text-muted-foreground hover:text-foreground">
+                FAQ
+              </Link>
+              <Link
                 href="/business"
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
               >
@@ -105,8 +108,8 @@ export function Footer() {
                   <p>Police: 991 | Ambulance: 907</p>
                 </div>
               </div>
-              <a href="mailto:support@algaale.com" className="text-muted-foreground hover:text-foreground">
-                support@algaale.com
+              <a href="mailto:team@yichalal.ai" className="text-muted-foreground hover:text-foreground">
+                team@yichalal.ai
               </a>
             </div>
           </div>

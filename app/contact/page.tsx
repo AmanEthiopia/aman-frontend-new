@@ -66,8 +66,8 @@ export default function ContactPage() {
                 <Mail className="mt-0.5 h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium">Email</p>
-                  <a href="mailto:support@algaale.com" className="text-sm text-muted-foreground hover:text-foreground">
-                    support@algaale.com
+                  <a href="mailto:team@yichalal.ai" className="text-sm text-muted-foreground hover:text-foreground">
+                    team@yichalal.ai
                   </a>
                 </div>
               </div>
