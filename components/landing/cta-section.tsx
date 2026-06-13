@@ -21,7 +21,7 @@ export function CTASection() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="h-12 bg-transparent px-8 text-base">
-              <Link href="/ai/planner">
+              <Link href="/planner">
                 <Sparkles className="mr-2 h-4 w-4" />
                 Plan with AI
               </Link>

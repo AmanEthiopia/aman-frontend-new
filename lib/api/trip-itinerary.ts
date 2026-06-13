@@ -65,12 +65,23 @@ export async function deleteTripDayPhoto(pkgId: string, dayId: string): Promise<
   await apiDelete(`${base(pkgId)}${dayId}/photo/`)
 }
 
-// ── Items (activities) ────────────────────────────────────────────────────────
+// ── Items (activities + platform resources) ──────────────────────────────────
+
+export interface AddTripDayItemPayload {
+  item_type?: "activity" | "hotel" | "restaurant" | "attraction"
+  title?: string
+  description?: string
+  duration_minutes?: number
+  order?: number
+  hotel_id?: string
+  restaurant_id?: string
+  attraction_id?: string
+}
 
 export async function addTripDayItem(
   pkgId: string,
   dayId: string,
-  payload: { title: string; description?: string; duration_minutes?: number; order?: number },
+  payload: AddTripDayItemPayload,
 ): Promise<TripDayItem> {
   return apiPost<TripDayItem>(`${base(pkgId)}${dayId}/items/`, {
     item_type: "activity",

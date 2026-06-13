@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   ArrowLeft,
   Sparkles,
@@ -21,20 +22,34 @@ import {
   CheckCircle2,
   Plus,
   Info,
+  Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { FEATURES } from "@/lib/config/features"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
+import { useAuth } from "@/contexts/auth-context"
 import { generateItinerary, type ItineraryRequest } from "@/lib/api/ai"
+import { addDayItem, addTripDay, createTrip } from "@/lib/api/itinerary"
 import { friendlyError } from "@/lib/utils/errors"
 import { toast } from "sonner"
 
@@ -303,51 +318,251 @@ function GeneratingState({ progress }: { progress: number }) {
   )
 }
 
+// ── Results helpers ───────────────────────────────────────────────────────────
+
+const PLANNER_STORAGE_KEY = "algaale_planner_result"
+
+function itineraryAsText(itinerary: GeneratedDay[]): string {
+  const lines = ["My Ethiopia trip plan (via Alga Ale AI Planner):", ""]
+  itinerary.forEach((day) => {
+    lines.push(`Day ${day.day} — ${day.city}`)
+    day.activities
+      .filter((a) => a.selected)
+      .forEach((a) => lines.push(`  ${a.time}  ${a.title}${a.price ? ` ($${a.price})` : ""}`))
+    lines.push("")
+  })
+  lines.push("Plan yours at https://aman.yichalal.ai/planner")
+  return lines.join("\n")
+}
+
+function exportItineraryToPrint(itinerary: GeneratedDay[]) {
+  const dayBlocks = itinerary
+    .map((day) => {
+      const rows = day.activities
+        .filter((a) => a.selected)
+        .map(
+          (a) => `
+            <tr>
+              <td style="white-space:nowrap">${a.time}</td>
+              <td><strong>${a.title}</strong><br/><span style="color:#6b7280">${a.description || ""}</span></td>
+              <td style="white-space:nowrap;text-align:right">${a.price ? `$${a.price}` : ""}</td>
+            </tr>`,
+        )
+        .join("")
+      return `
+        <h2>Day ${day.day} — ${day.city}</h2>
+        <table>${rows || "<tr><td colspan='3' style='color:#9ca3af'>No activities selected</td></tr>"}</table>`
+    })
+    .join("")
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>My Ethiopia Itinerary</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", sans-serif; font-size: 13px; color: #111; padding: 32px; }
+  h1 { font-size: 22px; margin-bottom: 4px; } h2 { font-size: 15px; margin: 20px 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  td { padding: 7px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+  .footer { margin-top: 28px; color: #9ca3af; font-size: 11px; }
+  @media print { body { padding: 12px; } }
+</style></head><body>
+  <h1>My Ethiopia Itinerary</h1>
+  <p style="color:#6b7280">${itinerary.length} day${itinerary.length !== 1 ? "s" : ""} · Generated with Alga Ale AI Planner</p>
+  ${dayBlocks}
+  <div class="footer">Alga Ale — Trust-first Ethiopian travel · aman.yichalal.ai</div>
+</body></html>`
+
+  const win = window.open("", "_blank", "width=900,height=700")
+  if (!win) {
+    toast.error("Pop-up blocked — please allow pop-ups and try again")
+    return
+  }
+  win.document.write(html)
+  win.document.close()
+  win.onload = () => {
+    win.focus()
+    win.print()
+  }
+}
+
+const REGENERATE_CHIPS = [
+  "More cultural & historical sites",
+  "Cheaper / budget options",
+  "More food experiences",
+  "Different cities",
+  "Slower pace, fewer activities",
+]
+
 function GeneratedItinerary({
   itinerary,
+  onItineraryChange,
   onRegenerate,
+  savedTripId,
+  onSaved,
 }: {
   itinerary: GeneratedDay[]
-  onRegenerate: () => void
+  onItineraryChange: (next: GeneratedDay[]) => void
+  onRegenerate: (feedback: string) => void
+  savedTripId: string | null
+  onSaved: (tripId: string) => void
 }) {
-  const [selectedActivities, setSelectedActivities] = useState<Set<string>>(() => {
-    const selected = new Set<string>()
-    itinerary.forEach((day) => {
-      day.activities.forEach((activity) => {
-        if (activity.selected) selected.add(activity.id)
-      })
-    })
-    return selected
+  const router = useRouter()
+  const { isAuthenticated } = useAuth()
+
+  const [saveOpen, setSaveOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 7)
+    return d.toISOString().slice(0, 10)
   })
 
-  const toggleActivity = (id: string) => {
-    setSelectedActivities((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-      return next
-    })
+  const [regenOpen, setRegenOpen] = useState(false)
+  const [regenChips, setRegenChips] = useState<string[]>([])
+  const [regenNotes, setRegenNotes] = useState("")
+
+  const [addOpen, setAddOpen] = useState<number | null>(null) // day number
+  const [actTitle, setActTitle] = useState("")
+  const [actTime, setActTime] = useState("10:00")
+  const [actType, setActType] = useState<GeneratedDay["activities"][number]["type"]>("experience")
+  const [actDescription, setActDescription] = useState("")
+
+  const [shareOpen, setShareOpen] = useState(false)
+
+  const toggleActivity = (dayNumber: number, id: string) => {
+    onItineraryChange(
+      itinerary.map((d) =>
+        d.day === dayNumber
+          ? { ...d, activities: d.activities.map((a) => (a.id === id ? { ...a, selected: !a.selected } : a)) }
+          : d,
+      ),
+    )
   }
 
-  const totalPrice = itinerary.reduce((total, day) => {
-    return (
-      total +
-      day.activities.reduce((dayTotal, activity) => {
-        if (selectedActivities.has(activity.id) && activity.price) {
-          return dayTotal + activity.price
+  const selectedCount = itinerary.reduce((n, d) => n + d.activities.filter((a) => a.selected).length, 0)
+  const totalPrice = itinerary.reduce(
+    (total, day) => total + day.activities.reduce((t, a) => (a.selected && a.price ? t + a.price : t), 0),
+    0,
+  )
+
+  // ── Save to itinerary ──────────────────────────────────────────────────────
+  const handleSaveClick = () => {
+    if (savedTripId) {
+      router.push(`/itinerary/${savedTripId}`)
+      return
+    }
+    if (!isAuthenticated) {
+      // Preserve the result, then send them to sign in — they come back right here.
+      try {
+        sessionStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify({ itinerary }))
+      } catch {}
+      toast.info("Sign in to save your itinerary — your plan is kept safe.")
+      router.push("/login?redirect=/planner")
+      return
+    }
+    setSaveOpen(true)
+  }
+
+  const handleSaveConfirm = async () => {
+    setSaving(true)
+    try {
+      const start = new Date(startDate + "T00:00:00")
+      const end = new Date(start)
+      end.setDate(end.getDate() + itinerary.length - 1)
+      const iso = (d: Date) => d.toISOString().slice(0, 10)
+
+      const trip = await createTrip({
+        title: `Ethiopia Adventure — ${start.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`,
+        description: "Created with the Alga Ale AI Planner.",
+        start_date: iso(start),
+        end_date: iso(end),
+      })
+
+      for (const day of itinerary) {
+        const dayDate = new Date(start)
+        dayDate.setDate(dayDate.getDate() + day.day - 1)
+        const created = await addTripDay(trip.id, { date: iso(dayDate), title: `${day.city}` })
+        const selected = day.activities.filter((a) => a.selected)
+        for (let i = 0; i < selected.length; i++) {
+          const a = selected[i]
+          await addDayItem(trip.id, created.id, {
+            item_type: "custom",
+            order: i,
+            time_slot: /^\d{2}:\d{2}/.test(a.time) ? a.time.slice(0, 5) : undefined,
+            title: a.title,
+            description: a.description,
+            notes: "From AI Planner",
+          })
         }
-        return dayTotal
-      }, 0)
+      }
+
+      onSaved(trip.id)
+      setSaveOpen(false)
+      toast.success("Itinerary saved! Find it under My Itinerary.")
+    } catch (err) {
+      toast.error(friendlyError(err, "Couldn't save your itinerary. Please try again."))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ── Regenerate with feedback ───────────────────────────────────────────────
+  const handleRegenSubmit = () => {
+    const feedback = [...regenChips, regenNotes.trim()].filter(Boolean).join("; ")
+    setRegenOpen(false)
+    setRegenChips([])
+    setRegenNotes("")
+    onRegenerate(feedback)
+  }
+
+  // ── Add activity ───────────────────────────────────────────────────────────
+  const handleAddActivity = () => {
+    if (addOpen === null) return
+    if (!actTitle.trim()) {
+      toast.error("Activity title is required")
+      return
+    }
+    onItineraryChange(
+      itinerary.map((d) =>
+        d.day === addOpen
+          ? {
+              ...d,
+              activities: [
+                ...d.activities,
+                {
+                  id: `manual-${Date.now()}`,
+                  time: actTime || "10:00",
+                  type: actType,
+                  title: actTitle.trim(),
+                  description: actDescription.trim(),
+                  selected: true,
+                },
+              ].sort((a, b) => a.time.localeCompare(b.time)),
+            }
+          : d,
+      ),
     )
-  }, 0)
+    setAddOpen(null)
+    setActTitle("")
+    setActDescription("")
+    setActTime("10:00")
+    toast.success("Activity added to your plan")
+  }
+
+  // ── Share ──────────────────────────────────────────────────────────────────
+  const shareText = () => itineraryAsText(itinerary)
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText())
+      toast.success("Itinerary copied!")
+    } catch {
+      toast.error("Couldn't copy — try Export instead")
+    }
+    setShareOpen(false)
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">Your Ethiopian Adventure</h1>
@@ -357,16 +572,53 @@ function GeneratedItinerary({
             {itinerary.length} {itinerary.length === 1 ? "day" : "days"} · {new Set(itinerary.map((d) => d.city)).size} cities · Customized for you
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onRegenerate}>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => setRegenOpen(true)}>
             <RefreshCcw className="mr-2 h-4 w-4" />
             Regenerate
           </Button>
-          <Button variant="outline" size="sm">
-            <Share2 className="mr-2 h-4 w-4" />
-            Share
-          </Button>
-          <Button variant="outline" size="sm">
+          <Popover open={shareOpen} onOpenChange={setShareOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Share2 className="mr-2 h-4 w-4" />
+                Share
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-1" align="end">
+              <button
+                onClick={handleCopy}
+                className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted"
+              >
+                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                Copy itinerary
+              </button>
+              <button
+                onClick={() => {
+                  window.open(`https://wa.me/?text=${encodeURIComponent(shareText())}`, "_blank", "noopener,noreferrer")
+                  setShareOpen(false)
+                }}
+                className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted"
+              >
+                <Share2 className="h-4 w-4 text-[#25D366]" />
+                WhatsApp
+              </button>
+              <button
+                onClick={() => {
+                  window.open(
+                    `https://t.me/share/url?url=${encodeURIComponent("https://aman.yichalal.ai/planner")}&text=${encodeURIComponent(shareText())}`,
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                  setShareOpen(false)
+                }}
+                className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted"
+              >
+                <Share2 className="h-4 w-4 text-[#2AABEE]" />
+                Telegram
+              </button>
+            </PopoverContent>
+          </Popover>
+          <Button variant="outline" size="sm" onClick={() => exportItineraryToPrint(itinerary)}>
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -375,14 +627,14 @@ function GeneratedItinerary({
 
       {/* Summary Card */}
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
-        <CardContent className="flex items-center justify-between py-4">
+        <CardContent className="flex items-center justify-between py-4 flex-wrap gap-4">
           <div className="flex items-center gap-6">
             <div className="text-center">
               <p className="text-3xl font-bold text-primary">{itinerary.length}</p>
               <p className="text-sm text-muted-foreground">Days</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold">{selectedActivities.size}</p>
+              <p className="text-3xl font-bold">{selectedCount}</p>
               <p className="text-sm text-muted-foreground">Activities</p>
             </div>
             <div className="text-center">
@@ -390,9 +642,9 @@ function GeneratedItinerary({
               <p className="text-sm text-muted-foreground">Est. Total</p>
             </div>
           </div>
-          <Button size="lg">
+          <Button size="lg" onClick={handleSaveClick} variant={savedTripId ? "outline" : "default"}>
             <CheckCircle2 className="mr-2 h-5 w-5" />
-            Save to My Itinerary
+            {savedTripId ? "View in My Itinerary" : "Save to My Itinerary"}
           </Button>
         </CardContent>
       </Card>
@@ -415,7 +667,7 @@ function GeneratedItinerary({
                     </CardDescription>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => setAddOpen(day.day)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Activity
                 </Button>
@@ -423,18 +675,17 @@ function GeneratedItinerary({
             </CardHeader>
             <CardContent className="space-y-3">
               {day.activities.map((activity) => {
-                const config = activityTypeConfig[activity.type]
+                const config = activityTypeConfig[activity.type] ?? activityTypeConfig.experience
                 const Icon = config.icon
-                const isSelected = selectedActivities.has(activity.id)
 
                 return (
                   <div
                     key={activity.id}
                     className={`flex items-start gap-4 rounded-lg border p-4 transition-all ${
-                      isSelected ? "border-primary/50 bg-primary/5" : "opacity-60"
+                      activity.selected ? "border-primary/50 bg-primary/5" : "opacity-60"
                     }`}
                   >
-                    <Checkbox checked={isSelected} onCheckedChange={() => toggleActivity(activity.id)} />
+                    <Checkbox checked={activity.selected} onCheckedChange={() => toggleActivity(day.day, activity.id)} />
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
                       {activity.time}
@@ -452,20 +703,13 @@ function GeneratedItinerary({
                             {activity.duration}
                           </Badge>
                         )}
-                        {activity.price && (
+                        {activity.price ? (
                           <Badge variant="secondary" className="gap-1">
                             <DollarSign className="h-3 w-3" />${activity.price}
                           </Badge>
-                        )}
+                        ) : null}
                       </div>
                     </div>
-                    {activity.type === "hotel" && (
-                      <Link href={`/hotels/addis-1`}>
-                        <Button variant="outline" size="sm">
-                          View Hotel
-                        </Button>
-                      </Link>
-                    )}
                   </div>
                 )
               })}
@@ -476,19 +720,165 @@ function GeneratedItinerary({
 
       {/* Bottom CTA */}
       <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
-        <CardContent className="flex items-center justify-between py-4">
+        <CardContent className="flex items-center justify-between py-4 flex-wrap gap-3">
           <div>
             <h3 className="font-semibold text-green-800 dark:text-green-200">Ready to book?</h3>
             <p className="text-sm text-green-700 dark:text-green-300">
-              Save this itinerary and start booking individual items
+              Save this itinerary, then book hotels, guides, and experiences from your plan
             </p>
           </div>
-          <Button className="bg-green-600 hover:bg-green-700">
+          <Button className="bg-green-600 hover:bg-green-700" onClick={handleSaveClick}>
             <CheckCircle2 className="mr-2 h-4 w-4" />
-            Save & Continue
+            {savedTripId ? "View in My Itinerary" : "Save & Continue"}
           </Button>
         </CardContent>
       </Card>
+
+      {/* Save dialog */}
+      <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save to My Itinerary</DialogTitle>
+            <DialogDescription>
+              When does your {itinerary.length}-day trip start? We&apos;ll map each day to a real date.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="start-date">Trip start date</Label>
+            <Input
+              id="start-date"
+              type="date"
+              value={startDate}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {selectedCount} selected {selectedCount === 1 ? "activity" : "activities"} will be saved.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setSaveOpen(false)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveConfirm} disabled={saving || !startDate}>
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Save Itinerary
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Regenerate dialog */}
+      <Dialog open={regenOpen} onOpenChange={setRegenOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Regenerate Itinerary</DialogTitle>
+            <DialogDescription>What should change? Tell us what you didn&apos;t like and we&apos;ll do better.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="flex flex-wrap gap-1.5">
+              {REGENERATE_CHIPS.map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() =>
+                    setRegenChips((prev) => (prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]))
+                  }
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    regenChips.includes(chip)
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+            <Textarea
+              placeholder="Anything else? E.g. 'Day 2 was too packed', 'I want to see Lalibela'…"
+              value={regenNotes}
+              onChange={(e) => setRegenNotes(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRegenOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRegenSubmit}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Regenerate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add activity dialog */}
+      <Dialog open={addOpen !== null} onOpenChange={(open) => !open && setAddOpen(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Activity — Day {addOpen}</DialogTitle>
+            <DialogDescription>Add your own activity alongside the AI suggestions.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label>Title</Label>
+              <Input
+                placeholder="E.g. Coffee ceremony at Tomoca"
+                value={actTitle}
+                onChange={(e) => setActTitle(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Time</Label>
+                <Input type="time" value={actTime} onChange={(e) => setActTime(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Type</Label>
+                <Select value={actType} onValueChange={(v) => setActType(v as typeof actType)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="experience">Experience</SelectItem>
+                    <SelectItem value="restaurant">Restaurant</SelectItem>
+                    <SelectItem value="hotel">Hotel</SelectItem>
+                    <SelectItem value="transport">Transport</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Description (optional)</Label>
+              <Textarea
+                placeholder="Notes about this activity…"
+                value={actDescription}
+                onChange={(e) => setActDescription(e.target.value)}
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddOpen(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddActivity}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Activity
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -497,10 +887,39 @@ export default function PlannerPage() {
   const [stage, setStage] = useState<"form" | "generating" | "results">("form")
   const [progress, setProgress] = useState(0)
   const [generatedItinerary, setGeneratedItinerary] = useState<GeneratedDay[]>([])
+  const [lastPayload, setLastPayload] = useState<ItineraryRequest | null>(null)
+  const [savedTripId, setSavedTripId] = useState<string | null>(null)
+
+  // Restore a preserved result (e.g. after the sign-in round trip from Save).
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(PLANNER_STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed?.itinerary) && parsed.itinerary.length > 0) {
+          setGeneratedItinerary(parsed.itinerary)
+          if (parsed.payload) setLastPayload(parsed.payload)
+          if (parsed.savedTripId) setSavedTripId(parsed.savedTripId)
+          setStage("results")
+        }
+      }
+    } catch {}
+  }, [])
+
+  // Keep the current result preserved across sign-in redirects and refreshes.
+  const persist = (itin: GeneratedDay[], payload: ItineraryRequest | null, tripId: string | null) => {
+    try {
+      sessionStorage.setItem(
+        PLANNER_STORAGE_KEY,
+        JSON.stringify({ itinerary: itin, payload, savedTripId: tripId }),
+      )
+    } catch {}
+  }
 
   const handleGenerate = async (payload: ItineraryRequest) => {
     setStage("generating")
     setProgress(0)
+    setSavedTripId(null)
 
     // Animate progress up to ~92% while the real request runs.
     const interval = setInterval(() => {
@@ -509,21 +928,44 @@ export default function PlannerPage() {
 
     try {
       const result = await generateItinerary(payload)
-      setGeneratedItinerary((result.itinerary ?? []) as GeneratedDay[])
+      const itin = (result.itinerary ?? []) as GeneratedDay[]
+      setGeneratedItinerary(itin)
+      setLastPayload(payload)
+      persist(itin, payload, null)
       setProgress(100)
       setStage("results")
     } catch (err) {
       toast.error(friendlyError(err, "Couldn't generate your itinerary. Please try again."))
-      setStage("form")
+      setStage(generatedItinerary.length > 0 ? "results" : "form")
     } finally {
       clearInterval(interval)
     }
   }
 
-  const handleRegenerate = () => {
-    setStage("form")
-    setProgress(0)
-    setGeneratedItinerary([])
+  const handleRegenerate = (feedback: string) => {
+    if (!lastPayload) {
+      setStage("form")
+      return
+    }
+    const summary = generatedItinerary.map((d) => `Day ${d.day}: ${d.city}`).join("; ")
+    const revisedNotes = [
+      lastPayload.notes,
+      feedback ? `REVISION REQUEST — the traveler asked for these changes: ${feedback}.` : "",
+      `Previous plan summary: ${summary}. Produce a noticeably different plan honoring the request.`,
+    ]
+      .filter(Boolean)
+      .join("\n")
+    handleGenerate({ ...lastPayload, notes: revisedNotes })
+  }
+
+  const handleItineraryChange = (next: GeneratedDay[]) => {
+    setGeneratedItinerary(next)
+    persist(next, lastPayload, savedTripId)
+  }
+
+  const handleSaved = (tripId: string) => {
+    setSavedTripId(tripId)
+    persist(generatedItinerary, lastPayload, tripId)
   }
 
   if (!FEATURES.AI_PLANNER) {
@@ -563,7 +1005,15 @@ export default function PlannerPage() {
 
           {stage === "form" && <PlannerForm onGenerate={handleGenerate} />}
           {stage === "generating" && <GeneratingState progress={Math.min(progress, 100)} />}
-          {stage === "results" && <GeneratedItinerary itinerary={generatedItinerary} onRegenerate={handleRegenerate} />}
+          {stage === "results" && (
+            <GeneratedItinerary
+              itinerary={generatedItinerary}
+              onItineraryChange={handleItineraryChange}
+              onRegenerate={handleRegenerate}
+              savedTripId={savedTripId}
+              onSaved={handleSaved}
+            />
+          )}
         </div>
       </main>
       <Footer />

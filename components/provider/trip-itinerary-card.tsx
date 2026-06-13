@@ -28,6 +28,16 @@ import {
   uploadTripDayPhoto,
   type TripDay,
 } from "@/lib/api/trip-itinerary"
+import { ResourcePicker, type ResourceKind } from "@/components/provider/resource-picker"
+
+type ItemKind = "activity" | ResourceKind
+
+const ITEM_KIND_LABELS: Record<ItemKind, string> = {
+  activity: "Activity",
+  hotel: "Hotel",
+  restaurant: "Restaurant",
+  attraction: "Attraction",
+}
 
 function itemLabel(item: TripDay["items"][number]): string {
   if (item.item_type === "hotel") return item.hotel?.name ?? "Hotel stay"
@@ -48,12 +58,21 @@ function DayBlock({
   onDeleted: () => void
 }) {
   const [showItemForm, setShowItemForm] = useState(false)
+  const [itemKind, setItemKind] = useState<ItemKind>("activity")
   const [itemTitle, setItemTitle] = useState("")
   const [itemDescription, setItemDescription] = useState("")
   const [itemDuration, setItemDuration] = useState("")
   const [saving, setSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const closeItemForm = () => {
+    setShowItemForm(false)
+    setItemKind("activity")
+    setItemTitle("")
+    setItemDescription("")
+    setItemDuration("")
+  }
 
   const handleAddItem = async () => {
     if (!itemTitle.trim()) {
@@ -69,13 +88,28 @@ function DayBlock({
         order: day.items.length,
       })
       onChanged({ ...day, items: [...day.items, item] })
-      setItemTitle("")
-      setItemDescription("")
-      setItemDuration("")
-      setShowItemForm(false)
+      closeItemForm()
       toast.success("Activity added")
     } catch {
       toast.error("Couldn't add the activity. Please try again.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handlePickResource = async (kind: ResourceKind, resource: { id: string; name: string }) => {
+    setSaving(true)
+    try {
+      const item = await addTripDayItem(tripId, day.id, {
+        item_type: kind,
+        [`${kind}_id`]: resource.id,
+        order: day.items.length,
+      })
+      onChanged({ ...day, items: [...day.items, item] })
+      closeItemForm()
+      toast.success(`${resource.name} added to Day ${day.day_number}`)
+    } catch {
+      toast.error(`Couldn't add the ${kind}. Please try again.`)
     } finally {
       setSaving(false)
     }
@@ -197,37 +231,69 @@ function DayBlock({
           )}
         </div>
 
-        {/* Add activity */}
+        {/* Add activity / platform resource */}
         {showItemForm ? (
-          <div className="mt-3 space-y-2 rounded-md border p-3">
-            <Input
-              placeholder="Activity title (e.g. Visit the National Museum)"
-              value={itemTitle}
-              onChange={(e) => setItemTitle(e.target.value)}
-            />
-            <Textarea
-              placeholder="Short description (optional)"
-              value={itemDescription}
-              onChange={(e) => setItemDescription(e.target.value)}
-              rows={2}
-            />
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min={1}
-                placeholder="Duration (minutes, optional)"
-                value={itemDuration}
-                onChange={(e) => setItemDuration(e.target.value)}
-                className="w-56"
-              />
-              <Button size="sm" onClick={handleAddItem} disabled={saving}>
-                {saving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Plus className="mr-1 h-3.5 w-3.5" />}
-                Add
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setShowItemForm(false)}>
-                Cancel
-              </Button>
+          <div className="mt-3 space-y-3 rounded-md border p-3">
+            {/* Kind selector */}
+            <div className="flex flex-wrap gap-1.5">
+              {(Object.keys(ITEM_KIND_LABELS) as ItemKind[]).map((kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => setItemKind(kind)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    itemKind === kind
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {ITEM_KIND_LABELS[kind]}
+                </button>
+              ))}
             </div>
+
+            {itemKind === "activity" ? (
+              <>
+                <Input
+                  placeholder="Activity title (e.g. Visit the National Museum)"
+                  value={itemTitle}
+                  onChange={(e) => setItemTitle(e.target.value)}
+                />
+                <Textarea
+                  placeholder="Short description (optional)"
+                  value={itemDescription}
+                  onChange={(e) => setItemDescription(e.target.value)}
+                  rows={2}
+                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    placeholder="Duration (minutes, optional)"
+                    value={itemDuration}
+                    onChange={(e) => setItemDuration(e.target.value)}
+                    className="w-56"
+                  />
+                  <Button size="sm" onClick={handleAddItem} disabled={saving}>
+                    {saving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Plus className="mr-1 h-3.5 w-3.5" />}
+                    Add
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={closeItemForm}>
+                    Cancel
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <ResourcePicker
+                  kind={itemKind}
+                  onPick={(resource) => handlePickResource(itemKind, resource)}
+                />
+                <Button size="sm" variant="ghost" onClick={closeItemForm}>
+                  Cancel
+                </Button>
+              </>
+            )}
           </div>
         ) : (
           <Button variant="outline" size="sm" className="mt-3" onClick={() => setShowItemForm(true)}>
