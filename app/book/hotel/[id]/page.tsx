@@ -207,6 +207,10 @@ export default function BookHotelPage() {
   }, 0)
   const totalGuests = Number(formData.numAdults) + Number(formData.numChildren)
   const capacityWarning = totalRoomCapacity > 0 && totalGuests > totalRoomCapacity
+  // Number of physical rooms selected (sum of quantities)
+  const totalRoomCount = roomsPayload.reduce((sum, { quantity }) => sum + quantity, 0)
+  // Each room needs at least one guest — selecting more rooms than guests isn't allowed
+  const tooManyRooms = totalRoomCount > 0 && totalRoomCount > totalGuests
 
   // Gender restriction notice for any selected room
   const genderRestrictions = roomsPayload
@@ -259,6 +263,21 @@ export default function BookHotelPage() {
     }
     if (formData.checkOutDate <= formData.checkInDate) {
       setError("Check-out must be after check-in.")
+      return
+    }
+
+    // Each room must have at least one guest — block selecting more rooms than guests
+    if (tooManyRooms) {
+      setError(
+        `You've selected ${totalRoomCount} room(s) for ${totalGuests} guest(s). Each room needs at least one guest — add more guests or remove a room.`
+      )
+      return
+    }
+    // Rooms must be able to hold everyone
+    if (capacityWarning) {
+      setError(
+        `Your ${totalGuests} guest(s) exceed the selected rooms' combined capacity (${totalRoomCapacity}). Add another room or choose a larger room type.`
+      )
       return
     }
 
@@ -648,7 +667,7 @@ export default function BookHotelPage() {
                               id="guestPhone"
                               name="guestPhone"
                               type="tel"
-                              placeholder="+251 91 123 4567"
+                              placeholder="+251 708 029 422"
                               value={formData.guestPhone}
                               onChange={handleChange}
                               className="pl-10"
@@ -685,6 +704,14 @@ export default function BookHotelPage() {
                           />
                         </div>
                       </div>
+
+                      {/* Too many rooms for the guest count */}
+                      {tooManyRooms && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 flex gap-2">
+                          <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                          <p>You&apos;ve selected {totalRoomCount} room(s) for {totalGuests} guest(s). Each room needs at least one guest — add more guests or remove a room.</p>
+                        </div>
+                      )}
 
                       {/* Capacity warning */}
                       {capacityWarning && (
@@ -795,7 +822,7 @@ export default function BookHotelPage() {
                         </div>
                       )}
 
-                      <Button type="submit" className="w-full" size="lg" disabled={isSubmitting || roomsPayload.length === 0}>
+                      <Button type="submit" className="w-full" size="lg" disabled={isSubmitting || roomsPayload.length === 0 || tooManyRooms || capacityWarning}>
                         {isSubmitting ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -152,7 +152,7 @@ export function BookingForm({ hotel }: BookingFormProps) {
                     id="guestPhone"
                     name="guestPhone"
                     type="tel"
-                    placeholder="+251 91 123 4567"
+                    placeholder="+251 708 029 422"
                     value={formData.guestPhone}
                     onChange={handleChange}
                     className="pl-10"

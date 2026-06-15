@@ -17,6 +17,7 @@ import {
   Phone,
   MessageSquare,
   Shield,
+  Calendar,
 } from "lucide-react"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
@@ -354,6 +355,13 @@ export default function TransportDetailPage({ params }: { params: Promise<{ id: 
                     transport.pricePerTrip == null && (
                       <p className="text-muted-foreground">Contact for pricing</p>
                     )}
+
+                  <Button size="lg" className="mt-4 w-full" asChild>
+                    <Link href={`/book/driver/${transport.id}`}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Book This Driver
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
 

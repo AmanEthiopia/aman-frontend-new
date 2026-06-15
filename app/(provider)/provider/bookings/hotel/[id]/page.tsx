@@ -66,6 +66,7 @@ const statusConfig: Record<
   cancelled: { label: "Cancelled",             icon: Ban,          variant: "destructive", color: "text-red-600"    },
   completed: { label: "Completed",             icon: CheckCircle2, variant: "outline",     color: "text-muted-foreground" },
   no_show:   { label: "No Show",               icon: AlertCircle,  variant: "destructive", color: "text-red-600"    },
+  expired:   { label: "Expired — No Response",  icon: AlertCircle,  variant: "outline",     color: "text-muted-foreground" },
 }
 
 function formatDate(d: string) {
@@ -139,8 +140,8 @@ export default function ProviderHotelBookingDetailPage() {
       const updated = await confirmHotelBooking(booking.id, assignmentList.length > 0 ? assignmentList : undefined)
       setBooking(updated)
       toast.success("Booking confirmed successfully")
-    } catch {
-      toast.error("Failed to confirm booking")
+    } catch (err: any) {
+      toast.error(err?.message || "Couldn't confirm this booking. Please try again.")
     } finally {
       setActionLoading(false)
     }
@@ -189,6 +190,10 @@ export default function ProviderHotelBookingDetailPage() {
   const heroPhoto = booking.hotel?.photo_url ?? booking.hotel?.cover_photo_url
   const contactVisible = booking.status === "confirmed" || booking.status === "completed"
   const isWalkIn = booking.source === "manual"
+  // A pending request whose check-in date has already passed can no longer be acted on.
+  const todayStart = new Date(new Date().toDateString())
+  const checkInPassed = checkIn < todayStart
+  const canRespond = booking.status === "pending" && !checkInPassed
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -623,7 +628,7 @@ export default function ProviderHotelBookingDetailPage() {
             </Button>
           </Link>
         )}
-        {booking.status === "pending" && (
+        {canRespond && (
           <>
             <Button
               variant="outline"
@@ -644,6 +649,21 @@ export default function ProviderHotelBookingDetailPage() {
           </>
         )}
       </div>
+
+      {/* Expired (pending but the check-in date has passed) */}
+      {booking.status === "pending" && checkInPassed && (
+        <div className="mb-6 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">This request has expired</p>
+            <p className="mt-1">
+              The check-in date ({booking.check_in_date}) has passed, so it can no longer be confirmed or
+              rejected. The guest has been notified that there was no response. Unanswered requests like this
+              lower your response rate.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Reject Dialog */}
       <Dialog open={rejectDialog} onOpenChange={(open) => { if (!open) { setRejectDialog(false); setRejectReason("") } }}>

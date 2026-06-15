@@ -78,6 +78,7 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
   cancelled: { label: "Cancelled",             variant: "outline"   },
   completed: { label: "Completed",             variant: "outline"   },
   no_show:   { label: "No Show",               variant: "destructive"},
+  expired:   { label: "Expired — No Response",  variant: "outline"   },
 }
 
 const serviceIcons: Record<BookingServiceType, typeof Building2> = {
@@ -188,6 +189,9 @@ function BookingDetailModal({
   if (!booking) return null
   const status = statusConfig[booking.status] ?? statusConfig.pending
   const Icon = serviceIcons[booking.service_type]
+  // A pending request whose service date has already passed can no longer be acted on.
+  const serviceDatePassed = !!booking.check_in && new Date(booking.check_in) < new Date(new Date().toDateString())
+  const canRespond = booking.status === "pending" && !serviceDatePassed
 
   const handleClose = () => {
     setShowRejectForm(false)
@@ -320,7 +324,7 @@ function BookingDetailModal({
           )}
 
           {/* Unit assignment for pending hotel bookings */}
-          {booking.status === "pending" && hotelBooking && !showRejectForm && (
+          {canRespond && hotelBooking && !showRejectForm && (
             <div className="space-y-3">
               <div>
                 <p className="text-sm font-medium">Assign Room Numbers (Optional)</p>
@@ -384,8 +388,19 @@ function BookingDetailModal({
           )}
         </div>
 
+        {booking.status === "pending" && serviceDatePassed && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <p>
+              This request expired — the date ({formatDate(booking.check_in!)}) has passed, so it can no longer
+              be confirmed or rejected. The guest was notified of the non-response, and unanswered requests
+              lower your response rate.
+            </p>
+          </div>
+        )}
+
         <DialogFooter className="gap-2">
-          {booking.status === "pending" && !showRejectForm && (
+          {canRespond && !showRejectForm && (
             <>
               <Button variant="outline" onClick={() => setShowRejectForm(true)} disabled={isLoading}>
                 <XCircle className="mr-2 h-4 w-4" />
@@ -397,7 +412,7 @@ function BookingDetailModal({
               </Button>
             </>
           )}
-          {booking.status === "pending" && showRejectForm && (
+          {canRespond && showRejectForm && (
             <>
               <Button variant="ghost" onClick={() => setShowRejectForm(false)} disabled={isLoading}>Back</Button>
               <Button variant="destructive" onClick={() => onReject(rejectReason)} disabled={isLoading}>
@@ -406,7 +421,7 @@ function BookingDetailModal({
               </Button>
             </>
           )}
-          {booking.status !== "pending" && (
+          {!canRespond && (
             <Button variant="outline" onClick={handleClose}>Close</Button>
           )}
         </DialogFooter>
@@ -621,7 +636,7 @@ function WalkInBookingModal({
             </div>
             <div className="space-y-2">
               <Label>Phone</Label>
-              <Input placeholder="+251 91 ..." value={formData.guestPhone} onChange={(e) => setFormData((p) => ({ ...p, guestPhone: e.target.value }))} />
+              <Input placeholder="+251 708 029 422" value={formData.guestPhone} onChange={(e) => setFormData((p) => ({ ...p, guestPhone: e.target.value }))} />
             </div>
             <div className="space-y-2">
               <Label>Adults *</Label>
@@ -670,6 +685,8 @@ function BookingRow({
   const status = statusConfig[booking.status] ?? statusConfig.pending
   const Icon = serviceIcons[booking.service_type]
   const isManual = (booking.raw as any).source === "manual"
+  const serviceDatePassed = !!booking.check_in && new Date(booking.check_in) < new Date(new Date().toDateString())
+  const canRespond = booking.status === "pending" && !serviceDatePassed
 
   return (
     <Card>
@@ -747,7 +764,7 @@ function BookingRow({
               <Button variant="outline" size="sm" onClick={onViewDetails}>
                 View Details
               </Button>
-              {booking.status === "pending" && (
+              {canRespond && (
                 <>
                   <Button variant="outline" size="sm" onClick={onReject} disabled={isLoading}>
                     <XCircle className="mr-1 h-4 w-4" />
@@ -758,6 +775,9 @@ function BookingRow({
                     Confirm
                   </Button>
                 </>
+              )}
+              {booking.status === "pending" && serviceDatePassed && (
+                <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">Expired</Badge>
               )}
             </div>
           </div>
@@ -814,7 +834,7 @@ export default function ProviderBookingsPage() {
 
   const pending   = filtered.filter((b) => b.status === "pending")
   const confirmed = filtered.filter((b) => b.status === "confirmed")
-  const past      = filtered.filter((b) => ["completed", "cancelled", "rejected", "no_show"].includes(b.status))
+  const past      = filtered.filter((b) => ["completed", "cancelled", "rejected", "no_show", "expired"].includes(b.status))
 
   const handleConfirm = async (booking: NormalizedBooking, assignments?: BookingRoomAssignment[]) => {
     setActionLoading(booking.id)
@@ -826,8 +846,8 @@ export default function ProviderBookingsPage() {
       }
       toast.success("Booking confirmed")
       await loadBookings()
-    } catch {
-      toast.error("Failed to confirm booking")
+    } catch (err: any) {
+      toast.error(err?.message || "Couldn't confirm this booking. Please try again.")
     } finally {
       setActionLoading(null)
       setSelectedBooking(null)

@@ -183,10 +183,20 @@ function DepartureSelector({ pkg }: { pkg: Package }) {
   return (
     <div className="space-y-3">
       {departures.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-6 text-center">
-          <CalendarDays className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-          <p className="font-medium text-muted-foreground">No upcoming dates</p>
-          <p className="text-sm text-muted-foreground">Check back later for new departures</p>
+        <div className="space-y-3">
+          <div className="rounded-lg border border-dashed p-6 text-center">
+            <CalendarDays className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+            <p className="font-medium">Flexible dates</p>
+            <p className="text-sm text-muted-foreground">
+              No fixed departures — request your preferred date and the organizer will arrange it with you.
+            </p>
+          </div>
+          <Link href={`/book/experience/${pkg.slug}`}>
+            <Button className="w-full" size="lg">
+              <CalendarDays className="mr-2 h-4 w-4" />
+              Request to Book
+            </Button>
+          </Link>
         </div>
       ) : (
         <>
@@ -354,7 +364,7 @@ export default function ExperienceDetailPage() {
               </div>
               <div className="flex items-start justify-between gap-4">
                 <h1 className="text-4xl font-bold text-white">{pkg.title}</h1>
-                <ShareButton title={pkg.title} className="mt-1 flex-shrink-0 border-white/40 text-white hover:bg-white/10 hover:text-white" />
+                <ShareButton title={pkg.title} className="mt-1 flex-shrink-0 border-white/40 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white" />
               </div>
               {pkg.nickname && <p className="text-xl text-white/80">{pkg.nickname}</p>}
               

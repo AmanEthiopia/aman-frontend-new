@@ -43,7 +43,7 @@ const guidelines = [
     icon: Phone,
     title: "Emergency Contacts",
     description:
-      "Keep these numbers saved: Ethiopian Police 991 · Ambulance 907 · Alga Ale 24/7 Support +251 91 123 4567. In a life-threatening emergency, always contact local authorities first.",
+      "Keep these numbers saved: Ethiopian Police 991 · Ambulance 907 · Alga Ale 24/7 Support +251 708 029 422. In a life-threatening emergency, always contact local authorities first.",
   },
 ]
 
@@ -77,7 +77,7 @@ export default function SafetyGuidelinesPage() {
               <div className="flex flex-wrap gap-6 text-sm">
                 <span><strong>Police:</strong> 991</span>
                 <span><strong>Ambulance:</strong> 907</span>
-                <span><strong>Alga Ale 24/7:</strong> +251 91 123 4567</span>
+                <span><strong>Alga Ale 24/7:</strong> +251 708 029 422</span>
               </div>
             </div>
           </div>
@@ -162,8 +162,8 @@ export default function SafetyGuidelinesPage() {
                   </a>
                   {" "}·{" "}
                   24/7 phone:{" "}
-                  <a href="tel:+251911234567" className="text-primary hover:underline">
-                    +251 91 123 4567
+                  <a href="tel:+251708029422" className="text-primary hover:underline">
+                    +251 708 029 422
                   </a>
                 </p>
               </div>

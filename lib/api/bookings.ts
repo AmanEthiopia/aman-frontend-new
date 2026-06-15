@@ -6,7 +6,7 @@ import { apiPost, apiGet, apiPatch } from "./client"
 // Types
 // ============================================================================
 
-export type BookingStatus = "pending" | "confirmed" | "rejected" | "cancelled" | "completed" | "no_show"
+export type BookingStatus = "pending" | "confirmed" | "rejected" | "cancelled" | "completed" | "no_show" | "expired"
 export type PaymentStatus = "unpaid" | "paid" | "refunded"
 
 export interface GuestInfo {

@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field"
+import { Label } from "@/components/ui/label"
 import {
   getExperienceBySlug,
   createPackageBooking,
@@ -84,6 +85,8 @@ export default function BookExperiencePage() {
   const [bookingNumber, setBookingNumber] = useState<string | null>(null)
   const [existingBookings, setExistingBookings] = useState<any[]>([])
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
+  // Flexible (no fixed departure) request: traveler proposes a preferred date.
+  const [flexibleDate, setFlexibleDate] = useState("")
 
   const [formData, setFormData] = useState({
     numAdults: 1,
@@ -142,13 +145,13 @@ export default function BookExperiencePage() {
   const totalPax = formData.numAdults + formData.numChildren
 
   const doSubmit = async () => {
-    if (!pkg || !departure) return
+    if (!pkg || (!departure && !flexibleDate)) return
     setSubmitting(true)
     setError(null)
     try {
       const response = await createPackageBooking({
         package_id: pkg.id,
-        departure_id: departure.id,
+        ...(departure ? { departure_id: departure.id } : { start_date: flexibleDate }),
         num_adults: formData.numAdults,
         num_children: formData.numChildren,
         guest_name: formData.guestName,
@@ -171,12 +174,16 @@ export default function BookExperiencePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!pkg || !isAuthenticated || !departure) return
+    if (!pkg || !isAuthenticated) return
+    if (!departure && !flexibleDate) {
+      setError("Please choose your preferred date.")
+      return
+    }
 
     // Duplicate check: same package + same departure already booked
     const duplicate = existingBookings
       .filter((b) => b.status !== "cancelled" && b.status !== "rejected")
-      .find((b) => b.departure_id === departure.id || b.package_id === pkg.id)
+      .find((b) => (departure && b.departure_id === departure.id) || b.package_id === pkg.id)
 
     if (duplicate) {
       const tripName = (duplicate as any).package?.title ?? pkg.title
@@ -310,10 +317,8 @@ export default function BookExperiencePage() {
             <Alert className="mb-6">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                No departure selected.{" "}
-                <Link href={`/experiences/${pkg.slug}`} className="font-medium underline">
-                  Go back and select a departure date.
-                </Link>
+                This is a <strong>flexible booking request</strong> — pick your preferred date below and the
+                organizer will confirm the final plan with you.
               </AlertDescription>
             </Alert>
           )}
@@ -327,7 +332,7 @@ export default function BookExperiencePage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <CalendarDays className="h-5 w-5 text-primary" />
-                      Selected Departure
+                      {departure ? "Selected Departure" : "Preferred Date"}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -358,12 +363,19 @@ export default function BookExperiencePage() {
                         )}
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
-                        <CalendarDays className="mx-auto mb-2 h-8 w-8" />
-                        <p>No departure selected</p>
-                        <Link href={`/experiences/${pkg.slug}`} className="mt-2 inline-block text-sm text-primary underline">
-                          Select a departure
-                        </Link>
+                      <div className="space-y-2">
+                        <Label htmlFor="flexibleDate">Your preferred start date *</Label>
+                        <Input
+                          id="flexibleDate"
+                          type="date"
+                          value={flexibleDate}
+                          min={new Date().toISOString().split("T")[0]}
+                          onChange={(e) => setFlexibleDate(e.target.value)}
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          The organizer will confirm availability and the final itinerary with you.
+                        </p>
                       </div>
                     )}
                   </CardContent>
@@ -520,7 +532,7 @@ export default function BookExperiencePage() {
                   disabled={
                     submitting ||
                     !isAuthenticated ||
-                    !departure ||
+                    (!departure && !flexibleDate) ||
                     (departure ? totalPax > departure.available_seats : false)
                   }
                 >
@@ -579,14 +591,19 @@ export default function BookExperiencePage() {
                     </div>
                   )}
 
-                  {departure && (
+                  {departure ? (
                     <div className="mt-3 flex items-center gap-1 text-sm text-muted-foreground">
                       <CalendarDays className="h-3.5 w-3.5" />
                       {new Date(departure.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       {" – "}
                       {new Date(departure.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </div>
-                  )}
+                  ) : flexibleDate ? (
+                    <div className="mt-3 flex items-center gap-1 text-sm text-muted-foreground">
+                      <CalendarDays className="h-3.5 w-3.5" />
+                      Preferred: {new Date(flexibleDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </div>
+                  ) : null}
 
                   {/* Price Breakdown */}
                   <div className="mt-6 space-y-2 border-t pt-4">

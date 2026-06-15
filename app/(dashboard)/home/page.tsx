@@ -300,7 +300,7 @@ export default function HomePage() {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold">Need help planning?</h3>
-              <p className="text-sm text-muted-foreground">Ask Aman AI to craft your perfect Ethiopian itinerary</p>
+              <p className="text-sm text-muted-foreground">Ask Alga Ale AI to craft your perfect Ethiopian itinerary</p>
             </div>
             <Link href="/planner">
               <Button>
@@ -366,7 +366,7 @@ export default function HomePage() {
         ) : (
           <EmptyState
             title="No upcoming trips yet"
-            description="Let Aman help you plan your perfect Ethiopian adventure. Discover verified hotels, authentic restaurants, and unique experiences."
+            description="Let Alga Ale help you plan your perfect Ethiopian adventure. Discover verified hotels, authentic restaurants, and unique experiences."
             action={{ label: "Explore Destinations", href: "/cities" }}
           />
         )}

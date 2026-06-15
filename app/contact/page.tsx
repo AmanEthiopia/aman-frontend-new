@@ -57,8 +57,8 @@ export default function ContactPage() {
                 <Phone className="mt-0.5 h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium">24/7 Support</p>
-                  <a href="tel:+251911234567" className="text-sm text-muted-foreground hover:text-foreground">
-                    +251 91 123 4567
+                  <a href="tel:+251708029422" className="text-sm text-muted-foreground hover:text-foreground">
+                    +251 708 029 422
                   </a>
                 </div>
               </div>
@@ -81,7 +81,7 @@ export default function ContactPage() {
                     rel="noopener noreferrer"
                     className="text-sm text-muted-foreground hover:text-foreground"
                   >
-                    +251 70 802 9422
+                    +251 708 029 422
                   </a>
                 </div>
               </div>

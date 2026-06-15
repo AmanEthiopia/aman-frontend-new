@@ -46,6 +46,7 @@ const STATUS_COLORS: Record<GuideBookingStatus, string> = {
   rejected: "bg-red-100 text-red-800",
   cancelled: "bg-gray-100 text-gray-800",
   completed: "bg-blue-100 text-blue-800",
+  expired: "bg-amber-100 text-amber-800",
 }
 
 export default function ProviderGuideBookingsPage() {
@@ -91,8 +92,8 @@ export default function ProviderGuideBookingsPage() {
         b.id === booking.id ? { ...b, status: "confirmed" } : b
       ))
       toast.success("Booking confirmed successfully")
-    } catch (error) {
-      toast.error("Failed to confirm booking")
+    } catch (error: any) {
+      toast.error(error?.message || "Couldn't confirm this booking. Please try again.")
     } finally {
       setProcessing(null)
     }
@@ -114,8 +115,8 @@ export default function ProviderGuideBookingsPage() {
       ))
       toast.success("Booking rejected")
       setRejectDialogOpen(false)
-    } catch (error) {
-      toast.error("Failed to reject booking")
+    } catch (error: any) {
+      toast.error(error?.message || "Couldn't reject this booking. Please try again.")
     } finally {
       setProcessing(null)
     }
@@ -256,7 +257,7 @@ export default function ProviderGuideBookingsPage() {
                       <p className="text-sm text-muted-foreground">{booking.currency}</p>
                     </div>
 
-                    {booking.status === "pending" && (
+                    {booking.status === "pending" && new Date(booking.booking_date) >= new Date(new Date().toDateString()) && (
                       <div className="flex gap-2">
                         <Button
                           onClick={() => handleConfirm(booking)}
@@ -273,6 +274,12 @@ export default function ProviderGuideBookingsPage() {
                           <X className="mr-2 h-4 w-4" />
                           Reject
                         </Button>
+                      </div>
+                    )}
+
+                    {booking.status === "pending" && new Date(booking.booking_date) < new Date(new Date().toDateString()) && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                        Expired — the booking date passed with no response. The traveler was notified; this lowers your response rate.
                       </div>
                     )}
 

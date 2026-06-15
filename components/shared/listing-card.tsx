@@ -61,7 +61,8 @@ export function ListingCard({
   distanceKm,
 }: ListingCardProps) {
   const priceInfo = priceRangeLabels[priceRange ?? ""] ?? DEFAULT_PRICE_INFO
-  const href = `/${type}s/${slug || id}`
+  // Transport/driver detail + booking endpoints resolve by UUID (not slug), so link by id.
+  const href = type === "transport" ? `/transports/${id}` : `/${type}s/${slug || id}`
   const distanceLabel = formatDistance(distanceKm)
   // Map listing type to wishlist item type
   const wishlistType: WishlistItemType =

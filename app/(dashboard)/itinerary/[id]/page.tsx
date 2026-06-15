@@ -371,7 +371,7 @@ function AddItemDialog({
             <Tabs value={subMode} onValueChange={(v) => { setSubMode(v as "search" | "manual"); setSelectedResource(null); setSearchResults([]); setSearchQuery("") }}>
               <TabsList className="w-full">
                 <TabsTrigger value="search" className="flex-1">
-                  {itemType === "transport" ? "Find Driver/Guide" : "Search Aman"}
+                  {itemType === "transport" ? "Find Driver/Guide" : "Search Alga Ale"}
                 </TabsTrigger>
                 <TabsTrigger value="manual" className="flex-1">
                   Custom Entry

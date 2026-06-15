@@ -47,6 +47,7 @@ const statusConfig: Record<BookingStatus, { label: string; icon: typeof Clock; v
   cancelled: { label: "Cancelled",             icon: Ban,           variant: "destructive", color: "text-red-600"    },
   completed: { label: "Completed",             icon: CheckCircle2,  variant: "outline",     color: "text-muted-foreground" },
   no_show:   { label: "No Show",               icon: AlertCircle,   variant: "destructive", color: "text-red-600"    },
+  expired:   { label: "Expired — No Response",  icon: AlertCircle,   variant: "outline",     color: "text-amber-600"  },
 }
 
 export default function HotelBookingDetailPage() {

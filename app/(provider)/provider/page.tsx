@@ -239,8 +239,8 @@ export default function ProviderDashboard() {
       await confirmDashboardBooking(req.id, req.booking_type)
       setPendingRequests((prev) => prev.filter((r) => r.id !== req.id))
       toast.success(`Booking ${req.booking_number} confirmed`)
-    } catch {
-      toast.error("Failed to confirm booking. Please try again.")
+    } catch (err: any) {
+      toast.error(err?.message || "Couldn't confirm this booking. Please try again.")
     } finally {
       setActionLoading(null)
     }
@@ -252,8 +252,8 @@ export default function ProviderDashboard() {
       await rejectDashboardBooking(req.id, req.booking_type)
       setPendingRequests((prev) => prev.filter((r) => r.id !== req.id))
       toast.success(`Booking ${req.booking_number} declined`)
-    } catch {
-      toast.error("Failed to decline booking. Please try again.")
+    } catch (err: any) {
+      toast.error(err?.message || "Couldn't decline this booking. Please try again.")
     } finally {
       setActionLoading(null)
     }
