@@ -176,6 +176,7 @@ export interface ModifyHotelBookingPayload {
   num_adults?: number
   num_children?: number
   special_requests?: string
+  rooms?: Array<{ room_id: string; quantity: number }>
 }
 
 export async function modifyHotelBooking(id: string, payload: ModifyHotelBookingPayload): Promise<HotelBooking> {

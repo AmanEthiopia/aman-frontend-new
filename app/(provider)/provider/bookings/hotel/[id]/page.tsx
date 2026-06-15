@@ -285,7 +285,7 @@ export default function ProviderHotelBookingDetailPage() {
                  booking.payment_status === "refunded" ? "Refunded" :
                  booking.payment_required ? "Awaiting Payment" : "No payment required"}
               </span>
-              <span className="font-bold">{booking.currency} {parseFloat(booking.total_price).toLocaleString()}</span>
+              <span className="font-bold">ETB {parseFloat(booking.total_price).toLocaleString()}</span>
             </div>
           </div>
 
@@ -473,10 +473,10 @@ export default function ProviderHotelBookingDetailPage() {
                     </div>
                     <div className="mt-3 flex items-center justify-between border-t pt-3">
                       <div className="text-sm text-muted-foreground">
-                        {booking.currency} {parseFloat(room.price_per_night).toLocaleString()} × {room.num_nights} nights × {room.quantity}
+                        ETB {parseFloat(room.price_per_night).toLocaleString()} × {room.num_nights} nights × {room.quantity}
                       </div>
                       <div className="font-semibold">
-                        {booking.currency} {parseFloat(room.subtotal).toLocaleString()}
+                        ETB {parseFloat(room.subtotal).toLocaleString()}
                       </div>
                     </div>
                   </div>
@@ -551,13 +551,13 @@ export default function ProviderHotelBookingDetailPage() {
               <span className="text-muted-foreground">
                 {room.room_name} × {room.quantity} ({room.num_nights} nights)
               </span>
-              <span>{booking.currency} {parseFloat(room.subtotal).toLocaleString()}</span>
+              <span>ETB {parseFloat(room.subtotal).toLocaleString()}</span>
             </div>
           ))}
           <Separator />
           <div className="flex items-center justify-between font-bold">
             <span>Total</span>
-            <span className="text-lg">{booking.currency} {parseFloat(booking.total_price).toLocaleString()}</span>
+            <span className="text-lg">ETB {parseFloat(booking.total_price).toLocaleString()}</span>
           </div>
         </CardContent>
       </Card>

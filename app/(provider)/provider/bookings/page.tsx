@@ -276,7 +276,7 @@ function BookingDetailModal({
             <div>
               <p className="text-muted-foreground">Total</p>
               <p className="text-lg font-bold">
-                {Number(booking.total_price) > 0 ? `${booking.currency ?? "ETB"} ${Number(booking.total_price).toLocaleString()}` : "Free / TBD"}
+                {Number(booking.total_price) > 0 ? `ETB ${Number(booking.total_price).toLocaleString()}` : "Free / TBD"}
               </p>
             </div>
             <div>
@@ -293,7 +293,7 @@ function BookingDetailModal({
                 <div key={br.id} className="text-sm">
                   <div className="flex justify-between text-muted-foreground">
                     <span>{br.room_name} × {br.quantity}</span>
-                    <span>{(hotelBooking?.currency ?? booking.currency ?? "ETB")} {parseFloat(br.subtotal).toLocaleString()}</span>
+                    <span>ETB {parseFloat(br.subtotal).toLocaleString()}</span>
                   </div>
                   {br.assigned_unit_numbers && br.assigned_unit_numbers.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1">
