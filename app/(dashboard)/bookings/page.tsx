@@ -24,6 +24,9 @@ import {
   CreditCard,
   Ban,
   Pencil,
+  Minus,
+  Plus,
+  BedDouble,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -49,7 +52,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAllBookings, useCancelHotelBooking, useCancelRestaurantReservation, useCancelPackageBooking } from "@/lib/hooks/use-bookings"
 import type { Booking, BookingStatus, HotelBookingListItem, RestaurantReservationListItem, PackageBooking, TransportBooking } from "@/lib/api/bookings"
-import { modifyHotelBooking, type ModifyHotelBookingPayload } from "@/lib/api/bookings"
+import { modifyHotelBooking, getHotelBookingById, type ModifyHotelBookingPayload } from "@/lib/api/bookings"
+import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
+import type { Room } from "@/lib/types"
 import { getMyGuideBookings, cancelGuideBooking, modifyGuideBooking, type GuideBooking, type ModifyGuideBookingPayload, SERVICE_TYPE_LABELS } from "@/lib/api/guides"
 import { ContactDialog } from "@/components/messaging/contact-dialog"
 import { toast } from "sonner"
@@ -153,6 +158,9 @@ function ModifyHotelBookingDialog({
   onSuccess: () => void
 }) {
   const [saving, setSaving] = useState(false)
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [roomsLoading, setRoomsLoading] = useState(false)
+  const [selectedRooms, setSelectedRooms] = useState<Record<string, number>>({})
   const [form, setForm] = useState({
     check_in_date: booking.check_in_date,
     check_out_date: booking.check_out_date,
@@ -161,10 +169,103 @@ function ModifyHotelBookingDialog({
     special_requests: booking.special_requests ?? "",
   })
 
+  // Load the hotel's rooms (capacity/price/availability) + prefill current selection.
+  useEffect(() => {
+    if (!open) return
+    let active = true
+    setRoomsLoading(true)
+    ;(async () => {
+      try {
+        const detail = await getHotelBookingById(booking.id)
+        const hotelId = (detail as any).hotel?.id
+        const prefill: Record<string, number> = {}
+        for (const r of (detail as any).rooms ?? []) {
+          if (r.room_id) prefill[r.room_id] = r.quantity
+        }
+        let roomList: Room[] = []
+        if (hotelId) {
+          roomList = await getHotelRooms(hotelId, { check_in: form.check_in_date, check_out: form.check_out_date })
+        } else if (booking.hotel_slug) {
+          const hotel = await getHotelById(booking.hotel_slug)
+          roomList = await getHotelRooms(hotel.id, { check_in: form.check_in_date, check_out: form.check_out_date })
+        }
+        if (!active) return
+        setRooms(roomList)
+        setSelectedRooms(prefill)
+      } catch {
+        if (active) setRooms([])
+      } finally {
+        if (active) setRoomsLoading(false)
+      }
+    })()
+    return () => { active = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, booking.id])
+
+  // Re-fetch availability when dates change.
+  useEffect(() => {
+    if (!open || rooms.length === 0) return
+    if (!form.check_in_date || !form.check_out_date || form.check_out_date <= form.check_in_date) return
+    const hotelId = (rooms[0] as any)?.hotel_id ?? (rooms[0] as any)?.hotel
+    if (!hotelId) return
+    getHotelRooms(hotelId, { check_in: form.check_in_date, check_out: form.check_out_date })
+      .then(setRooms)
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.check_in_date, form.check_out_date])
+
+  const setRoomQty = (roomId: string, delta: number) => {
+    setSelectedRooms((prev) => {
+      const current = prev[roomId] ?? 0
+      const room = rooms.find((r) => r.id === roomId)
+      const maxAvail = room?.available_units ?? room?.total_units ?? 99
+      const next = Math.max(0, Math.min(current + delta, maxAvail))
+      if (next === 0) {
+        const { [roomId]: _, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [roomId]: next }
+    })
+  }
+
+  const roomsPayload = Object.entries(selectedRooms)
+    .filter(([, q]) => q > 0)
+    .map(([room_id, quantity]) => ({ room_id, quantity }))
+
+  const totalNights = (() => {
+    const diff = new Date(form.check_out_date).getTime() - new Date(form.check_in_date).getTime()
+    return Math.max(0, Math.floor(diff / 86400000))
+  })()
+  const totalGuests = Number(form.num_adults) + Number(form.num_children)
+  const totalRoomCount = roomsPayload.reduce((s, { quantity }) => s + quantity, 0)
+  const totalCapacity = roomsPayload.reduce((s, { room_id, quantity }) => {
+    const room = rooms.find((r) => r.id === room_id)
+    return s + (room ? ((room.max_adults ?? 1) + (room.max_children ?? 0)) * quantity : 0)
+  }, 0)
+  const tooManyRooms = totalRoomCount > 0 && totalRoomCount > totalGuests
+  const capacityWarning = totalCapacity > 0 && totalGuests > totalCapacity
+  const estimatedTotal = roomsPayload.reduce((s, { room_id, quantity }) => {
+    const room = rooms.find((r) => r.id === room_id)
+    const price = room ? (room.base_price !== undefined ? parseFloat(String(room.base_price)) : (room.price_per_night ?? 0)) : 0
+    return s + price * quantity * totalNights
+  }, 0)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (form.check_in_date >= form.check_out_date) {
       toast.error("Check-out date must be after check-in date")
+      return
+    }
+    if (roomsPayload.length === 0) {
+      toast.error("Please keep at least one room selected.")
+      return
+    }
+    if (tooManyRooms) {
+      toast.error(`You have ${totalRoomCount} room(s) for ${totalGuests} guest(s). Each room needs at least one guest — reduce rooms or add guests.`)
+      return
+    }
+    if (capacityWarning) {
+      toast.error(`Your ${totalGuests} guest(s) exceed the selected room(s)' capacity (${totalCapacity}). Add a room before adding more guests.`)
       return
     }
     setSaving(true)
@@ -175,6 +276,7 @@ function ModifyHotelBookingDialog({
         num_adults: form.num_adults,
         num_children: form.num_children,
         special_requests: form.special_requests,
+        rooms: roomsPayload,
       }
       await modifyHotelBooking(booking.id, payload)
       toast.success("Booking request updated — waiting for provider confirmation")
@@ -189,7 +291,7 @@ function ModifyHotelBookingDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Modify Booking Request</DialogTitle>
           <DialogDescription>
@@ -244,6 +346,64 @@ function ModifyHotelBookingDialog({
               />
             </div>
           </div>
+          {/* Rooms */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <BedDouble className="h-4 w-4 text-primary" />
+              <Label>Rooms</Label>
+              {roomsLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+            </div>
+            <div className="space-y-2">
+              {rooms.map((room) => {
+                const qty = selectedRooms[room.id] ?? 0
+                const cap = (room.max_adults ?? 1) + (room.max_children ?? 0)
+                const maxQty = room.available_units ?? room.total_units ?? 99
+                const price = room.base_price !== undefined ? parseFloat(String(room.base_price)) : (room.price_per_night ?? 0)
+                return (
+                  <div key={room.id} className={`flex items-center justify-between gap-3 rounded-lg border p-3 ${qty > 0 ? "border-primary bg-primary/5" : "border-border"}`}>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{room.name}</p>
+                      <p className="text-xs text-muted-foreground">Up to {cap} guest{cap !== 1 ? "s" : ""} · ${price}/night</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button type="button" onClick={() => setRoomQty(room.id, -1)} disabled={qty === 0}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border transition-colors hover:bg-muted disabled:opacity-40">
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="w-5 text-center text-sm font-semibold">{qty}</span>
+                      <button type="button" onClick={() => setRoomQty(room.id, 1)} disabled={qty >= maxQty}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40">
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+              {!roomsLoading && rooms.length === 0 && (
+                <p className="text-xs text-muted-foreground">Couldn't load rooms. You can still update dates and guests.</p>
+              )}
+            </div>
+
+            {tooManyRooms && (
+              <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                <p>{totalRoomCount} room(s) for {totalGuests} guest(s) — each room needs at least one guest. Remove a room or add guests.</p>
+              </div>
+            )}
+            {capacityWarning && (
+              <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                <p>Your {totalGuests} guest(s) exceed the selected room(s)' capacity ({totalCapacity}). Add another room first.</p>
+              </div>
+            )}
+            {estimatedTotal > 0 && (
+              <div className="flex items-center justify-between border-t pt-2 text-sm">
+                <span className="text-muted-foreground">{totalNights} night{totalNights !== 1 ? "s" : ""} · {totalRoomCount} room{totalRoomCount !== 1 ? "s" : ""}</span>
+                <span className="font-bold">${estimatedTotal.toLocaleString()}</span>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="requests">Special Requests</Label>
             <Textarea
@@ -256,7 +416,7 @@ function ModifyHotelBookingDialog({
           </div>
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving || tooManyRooms || capacityWarning || roomsPayload.length === 0}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Resend Request
             </Button>
