@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Plus, X, Loader2 } from "lucide-react"
+import { useDuplicateGuard } from "@/components/provider/use-duplicate-guard"
 import { 
   createGuide,
   type GuideServiceType,
@@ -27,6 +28,7 @@ const COMMON_LANGUAGES = [
 
 export default function NewGuidePage() {
   const router = useRouter()
+  const { checkDuplicate, DuplicateDialog } = useDuplicateGuard()
   const [submitting, setSubmitting] = useState(false)
   
   const [formData, setFormData] = useState({
@@ -94,6 +96,8 @@ export default function NewGuidePage() {
       toast.error("Please fill in all required fields")
       return
     }
+
+    if (!(await checkDuplicate("tour_guide", formData.title))) return
 
     setSubmitting(true)
     try {
@@ -422,6 +426,7 @@ export default function NewGuidePage() {
           </div>
         </div>
       </form>
+      {DuplicateDialog}
     </div>
   )
 }

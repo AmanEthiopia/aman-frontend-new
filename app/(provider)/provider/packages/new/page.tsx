@@ -19,6 +19,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { createPackage, type PackageCategory } from "@/lib/api/experiences"
 import { ArrowLeft, AlertCircle, Loader2 } from "lucide-react"
+import { useDuplicateGuard } from "@/components/provider/use-duplicate-guard"
 
 const CATEGORIES: { value: PackageCategory; label: string }[] = [
   { value: "city_tour", label: "City Tour" },
@@ -35,6 +36,7 @@ const CURRENCIES = ["USD", "ETB", "EUR", "GBP"]
 
 export default function NewPackagePage() {
   const router = useRouter()
+  const { checkDuplicate, DuplicateDialog } = useDuplicateGuard()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -83,6 +85,7 @@ export default function NewPackagePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!(await checkDuplicate("trip", formData.title))) return
     setSubmitting(true)
     setError(null)
 
@@ -460,6 +463,7 @@ export default function NewPackagePage() {
           </div>
         </div>
       </form>
+      {DuplicateDialog}
     </div>
   )
 }

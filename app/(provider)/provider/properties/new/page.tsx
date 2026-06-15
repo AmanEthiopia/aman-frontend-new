@@ -55,6 +55,7 @@ import type {
   DriverService,
 } from "@/lib/api/provider"
 import type { City } from "@/lib/api/content"
+import { useDuplicateGuard } from "@/components/provider/use-duplicate-guard"
 
 // Hotel amenities options
 const HOTEL_AMENITIES = [
@@ -2580,7 +2581,8 @@ function AddPropertyContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialType = searchParams.get("type") as PropertyCategory | null
-  
+  const { checkDuplicate, DuplicateDialog } = useDuplicateGuard()
+
   const [step, setStep] = useState(initialType ? 2 : 1)
   const [propertyType, setPropertyType] = useState<PropertyCategory | null>(initialType)
   const [cities, setCities] = useState<City[]>([])
@@ -2645,6 +2647,7 @@ function AddPropertyContent() {
   }
 
   const handleSubmitHotel = async (data: CreateHotelPayload) => {
+    if (!(await checkDuplicate("hotel", data.name, { cityId: data.city_id }))) return
     setIsSubmitting(true)
     try {
       await providerAPI.createHotel(data)
@@ -2659,6 +2662,7 @@ function AddPropertyContent() {
   }
 
   const handleSubmitRestaurant = async (data: CreateRestaurantPayload) => {
+    if (!(await checkDuplicate("restaurant", data.name, { cityId: data.city_id }))) return
     setIsSubmitting(true)
     try {
       await providerAPI.createRestaurant(data)
@@ -2673,6 +2677,7 @@ function AddPropertyContent() {
   }
 
   const handleSubmitDriver = async (data: CreateDriverPayload) => {
+    if (!(await checkDuplicate("driver", data.name, { cityId: data.city_id }))) return
     setIsSubmitting(true)
     try {
       await providerAPI.createDriver(data)
@@ -2687,6 +2692,7 @@ function AddPropertyContent() {
   }
 
   const handleSubmitTrip = async (data: CreateTripPayload) => {
+    if (!(await checkDuplicate("trip", data.name, { cityId: data.city_id }))) return
     setIsSubmitting(true)
     try {
       await providerAPI.createTrip(data)
@@ -2701,6 +2707,7 @@ function AddPropertyContent() {
   }
 
   const handleSubmitTourGuide = async (data: CreateTourGuidePayload) => {
+    if (!(await checkDuplicate("tour_guide", data.name, { cityId: data.city_id }))) return
     setIsSubmitting(true)
     try {
       await providerAPI.createTourGuide(data)
@@ -2715,6 +2722,7 @@ function AddPropertyContent() {
   }
 
   const handleSubmitTranslator = async (data: CreateTranslatorPayload) => {
+    if (!(await checkDuplicate("translator", data.name, { cityId: data.city_id }))) return
     setIsSubmitting(true)
     try {
       await providerAPI.createTranslator(data)
@@ -2800,6 +2808,8 @@ function AddPropertyContent() {
       {step === 2 && propertyType === "translator" && (
         <TranslatorForm cities={cities} onSubmit={handleSubmitTranslator} isSubmitting={isSubmitting} />
       )}
+
+      {DuplicateDialog}
     </div>
   )
 }
