@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { toast } from "sonner"
 import { useApp } from "@/lib/contexts/app-context"
 import { updateMyProfile } from "@/lib/api/users"
+import { TelegramConnect } from "@/components/settings/telegram-connect"
 import { deleteAccount } from "@/lib/api/auth"
 import { getMediaUrl } from "@/lib/utils/media"
 
@@ -255,6 +256,9 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Telegram */}
+      <TelegramConnect />
 
       {/* Notifications */}
       <Card>

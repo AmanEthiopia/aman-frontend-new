@@ -38,6 +38,7 @@ import {
   type ProfileCompletion,
 } from "@/lib/api/users"
 import { changePassword, deleteAccount } from "@/lib/api/auth"
+import { TelegramConnect } from "@/components/settings/telegram-connect"
 
 // ─── Profile completion banner ────────────────────────────────────────────────
 
@@ -585,6 +586,9 @@ export default function ProviderSettingsPage() {
         {/* ── Tab 3: Notifications ──────────────────────────────────────── */}
         <TabsContent value="notifications" className="space-y-6">
           <CompletionBanner completion={completion} />
+
+          {/* Telegram */}
+          <TelegramConnect />
 
           {/* Email Notifications */}
           <Card>

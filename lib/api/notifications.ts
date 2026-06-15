@@ -80,3 +80,20 @@ export async function getNotificationStats(): Promise<NotificationStats> {
   const raw = await apiGet<any>("/notifications/stats/")
   return raw as NotificationStats
 }
+
+// ─── Telegram push notifications ─────────────────────────────────────────────
+
+export interface TelegramLinkStatus {
+  connected: boolean
+  bot_username: string
+  deep_link: string | null
+  linked_at: string | null
+}
+
+export async function getTelegramLink(): Promise<TelegramLinkStatus> {
+  return apiGet<TelegramLinkStatus>("/notifications/telegram/link/")
+}
+
+export async function disconnectTelegram(): Promise<void> {
+  await apiPost("/notifications/telegram/disconnect/", {})
+}
