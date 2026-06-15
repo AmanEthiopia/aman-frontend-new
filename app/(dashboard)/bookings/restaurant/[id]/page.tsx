@@ -44,6 +44,7 @@ const statusConfig: Record<BookingStatus, { label: string; icon: typeof Clock; v
   cancelled: { label: "Cancelled",             icon: Ban,          variant: "destructive" },
   completed: { label: "Completed",             icon: CheckCircle2, variant: "outline"     },
   no_show:   { label: "No Show",               icon: AlertCircle,  variant: "destructive" },
+  expired:   { label: "Expired — No Response",  icon: AlertCircle,  variant: "outline"     },
 }
 
 export default function RestaurantBookingDetailPage() {

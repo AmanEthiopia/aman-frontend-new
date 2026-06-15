@@ -130,7 +130,7 @@ export default function PartnerWithUsPage() {
                 </Button>
               </Link>
               <a href="#contact">
-                <Button size="lg" variant="outline" className="border-white/50 text-white hover:bg-white/10 px-8">
+                <Button size="lg" variant="outline" className="border-white/50 bg-transparent text-white hover:bg-white/10 hover:text-white px-8">
                   Talk to Our Team
                 </Button>
               </a>
@@ -350,7 +350,7 @@ export default function PartnerWithUsPage() {
                 </Button>
               </Link>
               <a href="#contact">
-                <Button size="lg" variant="outline" className="border-white/40 text-white hover:bg-white/10 px-8">
+                <Button size="lg" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white px-8">
                   Contact the Team
                 </Button>
               </a>

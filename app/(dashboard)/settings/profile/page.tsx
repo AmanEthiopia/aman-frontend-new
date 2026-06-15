@@ -500,7 +500,7 @@ export default function ProfileEditPage() {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleChange("phone", e.target.value)}
-                  placeholder="+251911234567"
+                  placeholder="+251708029422"
                 />
                 {user?.is_phone_verified ? (
                   <Badge variant="outline" className="text-green-600 shrink-0">Verified</Badge>

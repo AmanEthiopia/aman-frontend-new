@@ -77,7 +77,7 @@ export function Header() {
       className="aman-glass sticky top-0 z-50 w-full border-b border-border/40"
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href={isAuthenticated ? (isProvider ? "/provider" : "/home") : "/"} className="flex items-center gap-2">
+        <Link href={isProvider ? "/provider" : "/"} className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
             <span className="text-lg font-bold text-primary-foreground">A</span>
           </div>
@@ -121,7 +121,7 @@ export function Header() {
                 </Button>
               </Link>
             )}
-            <Link href="/#premium">
+            <Link href="/concierge">
               <Button variant="ghost" className="flex items-center gap-1">
                 <Crown className="h-4 w-4" />
                 Premium
@@ -303,7 +303,7 @@ export function Header() {
                   </Link>
                 )}
                 <Link
-                  href="/#premium"
+                  href="/concierge"
                   className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
                   onClick={() => setIsMenuOpen(false)}
                 >

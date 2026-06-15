@@ -16,7 +16,7 @@ export type GuideServiceType =
 
 export type GuidePricingType = "hourly" | "daily" | "per_person" | "per_group"
 
-export type GuideBookingStatus = "pending" | "confirmed" | "rejected" | "cancelled" | "completed"
+export type GuideBookingStatus = "pending" | "confirmed" | "rejected" | "cancelled" | "completed" | "expired"
 
 export interface GuideCity {
   id: string

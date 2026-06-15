@@ -286,14 +286,14 @@ function RegisterForm() {
                         id="phone"
                         name="phone"
                         type="tel"
-                        placeholder="+251911234567"
+                        placeholder="+251708029422"
                         value={formData.phone}
                         onChange={handleChange}
                         className="pl-10"
                         disabled={isLoading}
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground">Format: +251911234567</p>
+                    <p className="text-xs text-muted-foreground">Format: +251708029422</p>
                   </div>
 
                   <div className="space-y-2">

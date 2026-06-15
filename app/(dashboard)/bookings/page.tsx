@@ -91,6 +91,12 @@ const statusConfig: Record<BookingStatus, { label: string; icon: typeof Clock; v
     variant: "destructive",
     color: "text-red-600",
   },
+  expired: {
+    label: "Expired — No Response",
+    icon: AlertCircle,
+    variant: "outline",
+    color: "text-amber-600",
+  },
 }
 
 const bookingTypeConfig = {
@@ -840,6 +846,7 @@ function GuideBookingCard({ booking, onCancel, onModified }: { booking: GuideBoo
     rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
     cancelled: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
     completed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+    expired: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
   }
   const statusIcons: Record<string, typeof Clock> = {
     pending: Clock,
@@ -847,6 +854,7 @@ function GuideBookingCard({ booking, onCancel, onModified }: { booking: GuideBoo
     rejected: XCircle,
     cancelled: Ban,
     completed: CheckCircle2,
+    expired: AlertCircle,
   }
   const StatusIcon = statusIcons[booking.status] || Clock
 

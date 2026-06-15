@@ -29,7 +29,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getMediaUrl } from "@/lib/utils/media"
-import { AmanMark, AmanWordmark } from "@/components/brand/aman-logo"
+import { AlgaAleWordmark } from "@/components/brand/alga-ale-logo"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -297,8 +297,7 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
               <SheetContent side="left" className="w-72 p-0">
                 <div className="flex h-16 items-center border-b px-4">
                   <Link href="/" className="flex items-center gap-2" aria-label="Alga Ale home">
-                    <AmanMark size={32} variant="stacked" className="rounded-md" />
-                    <AmanWordmark height={22} />
+                    <AlgaAleWordmark size={32} />
                   </Link>
                 </div>
                 <SidebarNav items={sidebarItems} onItemClick={() => setMobileMenuOpen(false)} />
@@ -306,8 +305,8 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
             </Sheet>
 
             <Link href="/" className="flex items-center gap-2" aria-label="Alga Ale home">
-              <AmanMark size={32} variant="stacked" className="rounded-md" />
-              <AmanWordmark height={22} className="hidden sm:block" />
+              <AlgaAleWordmark size={32} className="hidden sm:inline-flex" />
+              <AlgaAleWordmark size={32} showAmharic={false} className="sm:hidden" />
               <Badge variant="secondary" className="ml-2">
                 Provider
               </Badge>

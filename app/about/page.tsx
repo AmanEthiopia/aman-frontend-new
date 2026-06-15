@@ -162,10 +162,10 @@ export default function AboutPage() {
                   team@yichalal.ai
                 </a>
                 <a
-                  href="tel:+251911234567"
+                  href="tel:+251708029422"
                   className="rounded-lg border border-border bg-card px-6 py-3 font-medium transition-shadow hover:shadow-lg"
                 >
-                  +251 91 123 4567
+                  +251 708 029 422
                 </a>
               </div>
             </div>

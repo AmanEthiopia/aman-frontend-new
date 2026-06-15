@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Shield, Phone, AlertTriangle, Briefcase, Crown } from "lucide-react"
-import { AmanWordmark } from "@/components/brand/aman-logo"
+import { AlgaAleWordmark } from "@/components/brand/alga-ale-logo"
 
 export function Footer() {
   return (
@@ -10,8 +10,7 @@ export function Footer() {
           {/* Brand */}
           <div className="flex flex-col gap-4 lg:col-span-2">
             <Link href="/" className="inline-flex w-fit items-center gap-3 py-2" aria-label="Alga Ale home">
-              <AmanWordmark height={40} />
-              <span className="font-serif text-xl text-muted-foreground">አልጋ አለ</span>
+              <AlgaAleWordmark size={40} />
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">
               A Yichalal Family Initiative — connecting locals, diaspora, and foreign travelers with verified hotels, experiences, and transport across Ethiopia.
@@ -52,7 +51,7 @@ export function Footer() {
               <Link href="/planner" className="text-sm text-muted-foreground hover:text-foreground">
                 AI Travel Planner
               </Link>
-              <Link href="/#premium" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+              <Link href="/concierge" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
                 <Crown className="h-3 w-3" />
                 Premium Concierge
               </Link>
@@ -96,8 +95,8 @@ export function Footer() {
                 <Phone className="mt-0.5 h-4 w-4" />
                 <div>
                   <p className="font-medium text-foreground">24/7 Support</p>
-                  <a href="tel:+251911234567" className="hover:text-foreground">
-                    +251 91 123 4567
+                  <a href="tel:+251708029422" className="hover:text-foreground">
+                    +251 708 029 422
                   </a>
                 </div>
               </div>

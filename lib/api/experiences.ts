@@ -257,7 +257,9 @@ export async function getFeaturedExperiences(): Promise<Package[]> {
 
 export interface PackageBookingRequest {
   package_id: string
-  departure_id: string
+  /** Provide a scheduled departure, OR a preferred start_date for a flexible request. */
+  departure_id?: string
+  start_date?: string
   num_adults: number
   num_children?: number
   guest_name: string

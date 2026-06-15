@@ -1,2 +1,5 @@
 onlyBuiltDependencies:
   - sharp
+overrides:
+  postcss: '>=8.5.10'
+  lodash: '>=4.17.24'

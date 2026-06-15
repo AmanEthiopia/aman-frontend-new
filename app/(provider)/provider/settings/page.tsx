@@ -452,7 +452,7 @@ export default function ProviderSettingsPage() {
                   <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     type="tel"
-                    placeholder="+251911234567"
+                    placeholder="+251708029422"
                     className="pl-9"
                     value={profileForm.phone}
                     onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}

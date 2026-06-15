@@ -1,6 +1,6 @@
 import { apiPost } from "./client"
 
-export type InquiryType = "partner" | "business" | "general"
+export type InquiryType = "partner" | "business" | "general" | "concierge"
 
 export interface InquiryPayload {
   name: string
