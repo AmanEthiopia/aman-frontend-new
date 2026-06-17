@@ -14,6 +14,7 @@ import {
   UtensilsCrossed,
   Car,
   Map,
+  Compass,
   Plus,
   BedDouble,
   Minus,
@@ -63,6 +64,7 @@ import {
   type HotelBookingListItem,
   type BookingRoomAssignment,
 } from "@/lib/api/bookings"
+import { confirmGuideBooking, rejectGuideBooking } from "@/lib/api/guides"
 import { getMyHotels } from "@/lib/api/provider"
 import { getHotelRooms } from "@/lib/api/hotels"
 import type { Room } from "@/lib/types"
@@ -86,6 +88,7 @@ const serviceIcons: Record<BookingServiceType, typeof Building2> = {
   restaurant: UtensilsCrossed,
   trip:       Map,
   driver:     Car,
+  guide:      Compass,
 }
 
 const serviceLabels: Record<BookingServiceType, string> = {
@@ -93,6 +96,7 @@ const serviceLabels: Record<BookingServiceType, string> = {
   restaurant: "Restaurant",
   trip:       "Trip",
   driver:     "Driver",
+  guide:      "Guide",
 }
 
 function formatDate(date: string) {
@@ -118,6 +122,7 @@ async function confirmBookingDefault(b: NormalizedBooking): Promise<void> {
   else if (b.service_type === "restaurant") await confirmRestaurantReservation(b.id)
   else if (b.service_type === "trip")  await confirmPackageBooking(b.id)
   else if (b.service_type === "driver") await confirmDriverBooking(b.id)
+  else if (b.service_type === "guide") await confirmGuideBooking(b.id)
 }
 
 async function rejectBooking(b: NormalizedBooking, reason?: string): Promise<void> {
@@ -125,6 +130,7 @@ async function rejectBooking(b: NormalizedBooking, reason?: string): Promise<voi
   else if (b.service_type === "restaurant") await rejectRestaurantReservation(b.id, reason)
   else if (b.service_type === "trip")  await rejectPackageBooking(b.id, reason)
   else if (b.service_type === "driver") await rejectDriverBooking(b.id, reason)
+  else if (b.service_type === "guide") await rejectGuideBooking(b.id, reason || "")
 }
 
 // ============================================================================
@@ -190,7 +196,7 @@ function BookingDetailModal({
   const status = statusConfig[booking.status] ?? statusConfig.pending
   const Icon = serviceIcons[booking.service_type]
   // A pending request whose service date has already passed can no longer be acted on.
-  const serviceDatePassed = !!booking.check_in && new Date(booking.check_in) < new Date(new Date().toDateString())
+  const serviceDatePassed = !!booking.date_from && new Date(booking.date_from) < new Date(new Date().toDateString())
   const canRespond = booking.status === "pending" && !serviceDatePassed
 
   const handleClose = () => {
@@ -392,7 +398,7 @@ function BookingDetailModal({
           <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
             <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <p>
-              This request expired — the date ({formatDate(booking.check_in!)}) has passed, so it can no longer
+              This request expired — the date ({formatDate(booking.date_from!)}) has passed, so it can no longer
               be confirmed or rejected. The guest was notified of the non-response, and unanswered requests
               lower your response rate.
             </p>
@@ -685,7 +691,7 @@ function BookingRow({
   const status = statusConfig[booking.status] ?? statusConfig.pending
   const Icon = serviceIcons[booking.service_type]
   const isManual = (booking.raw as any).source === "manual"
-  const serviceDatePassed = !!booking.check_in && new Date(booking.check_in) < new Date(new Date().toDateString())
+  const serviceDatePassed = !!booking.date_from && new Date(booking.date_from) < new Date(new Date().toDateString())
   const canRespond = booking.status === "pending" && !serviceDatePassed
 
   return (
