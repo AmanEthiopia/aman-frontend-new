@@ -1,6 +1,7 @@
 "use client"
 
 import { apiPost, apiGet, apiPatch } from "./client"
+import { getProviderGuideBookings, type GuideBooking } from "./guides"
 
 // ============================================================================
 // Types
@@ -616,7 +617,7 @@ export async function createPackagePaymentIntent(bookingId: string): Promise<Cre
 // Normalized unified type for provider bookings page display
 // ============================================================================
 
-export type BookingServiceType = "hotel" | "restaurant" | "trip" | "driver"
+export type BookingServiceType = "hotel" | "restaurant" | "trip" | "driver" | "guide"
 
 export interface NormalizedBooking {
   id: string
@@ -634,7 +635,7 @@ export interface NormalizedBooking {
   status: BookingStatus
   special_requests?: string
   created_at: string
-  raw: HotelBookingListItem | RestaurantReservationListItem | PackageBooking | DriverBooking
+  raw: HotelBookingListItem | RestaurantReservationListItem | PackageBooking | DriverBooking | GuideBooking
 }
 
 export function normalizeHotelBooking(b: HotelBookingListItem): NormalizedBooking {
@@ -685,12 +686,25 @@ export function normalizeDriverBooking(b: DriverBooking): NormalizedBooking {
   }
 }
 
+export function normalizeGuideBooking(b: GuideBooking): NormalizedBooking {
+  return {
+    id: b.id, booking_number: b.booking_number, service_type: "guide",
+    property_name: b.guide?.title ?? "Guide service",
+    guest_name: b.guest_name, guest_email: b.guest_email, guest_phone: b.guest_phone,
+    date_from: b.booking_date,
+    guests: (b.num_adults ?? 0) + (b.num_children ?? 0),
+    total_price: String(b.total_price ?? 0), currency: b.currency ?? "ETB", status: b.status as BookingStatus,
+    special_requests: b.special_requests, created_at: b.created_at, raw: b,
+  }
+}
+
 export async function getAllProviderBookings(): Promise<NormalizedBooking[]> {
-  const [hotels, restaurants, trips, drivers] = await Promise.allSettled([
+  const [hotels, restaurants, trips, drivers, guides] = await Promise.allSettled([
     getProviderHotelBookings(),
     getProviderRestaurantReservations(),
     getProviderPackageBookings(),
     getProviderDriverBookings(),
+    getProviderGuideBookings(),
   ])
 
   const normalized: NormalizedBooking[] = [
@@ -698,6 +712,7 @@ export async function getAllProviderBookings(): Promise<NormalizedBooking[]> {
     ...(restaurants.status === "fulfilled" ? restaurants.value.map(normalizeRestaurantReservation) : []),
     ...(trips.status === "fulfilled" ? trips.value.map(normalizePackageBooking) : []),
     ...(drivers.status === "fulfilled" ? drivers.value.map(normalizeDriverBooking) : []),
+    ...(guides.status === "fulfilled" ? guides.value.map(normalizeGuideBooking) : []),
   ]
 
   return normalized.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())

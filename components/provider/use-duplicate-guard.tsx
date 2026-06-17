@@ -19,63 +19,48 @@ const LABELS: Record<string, string> = {
   translator: "translator service",
 }
 
-type Listing = { name: string; cityId?: string; cityName?: string }
-
 /**
- * Warns a provider before creating a listing that looks like a duplicate
- * (same type + same name + same place they already have). Never blocks — they
- * confirm "Create anyway". Returns false only if they choose to go back.
+ * Warns a provider before creating a listing whose NAME they already use for the
+ * same type of listing (place is ignored — a matching name alone is enough).
+ * Never blocks — they confirm "Create anyway". Returns false only if they go back.
  *
  * Usage:
  *   const { checkDuplicate, DuplicateDialog } = useDuplicateGuard()
- *   if (!(await checkDuplicate("hotel", data.name, { cityId: data.city_id }))) return
+ *   if (!(await checkDuplicate("hotel", data.name))) return
  *   ...render {DuplicateDialog} once in the component.
+ *
+ * The optional 2nd arg is ignored (kept for call-site compatibility).
  */
 export function useDuplicateGuard() {
-  const [info, setInfo] = useState<{ name: string; place: string; label: string } | null>(null)
+  const [info, setInfo] = useState<{ name: string; label: string } | null>(null)
   const resolverRef = useRef<((proceed: boolean) => void) | null>(null)
 
   const checkDuplicate = useCallback(
-    async (
-      category: PropertyCategory,
-      name: string,
-      opts?: { cityId?: string; cityName?: string },
-    ): Promise<boolean> => {
+    async (category: PropertyCategory, name: string, _opts?: unknown): Promise<boolean> => {
       const target = (name || "").trim().toLowerCase()
       if (!target) return true
 
-      let listings: Listing[] = []
+      let names: string[] = []
       try {
-        if (category === "tour_guide") {
+        // Tour guides AND translators are both stored as guides (/guides/provider/).
+        if (category === "tour_guide" || category === "translator") {
           const guides = await getProviderGuides()
-          listings = (guides as any[]).map((g) => ({
-            name: g.title,
-            cityName: g.cities?.[0]?.city?.name,
-          }))
+          names = (guides as any[]).map((g) => g.title || g.name || "")
         } else {
-          const res = await getMyProperties({ category })
+          const res = await getMyProperties({ category, page_size: 500 })
           const items = Array.isArray(res) ? res : (res as any)?.results ?? []
-          listings = items.map((p: any) => ({ name: p.name, cityId: p.city_id, cityName: p.city_name }))
+          names = items.map((p: any) => p.name || "")
         }
       } catch {
         return true // never block creation if the check itself fails
       }
 
-      const dup = listings.find((l) => {
-        if ((l.name || "").trim().toLowerCase() !== target) return false
-        if (opts?.cityId && l.cityId) return l.cityId === opts.cityId
-        if (opts?.cityName && l.cityName) return l.cityName.trim().toLowerCase() === opts.cityName.trim().toLowerCase()
-        return true // same name, city unknown → still warn
-      })
-      if (!dup) return true
+      const isDup = names.some((n) => (n || "").trim().toLowerCase() === target)
+      if (!isDup) return true
 
       return new Promise<boolean>((resolve) => {
         resolverRef.current = resolve
-        setInfo({
-          name,
-          place: dup.cityName || opts?.cityName || "",
-          label: LABELS[category] ?? "listing",
-        })
+        setInfo({ name, label: LABELS[category] ?? "listing" })
       })
     },
     [],
@@ -96,8 +81,8 @@ export function useDuplicateGuard() {
             Possible duplicate
           </DialogTitle>
           <DialogDescription>
-            You already have a {info?.label} named “{info?.name}”
-            {info?.place ? ` in ${info.place}` : ""}. Do you want to create another one anyway?
+            You already have a {info?.label} named “{info?.name}”. Do you want to create
+            another one with the same name anyway?
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">

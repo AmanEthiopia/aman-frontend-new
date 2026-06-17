@@ -232,7 +232,7 @@ export default function BookGuidePage() {
             )}
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Button asChild>
-                <Link href="/dashboard/bookings">View My Bookings</Link>
+                <Link href="/bookings">View My Bookings</Link>
               </Button>
               <Button variant="outline" asChild>
                 <Link href="/guides">Browse More Guides</Link>
