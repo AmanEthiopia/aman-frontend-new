@@ -362,6 +362,8 @@ export interface DriverBooking {
   driver_id: string
   driver_name: string
   driver_vehicle_type: string
+  driver_photo?: string | null
+  provider_id?: string | null
   trip_date: string
   pickup_time: string
   pickup_location: string
@@ -680,7 +682,7 @@ export function normalizeDriverBooking(b: DriverBooking): NormalizedBooking {
     property_name: b.driver_name ?? "Driver",
     guest_name: b.guest_name, guest_email: b.guest_email, guest_phone: b.guest_phone,
     date_from: b.trip_date,
-    guests: b.num_passengers ?? 1,
+    guests: Number(b.num_passengers) || 1,
     total_price: String(b.estimated_price ?? 0), currency: (b as any).currency ?? "ETB", status: b.status,
     special_requests: b.special_requests, created_at: b.created_at, raw: b,
   }

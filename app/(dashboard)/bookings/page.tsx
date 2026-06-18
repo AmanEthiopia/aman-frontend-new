@@ -52,7 +52,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAllBookings, useCancelHotelBooking, useCancelRestaurantReservation, useCancelPackageBooking } from "@/lib/hooks/use-bookings"
 import type { Booking, BookingStatus, HotelBookingListItem, RestaurantReservationListItem, PackageBooking, TransportBooking } from "@/lib/api/bookings"
-import { modifyHotelBooking, getHotelBookingById, type ModifyHotelBookingPayload } from "@/lib/api/bookings"
+import { modifyHotelBooking, getHotelBookingById, cancelDriverBooking, type ModifyHotelBookingPayload } from "@/lib/api/bookings"
 import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
 import type { Room } from "@/lib/types"
 import { getMyGuideBookings, cancelGuideBooking, modifyGuideBooking, type GuideBooking, type ModifyGuideBookingPayload, SERVICE_TYPE_LABELS } from "@/lib/api/guides"
@@ -903,19 +903,26 @@ function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; on
   )
 }
 
-function TransportBookingCard({ booking }: { booking: TransportBooking }) {
+function TransportBookingCard({ booking, onCancel }: { booking: TransportBooking; onCancel: () => void }) {
   const b = booking as any
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const tripDate = new Date(b.trip_date || b.pickup_date || Date.now())
-  const isPast = tripDate < new Date()
+  const isPast = tripDate < new Date(new Date().toDateString())
+  const photo = getMediaUrl(b.driver_photo)
 
   return (
     <Card className={isPast ? "opacity-75" : ""}>
       <CardContent className="p-0">
         <div className="flex flex-col sm:flex-row">
-          <div className="relative h-32 w-full sm:h-auto sm:w-40 flex items-center justify-center bg-purple-50 sm:rounded-l-lg">
-            <Car className="h-12 w-12 text-purple-400" />
+          <div className="relative h-32 w-full sm:h-auto sm:w-40 shrink-0">
+            {photo ? (
+              <Image src={photo} alt={b.driver_name || "Driver"} fill className="object-cover sm:rounded-l-lg" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-purple-50 sm:rounded-l-lg">
+                <Car className="h-12 w-12 text-purple-400" />
+              </div>
+            )}
             <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-purple-500 px-2 py-0.5 text-xs font-medium text-white">
               <Car className="h-3 w-3" />
               Transport
@@ -979,11 +986,33 @@ function TransportBookingCard({ booking }: { booking: TransportBooking }) {
                   <span className="text-sm text-muted-foreground">Price TBD</span>
                 )}
               </div>
-              <div className="flex gap-2">
-                {booking.status === "confirmed" && !isPast && (
-                  <Button variant="outline" size="sm">
-                    <Phone className="mr-2 h-4 w-4" />
-                    Call Driver
+              <div className="flex flex-wrap gap-2">
+                {b.provider_id && (
+                  <ContactDialog
+                    recipientId={b.provider_id}
+                    recipientName={b.driver_name || "Driver"}
+                    relatedToType="general"
+                    relatedToId={booking.id}
+                    relatedToName={b.driver_name || "Driver"}
+                  >
+                    <Button variant="outline" size="sm">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      {booking.status === "confirmed" ? "Contact Driver" : "Message"}
+                    </Button>
+                  </ContactDialog>
+                )}
+                {booking.status === "confirmed" && !isPast && b.guest_phone && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`tel:${b.guest_phone}`}>
+                      <Phone className="mr-2 h-4 w-4" />
+                      Call Driver
+                    </a>
+                  </Button>
+                )}
+                {(booking.status === "pending" || booking.status === "confirmed") && !isPast && (
+                  <Button variant="ghost" size="sm" onClick={onCancel} className="text-destructive hover:text-destructive">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cancel
                   </Button>
                 )}
               </div>
@@ -1164,7 +1193,7 @@ function BookingCard({ booking, onCancel, onModified }: { booking: Booking; onCa
     case "package":
       return <PackageBookingCard booking={booking as any} onCancel={onCancel} />
     case "transport":
-      return <TransportBookingCard booking={booking as any} />
+      return <TransportBookingCard booking={booking as any} onCancel={onCancel} />
     default:
       return null
   }
@@ -1280,6 +1309,9 @@ export default function BookingsPage() {
           break
         case "package":
           await cancelPackage({ id: booking.id, reason: cancelReason })
+          break
+        case "transport":
+          await cancelDriverBooking(booking.id, cancelReason)
           break
       }
       
