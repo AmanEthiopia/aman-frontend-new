@@ -855,7 +855,7 @@ function HotelBookingCard({ booking, onCancel, onModified }: { booking: HotelBoo
                     recipientId={booking.hotel_provider_id}
                     recipientName={booking.hotel_name}
                     relatedToType="hotel"
-                    relatedToId={booking.id}
+                    relatedToId={booking.hotel_id || booking.id}
                     relatedToName={booking.hotel_name}
                   >
                     <Button variant="outline" size="sm">
@@ -1080,7 +1080,7 @@ function PackageBookingCard({ booking, onCancel, onModified }: { booking: Packag
                     recipientId={booking.package.provider_id}
                     recipientName={packageTitle}
                     relatedToType="experience"
-                    relatedToId={booking.id}
+                    relatedToId={booking.package.id || booking.id}
                     relatedToName={packageTitle}
                   >
                     <Button variant="outline" size="sm">
@@ -1207,8 +1207,8 @@ function TransportBookingCard({ booking, onCancel, onModified }: { booking: Tran
                   <ContactDialog
                     recipientId={b.provider_id}
                     recipientName={b.driver_name || "Driver"}
-                    relatedToType="general"
-                    relatedToId={booking.id}
+                    relatedToType="driver"
+                    relatedToId={b.driver_id || booking.id}
                     relatedToName={b.driver_name || "Driver"}
                   >
                     <Button variant="outline" size="sm">
@@ -1382,7 +1382,7 @@ function GuideBookingCard({ booking, onCancel, onModified }: { booking: GuideBoo
                     recipientId={booking.guide.provider_id}
                     recipientName={booking.guide.title}
                     relatedToType="guide"
-                    relatedToId={booking.id}
+                    relatedToId={booking.guide.id || booking.id}
                     relatedToName={booking.guide.title}
                   >
                     <Button variant="outline" size="sm">

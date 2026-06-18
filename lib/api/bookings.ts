@@ -105,6 +105,7 @@ export interface HotelBookingListItem {
   payment_required: boolean
   payment_status: PaymentStatus
   hotel_name: string
+  hotel_id?: string
   hotel_slug?: string
   hotel_city?: string
   hotel_photo?: string
