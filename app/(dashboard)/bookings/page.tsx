@@ -882,14 +882,30 @@ function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; on
                 <span className="text-sm text-muted-foreground">Total</span>
                 <p className="text-lg font-bold">{booking.currency} {parseFloat(booking.total_price).toLocaleString()}</p>
               </div>
-              <div className="flex gap-2">
-                <Link href={`/experiences/${booking.package?.slug ?? ""}`}>
-                  <Button variant="outline" size="sm">
-                    View Itinerary
-                  </Button>
-                </Link>
+              <div className="flex flex-wrap gap-2">
+                {booking.package?.slug && (
+                  <Link href={`/experiences/${booking.package.slug}`}>
+                    <Button variant="outline" size="sm">
+                      View Itinerary
+                    </Button>
+                  </Link>
+                )}
+                {booking.package?.provider_id && (
+                  <ContactDialog
+                    recipientId={booking.package.provider_id}
+                    recipientName={packageTitle}
+                    relatedToType="experience"
+                    relatedToId={booking.id}
+                    relatedToName={packageTitle}
+                  >
+                    <Button variant="outline" size="sm">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      {booking.status === "confirmed" ? "Contact Organizer" : "Message"}
+                    </Button>
+                  </ContactDialog>
+                )}
                 {(booking.status === "pending" || booking.status === "confirmed") && !isPast && (
-                  <Button variant="ghost" size="sm" onClick={onCancel}>
+                  <Button variant="ghost" size="sm" onClick={onCancel} className="text-destructive hover:text-destructive">
                     <XCircle className="mr-2 h-4 w-4" />
                     Cancel
                   </Button>

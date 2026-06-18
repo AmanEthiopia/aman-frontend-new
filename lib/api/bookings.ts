@@ -298,6 +298,7 @@ export interface PackageBookingPackage {
   duration_days: number
   price_per_person: string
   cover_photo_url?: string
+  provider_id?: string | null
 }
 
 export interface PackageBooking {
