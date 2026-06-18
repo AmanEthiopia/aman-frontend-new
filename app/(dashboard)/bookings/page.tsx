@@ -52,7 +52,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAllBookings, useCancelHotelBooking, useCancelRestaurantReservation, useCancelPackageBooking } from "@/lib/hooks/use-bookings"
 import type { Booking, BookingStatus, HotelBookingListItem, RestaurantReservationListItem, PackageBooking, TransportBooking } from "@/lib/api/bookings"
-import { modifyHotelBooking, getHotelBookingById, type ModifyHotelBookingPayload } from "@/lib/api/bookings"
+import { modifyHotelBooking, getHotelBookingById, cancelDriverBooking, modifyDriverBooking, type ModifyHotelBookingPayload } from "@/lib/api/bookings"
+import { modifyPackageBooking } from "@/lib/api/experiences"
 import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
 import type { Room } from "@/lib/types"
 import { getMyGuideBookings, cancelGuideBooking, modifyGuideBooking, type GuideBooking, type ModifyGuideBookingPayload, SERVICE_TYPE_LABELS } from "@/lib/api/guides"
@@ -563,6 +564,189 @@ function ModifyGuideBookingDialog({
   )
 }
 
+// ── Modify Driver (transport) Booking Dialog ────────────────────────────────────
+function ModifyDriverBookingDialog({ booking, open, onClose, onSuccess }: {
+  booking: TransportBooking; open: boolean; onClose: () => void; onSuccess: () => void
+}) {
+  const b = booking as any
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    trip_date: b.trip_date ?? "",
+    pickup_time: b.pickup_time ?? "",
+    pickup_location: b.pickup_location ?? "",
+    dropoff_location: b.dropoff_location ?? "",
+    num_passengers: b.num_passengers ?? 1,
+    guest_name: b.guest_name ?? "",
+    guest_email: b.guest_email ?? "",
+    guest_phone: b.guest_phone ?? "",
+    special_requests: b.special_requests ?? "",
+  })
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      await modifyDriverBooking(booking.id, { ...form, num_passengers: Number(form.num_passengers) || 1 })
+      toast.success("Booking request updated — waiting for driver confirmation")
+      onSuccess(); onClose()
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update booking")
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Modify Booking Request</DialogTitle>
+          <DialogDescription>Update your request for {b.driver_name || "the driver"}. The driver will be notified.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="d_date">Trip Date</Label>
+              <Input id="d_date" type="date" value={form.trip_date} min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setForm((p) => ({ ...p, trip_date: e.target.value }))} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="d_time">Pickup Time</Label>
+              <Input id="d_time" type="time" value={form.pickup_time}
+                onChange={(e) => setForm((p) => ({ ...p, pickup_time: e.target.value }))} required />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="d_pickup">Pickup Location</Label>
+            <Input id="d_pickup" value={form.pickup_location}
+              onChange={(e) => setForm((p) => ({ ...p, pickup_location: e.target.value }))} required />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="d_drop">Drop-off Location</Label>
+            <Input id="d_drop" value={form.dropoff_location}
+              onChange={(e) => setForm((p) => ({ ...p, dropoff_location: e.target.value }))} required />
+          </div>
+          <div className="space-y-1.5 sm:max-w-[50%]">
+            <Label htmlFor="d_pax">Passengers</Label>
+            <Input id="d_pax" type="number" min={1} value={form.num_passengers}
+              onChange={(e) => setForm((p) => ({ ...p, num_passengers: parseInt(e.target.value) || 1 }))} required />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="d_name">Full Name</Label>
+            <Input id="d_name" value={form.guest_name} onChange={(e) => setForm((p) => ({ ...p, guest_name: e.target.value }))} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="d_email">Email</Label>
+              <Input id="d_email" type="email" value={form.guest_email} onChange={(e) => setForm((p) => ({ ...p, guest_email: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="d_phone">Phone</Label>
+              <Input id="d_phone" type="tel" value={form.guest_phone} onChange={(e) => setForm((p) => ({ ...p, guest_phone: e.target.value }))} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="d_req">Special Requests</Label>
+            <Textarea id="d_req" rows={3} value={form.special_requests}
+              onChange={(e) => setForm((p) => ({ ...p, special_requests: e.target.value }))} />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+            <Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Resend Request</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Modify Trip (package) Booking Dialog ────────────────────────────────────────
+function ModifyPackageBookingDialog({ booking, open, onClose, onSuccess }: {
+  booking: PackageBooking; open: boolean; onClose: () => void; onSuccess: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    start_date: booking.start_date ?? "",
+    num_adults: booking.num_adults ?? 1,
+    num_children: booking.num_children ?? 0,
+    guest_name: booking.guest_name ?? "",
+    guest_email: booking.guest_email ?? "",
+    guest_phone: booking.guest_phone ?? "",
+    special_requests: booking.special_requests ?? "",
+  })
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      await modifyPackageBooking(booking.id, {
+        start_date: form.start_date || undefined,
+        num_adults: Number(form.num_adults) || 1,
+        num_children: Number(form.num_children) || 0,
+        guest_name: form.guest_name,
+        guest_email: form.guest_email,
+        guest_phone: form.guest_phone,
+        special_requests: form.special_requests,
+      })
+      toast.success("Booking request updated — waiting for organizer confirmation")
+      onSuccess(); onClose()
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update booking")
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Modify Booking Request</DialogTitle>
+          <DialogDescription>Update your request for {booking.package?.title ?? "this trip"}. The organizer will be notified.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="p_date">Preferred Date</Label>
+            <Input id="p_date" type="date" value={form.start_date} min={new Date().toISOString().split("T")[0]}
+              onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="p_adults">Adults</Label>
+              <Input id="p_adults" type="number" min={1} value={form.num_adults}
+                onChange={(e) => setForm((p) => ({ ...p, num_adults: parseInt(e.target.value) || 1 }))} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="p_children">Children</Label>
+              <Input id="p_children" type="number" min={0} value={form.num_children}
+                onChange={(e) => setForm((p) => ({ ...p, num_children: parseInt(e.target.value) || 0 }))} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="p_name">Full Name</Label>
+            <Input id="p_name" value={form.guest_name} onChange={(e) => setForm((p) => ({ ...p, guest_name: e.target.value }))} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="p_email">Email</Label>
+              <Input id="p_email" type="email" value={form.guest_email} onChange={(e) => setForm((p) => ({ ...p, guest_email: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="p_phone">Phone</Label>
+              <Input id="p_phone" type="tel" value={form.guest_phone} onChange={(e) => setForm((p) => ({ ...p, guest_phone: e.target.value }))} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="p_req">Special Requests</Label>
+            <Textarea id="p_req" rows={3} value={form.special_requests}
+              onChange={(e) => setForm((p) => ({ ...p, special_requests: e.target.value }))} />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+            <Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Resend Request</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function HotelBookingCard({ booking, onCancel, onModified }: { booking: HotelBookingListItem; onCancel: () => void; onModified: () => void }) {
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
@@ -800,7 +984,8 @@ function RestaurantReservationCard({ booking, onCancel }: { booking: RestaurantR
   )
 }
 
-function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; onCancel: () => void }) {
+function PackageBookingCard({ booking, onCancel, onModified }: { booking: PackageBooking; onCancel: () => void; onModified: () => void }) {
+  const [showModify, setShowModify] = useState(false)
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const startDate = new Date(booking.start_date)
@@ -882,14 +1067,36 @@ function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; on
                 <span className="text-sm text-muted-foreground">Total</span>
                 <p className="text-lg font-bold">{booking.currency} {parseFloat(booking.total_price).toLocaleString()}</p>
               </div>
-              <div className="flex gap-2">
-                <Link href={`/experiences/${booking.package?.slug ?? ""}`}>
-                  <Button variant="outline" size="sm">
-                    View Itinerary
+              <div className="flex flex-wrap gap-2">
+                {booking.package?.slug && (
+                  <Link href={`/experiences/${booking.package.slug}`}>
+                    <Button variant="outline" size="sm">
+                      View Itinerary
+                    </Button>
+                  </Link>
+                )}
+                {booking.package?.provider_id && (
+                  <ContactDialog
+                    recipientId={booking.package.provider_id}
+                    recipientName={packageTitle}
+                    relatedToType="experience"
+                    relatedToId={booking.id}
+                    relatedToName={packageTitle}
+                  >
+                    <Button variant="outline" size="sm">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      {booking.status === "confirmed" ? "Contact Organizer" : "Message"}
+                    </Button>
+                  </ContactDialog>
+                )}
+                {booking.status === "pending" && !isPast && (
+                  <Button variant="outline" size="sm" onClick={() => setShowModify(true)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Modify
                   </Button>
-                </Link>
+                )}
                 {(booking.status === "pending" || booking.status === "confirmed") && !isPast && (
-                  <Button variant="ghost" size="sm" onClick={onCancel}>
+                  <Button variant="ghost" size="sm" onClick={onCancel} className="text-destructive hover:text-destructive">
                     <XCircle className="mr-2 h-4 w-4" />
                     Cancel
                   </Button>
@@ -899,23 +1106,39 @@ function PackageBookingCard({ booking, onCancel }: { booking: PackageBooking; on
           </div>
         </div>
       </CardContent>
+      {showModify && (
+        <ModifyPackageBookingDialog
+          booking={booking}
+          open={showModify}
+          onClose={() => setShowModify(false)}
+          onSuccess={onModified}
+        />
+      )}
     </Card>
   )
 }
 
-function TransportBookingCard({ booking }: { booking: TransportBooking }) {
+function TransportBookingCard({ booking, onCancel, onModified }: { booking: TransportBooking; onCancel: () => void; onModified: () => void }) {
   const b = booking as any
+  const [showModify, setShowModify] = useState(false)
   const status = statusConfig[booking.status]
   const StatusIcon = status.icon
   const tripDate = new Date(b.trip_date || b.pickup_date || Date.now())
-  const isPast = tripDate < new Date()
+  const isPast = tripDate < new Date(new Date().toDateString())
+  const photo = getMediaUrl(b.driver_photo)
 
   return (
     <Card className={isPast ? "opacity-75" : ""}>
       <CardContent className="p-0">
         <div className="flex flex-col sm:flex-row">
-          <div className="relative h-32 w-full sm:h-auto sm:w-40 flex items-center justify-center bg-purple-50 sm:rounded-l-lg">
-            <Car className="h-12 w-12 text-purple-400" />
+          <div className="relative h-32 w-full sm:h-auto sm:w-40 shrink-0">
+            {photo ? (
+              <Image src={photo} alt={b.driver_name || "Driver"} fill className="object-cover sm:rounded-l-lg" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-purple-50 sm:rounded-l-lg">
+                <Car className="h-12 w-12 text-purple-400" />
+              </div>
+            )}
             <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-purple-500 px-2 py-0.5 text-xs font-medium text-white">
               <Car className="h-3 w-3" />
               Transport
@@ -979,11 +1202,39 @@ function TransportBookingCard({ booking }: { booking: TransportBooking }) {
                   <span className="text-sm text-muted-foreground">Price TBD</span>
                 )}
               </div>
-              <div className="flex gap-2">
-                {booking.status === "confirmed" && !isPast && (
-                  <Button variant="outline" size="sm">
-                    <Phone className="mr-2 h-4 w-4" />
-                    Call Driver
+              <div className="flex flex-wrap gap-2">
+                {b.provider_id && (
+                  <ContactDialog
+                    recipientId={b.provider_id}
+                    recipientName={b.driver_name || "Driver"}
+                    relatedToType="general"
+                    relatedToId={booking.id}
+                    relatedToName={b.driver_name || "Driver"}
+                  >
+                    <Button variant="outline" size="sm">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      {booking.status === "confirmed" ? "Contact Driver" : "Message"}
+                    </Button>
+                  </ContactDialog>
+                )}
+                {booking.status === "confirmed" && !isPast && b.guest_phone && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`tel:${b.guest_phone}`}>
+                      <Phone className="mr-2 h-4 w-4" />
+                      Call Driver
+                    </a>
+                  </Button>
+                )}
+                {booking.status === "pending" && !isPast && (
+                  <Button variant="outline" size="sm" onClick={() => setShowModify(true)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Modify
+                  </Button>
+                )}
+                {(booking.status === "pending" || booking.status === "confirmed") && !isPast && (
+                  <Button variant="ghost" size="sm" onClick={onCancel} className="text-destructive hover:text-destructive">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cancel
                   </Button>
                 )}
               </div>
@@ -991,6 +1242,14 @@ function TransportBookingCard({ booking }: { booking: TransportBooking }) {
           </div>
         </div>
       </CardContent>
+      {showModify && (
+        <ModifyDriverBookingDialog
+          booking={booking}
+          open={showModify}
+          onClose={() => setShowModify(false)}
+          onSuccess={onModified}
+        />
+      )}
     </Card>
   )
 }
@@ -1162,9 +1421,9 @@ function BookingCard({ booking, onCancel, onModified }: { booking: Booking; onCa
     case "restaurant":
       return <RestaurantReservationCard booking={booking as any} onCancel={onCancel} />
     case "package":
-      return <PackageBookingCard booking={booking as any} onCancel={onCancel} />
+      return <PackageBookingCard booking={booking as any} onCancel={onCancel} onModified={onModified} />
     case "transport":
-      return <TransportBookingCard booking={booking as any} />
+      return <TransportBookingCard booking={booking as any} onCancel={onCancel} onModified={onModified} />
     default:
       return null
   }
@@ -1280,6 +1539,9 @@ export default function BookingsPage() {
           break
         case "package":
           await cancelPackage({ id: booking.id, reason: cancelReason })
+          break
+        case "transport":
+          await cancelDriverBooking(booking.id, cancelReason)
           break
       }
       

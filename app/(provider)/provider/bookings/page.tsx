@@ -913,7 +913,7 @@ export default function ProviderBookingsPage() {
           />
         </div>
         <div className="flex gap-1 rounded-md border p-1">
-          {(["all", "hotel", "restaurant", "trip", "driver"] as const).map((type) => {
+          {(["all", "hotel", "restaurant", "trip", "driver", "guide"] as const).map((type) => {
             const Icon = type === "all" ? null : serviceIcons[type]
             return (
               <button
