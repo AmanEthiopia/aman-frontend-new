@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Shield,
   Calendar,
+  Heart,
 } from "lucide-react"
 import { Header } from "@/components/ui/header"
 import { Footer } from "@/components/ui/footer"
@@ -27,8 +28,10 @@ import { LocationMap } from "@/components/location/location-map"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ContactDialog } from "@/components/messaging/contact-dialog"
+import { AddToItineraryButton } from "@/components/itinerary/add-to-itinerary-button"
 import { getTransportById } from "@/lib/api/transport"
 import { getMediaUrl } from "@/lib/utils/media"
+import { useApp } from "@/lib/contexts/app-context"
 import type { Transport } from "@/lib/types"
 
 const vehicleTypeLabels: Record<string, string> = {
@@ -53,6 +56,7 @@ const serviceLabels: Record<string, string> = {
 export default function TransportDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const { toggleSavedItem, isItemSaved } = useApp()
   const [transport, setTransport] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -372,7 +376,7 @@ export default function TransportDetailPage({ params }: { params: Promise<{ id: 
                     <ContactDialog
                       recipientId={transport.provider_id}
                       recipientName={transport.name}
-                      relatedToType="general"
+                      relatedToType="driver"
                       relatedToId={transport.id}
                       relatedToName={transport.name}
                     >
@@ -382,6 +386,24 @@ export default function TransportDetailPage({ params }: { params: Promise<{ id: 
                       </Button>
                     </ContactDialog>
                   )}
+
+                  <AddToItineraryButton
+                    itemType="transport"
+                    itemId={transport.id}
+                    itemName={transport.name}
+                    variant="outline"
+                    className="w-full"
+                  />
+
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => toggleSavedItem(`transport-${transport.id}`)}
+                  >
+                    <Heart className={`mr-2 h-4 w-4 ${isItemSaved(`transport-${transport.id}`) ? "fill-red-500 text-red-500" : ""}`} />
+                    {isItemSaved(`transport-${transport.id}`) ? "Saved" : "Save to Wishlist"}
+                  </Button>
+
                   {transport.contactPhone && (
                     <Button variant="outline" className="w-full" asChild>
                       <a href={`tel:${transport.contactPhone}`}>

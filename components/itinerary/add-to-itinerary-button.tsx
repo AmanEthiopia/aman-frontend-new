@@ -149,6 +149,9 @@ export function AddToItineraryButton({
       case "attraction":  payload.attraction_id = itemId;  break
       case "experience":  payload.experience_id = itemId;  break
       case "guide":       payload.guide_id = itemId;       break
+      // Transport has no linked resource on day items — record it by name.
+      case "transport":   payload.title = itemName;        break
+      default:            payload.title = itemName;        break
     }
     return payload
   }

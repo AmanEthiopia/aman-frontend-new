@@ -265,7 +265,7 @@ export default function BookExperiencePage() {
                   A confirmation email has been sent to {formData.guestEmail}.
                 </p>
                 <div className="mt-8 flex flex-col gap-3">
-                  <Link href="/account/bookings">
+                  <Link href="/bookings">
                     <Button className="w-full">View My Bookings</Button>
                   </Link>
                   <Link href="/experiences">
