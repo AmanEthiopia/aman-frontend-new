@@ -410,6 +410,22 @@ export async function cancelDriverBooking(id: string, reason?: string): Promise<
   return apiPost<DriverBooking>(`/bookings/driver/${id}/cancel/`, { reason })
 }
 
+export interface ModifyDriverBookingPayload {
+  trip_date?: string
+  pickup_time?: string
+  pickup_location?: string
+  dropoff_location?: string
+  num_passengers?: number
+  guest_name?: string
+  guest_email?: string
+  guest_phone?: string
+  special_requests?: string
+}
+
+export async function modifyDriverBooking(id: string, payload: ModifyDriverBookingPayload): Promise<DriverBooking> {
+  return apiPatch<DriverBooking>(`/bookings/driver/${id}/`, payload)
+}
+
 // ============================================================================
 // Provider Booking Management
 // ============================================================================

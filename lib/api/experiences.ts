@@ -340,6 +340,20 @@ export async function createPackageBooking(data: PackageBookingRequest): Promise
   return apiPost<PackageBookingResponse>("/experiences/bookings/", data)
 }
 
+export interface ModifyPackageBookingPayload {
+  start_date?: string
+  num_adults?: number
+  num_children?: number
+  guest_name?: string
+  guest_email?: string
+  guest_phone?: string
+  special_requests?: string
+}
+
+export async function modifyPackageBooking(id: string, payload: ModifyPackageBookingPayload): Promise<unknown> {
+  return apiPatch(`/experiences/bookings/${id}/`, payload)
+}
+
 /**
  * Get my package bookings
  */
