@@ -372,20 +372,18 @@ export default function TransportDetailPage({ params }: { params: Promise<{ id: 
               {/* Contact / Message */}
               <Card>
                 <CardContent className="space-y-3 pt-6">
-                  {transport.provider_id && (
-                    <ContactDialog
-                      recipientId={transport.provider_id}
-                      recipientName={transport.name}
-                      relatedToType="driver"
-                      relatedToId={transport.id}
-                      relatedToName={transport.name}
-                    >
-                      <Button className="w-full">
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        Message Driver
-                      </Button>
-                    </ContactDialog>
-                  )}
+                  <ContactDialog
+                    recipientId={transport.provider_id || transport.owner_id || ""}
+                    recipientName={transport.name}
+                    relatedToType="driver"
+                    relatedToId={transport.id}
+                    relatedToName={transport.name}
+                  >
+                    <Button className="w-full">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Message Driver
+                    </Button>
+                  </ContactDialog>
 
                   <AddToItineraryButton
                     itemType="transport"
