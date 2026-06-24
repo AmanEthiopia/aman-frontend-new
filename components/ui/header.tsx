@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { AlgaAleWordmark } from "@/components/brand/alga-ale-logo"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,13 +79,7 @@ export function Header() {
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href={isProvider ? "/provider" : "/"} className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <span className="text-lg font-bold text-primary-foreground">A</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold leading-none text-foreground">Alga Ale</span>
-            <span className="text-xs text-muted-foreground">አልጋ አለ</span>
-          </div>
+          <AlgaAleWordmark size={36} />
         </Link>
 
         {/* Desktop Navigation */}
