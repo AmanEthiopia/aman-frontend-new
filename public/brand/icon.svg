@@ -1,4 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#0f5132"/>
-  <text x="16" y="23" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">A</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="Algalle">
+  <title>Algalle</title>
+  <rect width="100" height="100" rx="22" fill="#0E5C43"></rect>
+  <g fill="none" transform="translate(14 10) scale(0.72)">
+    <path d="M26 86 L26 44 A24 24 0 0 1 74 44 L74 86" stroke="#FAF6EE" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path>
+    <line x1="38" y1="69" x2="62" y2="69" stroke="#FAF6EE" stroke-width="11" stroke-linecap="round"></line>
+    <line x1="40" y1="57" x2="50" y2="57" stroke="#E3A92C" stroke-width="8" stroke-linecap="round"></line>
+  </g>
 </svg>

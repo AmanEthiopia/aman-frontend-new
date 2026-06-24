@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { getConversations } from "@/lib/api/messages"
 import { getUnreadCount } from "@/lib/api/notifications"
 import { Footer } from "@/components/ui/footer"
+import { AlgaAleWordmark } from "@/components/brand/alga-ale-logo"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -69,13 +70,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
             <Link href="/" className="flex items-center gap-2" aria-label="Alga Ale home">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <span className="text-lg font-bold text-primary-foreground">A</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-bold leading-none text-foreground">Alga Ale</span>
-                <span className="text-xs text-muted-foreground">አልጋ አለ</span>
-              </div>
+              <AlgaAleWordmark size={36} />
             </Link>
 
             <nav className="hidden items-center gap-1 md:flex">

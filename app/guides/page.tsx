@@ -285,22 +285,21 @@ function GuidesContent() {
 
   return (
     <main className="min-h-screen bg-background">
-      {/* ─── Hero Banner ─── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-primary/80">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[url('/placeholder.svg?height=600&width=1400&query=Ethiopian landscape mountains')] bg-cover bg-center opacity-20" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-900/40 to-slate-900/80" />
+      {/* ─── Hero Banner ─── (matches the Premium Concierge pitch tone) */}
+      <section className="relative overflow-hidden bg-primary py-16 text-primary-foreground">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 bg-[url('/abstract-geometric-pattern.png')] bg-cover bg-center" />
         </div>
-        <div className="relative container mx-auto px-4 py-16 text-center">
-          <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30 backdrop-blur">
+        <div className="relative container mx-auto px-4 text-center">
+          <Badge variant="secondary" className="mb-4 bg-white/10 text-primary-foreground border-white/20 backdrop-blur">
             <Shield className="mr-1.5 h-3.5 w-3.5" />
             Verified Local Experts
           </Badge>
-          <h1 className="mb-4 text-4xl font-bold tracking-tight text-white md:text-5xl lg:text-6xl">
+          <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
             Find Your Perfect{" "}
-            <span className="text-primary">Ethiopian Guide</span>
+            <span className="text-secondary">Ethiopian Guide</span>
           </h1>
-          <p className="mx-auto mb-8 max-w-2xl text-lg text-slate-300">
+          <p className="mx-auto mb-8 max-w-2xl text-lg text-primary-foreground/80">
             Explore with trusted local guides, experienced drivers, talented photographers, and cultural experts — handpicked across Ethiopia.
           </p>
 
@@ -312,26 +311,26 @@ function GuidesContent() {
                 placeholder="Search by name, skill, language..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-12 rounded-xl pl-10 text-base shadow-lg"
+                className="h-12 rounded-xl bg-background pl-10 text-base text-foreground shadow-lg"
               />
             </div>
-            <Button size="lg" className="h-12 rounded-xl px-6 shadow-lg">
+            <Button size="lg" variant="secondary" className="h-12 rounded-xl px-6 shadow-lg">
               Search
             </Button>
           </div>
 
           {/* Trust Indicators */}
-          <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-slate-400">
+          <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-primary-foreground/70">
             <span className="flex items-center gap-1.5">
-              <CheckCircle className="h-4 w-4 text-green-400" />
+              <CheckCircle className="h-4 w-4" />
               Background-checked guides
             </span>
             <span className="flex items-center gap-1.5">
-              <Globe className="h-4 w-4 text-blue-400" />
+              <Globe className="h-4 w-4" />
               20+ languages spoken
             </span>
             <span className="flex items-center gap-1.5">
-              <Award className="h-4 w-4 text-amber-400" />
+              <Award className="h-4 w-4" />
               Certified professionals
             </span>
           </div>
@@ -523,7 +522,7 @@ export default function GuidesPage() {
       <Suspense
         fallback={
           <main className="min-h-screen bg-background">
-            <div className="bg-gradient-to-br from-slate-900 to-primary/80 py-24" />
+            <div className="bg-primary py-24" />
             <div className="container mx-auto px-4 py-8">
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {[...Array(8)].map((_, i) => (
