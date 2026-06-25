@@ -35,7 +35,9 @@ export interface VerificationStatusInfo {
 }
 
 export interface SubmitVerificationPayload {
-  documents: string[]
+  // Documents are no longer required — the admin verifies by cross-checking the
+  // listing's existing photos and profile content. Kept optional for back-compat.
+  documents?: string[]
   submitter_notes?: string
 }
 

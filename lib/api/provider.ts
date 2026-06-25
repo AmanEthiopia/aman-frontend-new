@@ -92,7 +92,7 @@ export async function requestVerification(
   const entityType = CATEGORY_TO_ENTITY[category] ?? category
   return apiPost<{ id: string; status: string }>(
     `/admin/verifications/submit/?entity_type=${entityType}&entity_id=${id}`,
-    { documents: [], submitter_notes: note ?? "" },
+    { submitter_notes: note ?? "" },
   )
 }
 

@@ -138,7 +138,7 @@ function ChangeRequestedBanner({
               </li>
               <li className="flex items-start gap-2">
                 <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-orange-200 text-xs font-bold dark:bg-orange-900">2</span>
-                Upload any missing documents or photos to your property profile
+                Add any missing photos or details to your property profile
               </li>
               <li className="flex items-start gap-2">
                 <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-orange-200 text-xs font-bold dark:bg-orange-900">3</span>
@@ -359,10 +359,9 @@ export default function VerificationPage() {
     setIsSubmitting(true)
     try {
       await submitForVerification(selectedProperty.entityType, selectedProperty.id, {
-        documents: [],
-        submitter_notes: submitterNotes.trim() || undefined,
+        submitter_notes: submitterNotes.trim() || "",
       })
-      toast.success("Verification request submitted! We'll review it and get back to you.")
+      toast.success("Submitted for review! Our team will review your photos and details.")
       setShowSubmitModal(false)
       loadProperties()
     } catch {
@@ -377,7 +376,6 @@ export default function VerificationPage() {
     setResubmitting(property.id)
     try {
       await submitForVerification(property.entityType, property.id, {
-        documents: [],
         submitter_notes: "Resubmitting after requested changes have been made.",
       })
       toast.success("Resubmitted successfully! Our team will review your updates.")
@@ -547,9 +545,9 @@ export default function VerificationPage() {
       <Dialog open={showSubmitModal} onOpenChange={setShowSubmitModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Request Verification</DialogTitle>
+            <DialogTitle>Submit for Verification</DialogTitle>
             <DialogDescription>
-              Submit <strong>{selectedProperty?.name}</strong> for review. Make sure your property profile, photos, and business details are complete before submitting.
+              Submit <strong>{selectedProperty?.name}</strong> for verification — our team will review your photos and details. No document uploads needed. Just make sure your profile and listing are complete before submitting.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -570,10 +568,10 @@ export default function VerificationPage() {
               </ul>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes for our team (optional)</Label>
+              <Label htmlFor="notes">Anything you'd like our reviewers to know? — optional</Label>
               <Textarea
                 id="notes"
-                placeholder="Any additional context about your property, special certifications, or notes for the review team..."
+                placeholder="Any context about your listing, special certifications, or notes for the review team..."
                 value={submitterNotes}
                 onChange={(e) => setSubmitterNotes(e.target.value)}
                 rows={3}
