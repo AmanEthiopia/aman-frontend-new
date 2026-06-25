@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { 
-  Plus, Compass, Star, MapPin, Languages, Clock, Users, 
-  MoreHorizontal, Edit, Eye, EyeOff, Trash2, Shield
+import {
+  Plus, Compass, Star, MapPin, Languages, Clock, Users,
+  MoreHorizontal, Edit, Eye, EyeOff, Trash2, Shield, Loader2
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -19,9 +19,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { 
-  getProviderGuides, 
-  toggleGuidePublish, 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  getProviderGuides,
+  toggleGuidePublish,
+  unpublishGuide,
   deleteGuide,
   type Guide,
   SERVICE_TYPE_LABELS,
@@ -43,6 +54,8 @@ export default function ProviderGuidesPage() {
   const router = useRouter()
   const [guides, setGuides] = useState<Guide[]>([])
   const [loading, setLoading] = useState(true)
+  const [unpublishTarget, setUnpublishTarget] = useState<Guide | null>(null)
+  const [isUnpublishing, setIsUnpublishing] = useState(false)
 
   const loadGuides = async () => {
     setLoading(true)
@@ -61,14 +74,36 @@ export default function ProviderGuidesPage() {
   }, [])
 
   const handleTogglePublish = async (guide: Guide) => {
+    // Unpublishing requires confirmation; publishing happens directly.
+    if (guide.is_published) {
+      setUnpublishTarget(guide)
+      return
+    }
     try {
       const result = await toggleGuidePublish(guide.id)
-      setGuides(guides.map(g => 
+      setGuides(guides.map(g =>
         g.id === guide.id ? { ...g, is_published: result.is_published } : g
       ))
-      toast.success(result.is_published ? "Guide published" : "Guide unpublished")
+      toast.success("Guide published")
     } catch (error) {
       toast.error("Failed to update guide status")
+    }
+  }
+
+  const handleConfirmUnpublish = async () => {
+    if (!unpublishTarget) return
+    setIsUnpublishing(true)
+    try {
+      const result = await unpublishGuide(unpublishTarget.id)
+      setGuides(guides.map(g =>
+        g.id === unpublishTarget.id ? { ...g, is_published: result.is_published } : g
+      ))
+      toast.success("Guide unpublished — it's now hidden from travelers")
+    } catch (error) {
+      toast.error("Failed to unpublish")
+    } finally {
+      setIsUnpublishing(false)
+      setUnpublishTarget(null)
     }
   }
 
@@ -152,7 +187,7 @@ export default function ProviderGuidesPage() {
                       </Badge>
                     )}
                     <Badge variant={guide.is_published ? "default" : "secondary"}>
-                      {guide.is_published ? "Published" : "Draft"}
+                      {guide.is_published ? "Published" : "Hidden"}
                     </Badge>
                   </div>
                   <div className="absolute bottom-3 right-3">
@@ -257,6 +292,32 @@ export default function ProviderGuidesPage() {
           })}
         </div>
       )}
+
+      {/* Unpublish Confirmation */}
+      <AlertDialog open={!!unpublishTarget} onOpenChange={(o) => !o && setUnpublishTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish this listing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It will be hidden from travelers until you publish it again. Your data,
+              bookings, and reviews are kept.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUnpublishing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmUnpublish} disabled={isUnpublishing}>
+              {isUnpublishing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Unpublishing...
+                </>
+              ) : (
+                "Unpublish"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

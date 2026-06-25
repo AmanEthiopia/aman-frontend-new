@@ -546,10 +546,11 @@ export async function publishHotel(hotelId: string): Promise<{ is_published: boo
 }
 
 /**
- * Unpublish a hotel
+ * Unpublish a hotel — hides it from public results without deleting it.
+ * Idempotent: returns 200 even if already unpublished.
  */
-export async function unpublishHotel(hotelId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
-  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/hotels/provider/${hotelId}/unpublish/`)
+export async function unpublishHotel(hotelId: string): Promise<{ is_published: boolean }> {
+  return apiPut<{ is_published: boolean }>(`/hotels/provider/${hotelId}/unpublish/`, {})
 }
 
 /**
@@ -642,6 +643,14 @@ export async function publishRestaurant(restaurantId: string): Promise<{ is_publ
   return apiPost<{ is_published: boolean; is_verified: boolean }>(`/restaurants/provider/${restaurantId}/publish/`)
 }
 
+/**
+ * Unpublish a restaurant — hides it from public results without deleting it.
+ * Idempotent: returns 200 even if already unpublished.
+ */
+export async function unpublishRestaurant(restaurantId: string): Promise<{ is_published: boolean }> {
+  return apiPut<{ is_published: boolean }>(`/restaurants/provider/${restaurantId}/unpublish/`, {})
+}
+
 // ============================================================================
 // DRIVERS API
 // ============================================================================
@@ -702,6 +711,14 @@ export async function deleteDriver(driverId: string): Promise<void> {
  */
 export async function toggleDriverPublish(driverId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
   return apiPost<{ is_published: boolean; is_verified: boolean }>(`/drivers/${driverId}/publish/`)
+}
+
+/**
+ * Unpublish a driver listing — hides it from public results without deleting it.
+ * Idempotent: returns 200 even if already unpublished.
+ */
+export async function unpublishDriver(driverId: string): Promise<{ is_published: boolean }> {
+  return apiPut<{ is_published: boolean }>(`/transport/drivers/${driverId}/unpublish/`, {})
 }
 
 // ============================================================================
