@@ -540,6 +540,7 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
+  const [showUnpublishDialog, setShowUnpublishDialog] = useState(false)
 
   useEffect(() => {
     loadRestaurant()
@@ -575,15 +576,35 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
 
   const handleTogglePublish = async () => {
     if (!restaurant) return
+    // Unpublishing requires confirmation; publishing happens directly.
+    if (restaurant.is_active) {
+      setShowUnpublishDialog(true)
+      return
+    }
     setIsPublishing(true)
     try {
       const result = await providerAPI.publishRestaurant(resolvedParams.id)
       setRestaurant((prev) => prev ? { ...prev, is_active: result.is_published, is_verified: result.is_verified } : prev)
-      toast.success(result.is_published ? "Restaurant published" : "Restaurant unpublished")
+      toast.success("Restaurant published")
     } catch (error) {
       toast.error("Failed to update publish status")
     } finally {
       setIsPublishing(false)
+    }
+  }
+
+  const handleConfirmUnpublish = async () => {
+    if (!restaurant) return
+    setIsPublishing(true)
+    try {
+      const result = await providerAPI.unpublishRestaurant(resolvedParams.id)
+      setRestaurant((prev) => prev ? { ...prev, is_active: result.is_published } : prev)
+      toast.success("Restaurant unpublished — it's now hidden from travelers")
+    } catch (error) {
+      toast.error("Failed to unpublish")
+    } finally {
+      setIsPublishing(false)
+      setShowUnpublishDialog(false)
     }
   }
 
@@ -826,6 +847,32 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
                 </>
               ) : (
                 "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unpublish Confirmation */}
+      <AlertDialog open={showUnpublishDialog} onOpenChange={setShowUnpublishDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish this listing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It will be hidden from travelers until you publish it again. Your data,
+              bookings, and reviews are kept.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPublishing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmUnpublish} disabled={isPublishing}>
+              {isPublishing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Unpublishing...
+                </>
+              ) : (
+                "Unpublish"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

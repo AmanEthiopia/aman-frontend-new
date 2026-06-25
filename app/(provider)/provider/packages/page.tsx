@@ -16,8 +16,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   getProviderPackages,
   togglePackagePublish,
+  unpublishPackage,
   deletePackage,
   type Package,
 } from "@/lib/api/experiences"
@@ -33,6 +44,7 @@ import {
   Package as PackageIcon,
   Globe,
   GlobeLock,
+  Loader2,
 } from "lucide-react"
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -59,6 +71,8 @@ export default function ProviderPackagesPage() {
   const [packages, setPackages] = useState<Package[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [unpublishTarget, setUnpublishTarget] = useState<Package | null>(null)
+  const [isUnpublishing, setIsUnpublishing] = useState(false)
 
   useEffect(() => {
     loadPackages()
@@ -77,13 +91,34 @@ export default function ProviderPackagesPage() {
   }
 
   async function handleTogglePublish(pkg: Package) {
+    // Unpublishing requires confirmation; publishing happens directly.
+    if (pkg.is_published) {
+      setUnpublishTarget(pkg)
+      return
+    }
     try {
       const result = await togglePackagePublish(pkg.id)
-      setPackages(packages.map(p => 
+      setPackages(packages.map(p =>
         p.id === pkg.id ? { ...p, is_published: result.is_published } : p
       ))
     } catch (err: any) {
       alert(err.message || "Failed to update publish status")
+    }
+  }
+
+  async function handleConfirmUnpublish() {
+    if (!unpublishTarget) return
+    setIsUnpublishing(true)
+    try {
+      const result = await unpublishPackage(unpublishTarget.id)
+      setPackages(packages.map(p =>
+        p.id === unpublishTarget.id ? { ...p, is_published: result.is_published } : p
+      ))
+    } catch (err: any) {
+      alert(err.message || "Failed to unpublish")
+    } finally {
+      setIsUnpublishing(false)
+      setUnpublishTarget(null)
     }
   }
 
@@ -167,7 +202,7 @@ export default function ProviderPackagesPage() {
                     {pkg.is_published ? (
                       <><Globe className="mr-1 h-3 w-3" /> Published</>
                     ) : (
-                      <><GlobeLock className="mr-1 h-3 w-3" /> Draft</>
+                      <><GlobeLock className="mr-1 h-3 w-3" /> Hidden</>
                     )}
                   </Badge>
                 </div>
@@ -255,6 +290,32 @@ export default function ProviderPackagesPage() {
           ))}
         </div>
       )}
+
+      {/* Unpublish Confirmation */}
+      <AlertDialog open={!!unpublishTarget} onOpenChange={(o) => !o && setUnpublishTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish this listing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It will be hidden from travelers until you publish it again. Your data,
+              bookings, and reviews are kept.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUnpublishing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmUnpublish} disabled={isUnpublishing}>
+              {isUnpublishing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Unpublishing...
+                </>
+              ) : (
+                "Unpublish"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

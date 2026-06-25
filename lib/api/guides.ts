@@ -321,6 +321,14 @@ export async function toggleGuidePublish(guideId: string): Promise<{ is_publishe
   return apiPut<{ is_published: boolean }>(`/guides/provider/${guideId}/publish/`, {})
 }
 
+/**
+ * Unpublish a guide (Provider) — hides it from public results without deleting it.
+ * Idempotent: returns 200 even if already unpublished.
+ */
+export async function unpublishGuide(guideId: string): Promise<{ is_published: boolean }> {
+  return apiPut<{ is_published: boolean }>(`/guides/provider/${guideId}/unpublish/`, {})
+}
+
 // ============================================================================
 // Provider Cities Management
 // ============================================================================

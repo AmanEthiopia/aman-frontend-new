@@ -478,6 +478,16 @@ export async function togglePackagePublish(id: string): Promise<{ is_published: 
   })
 }
 
+/**
+ * Unpublish a package — hides it from public results without deleting it.
+ * Idempotent: returns 200 even if already unpublished.
+ */
+export async function unpublishPackage(id: string): Promise<{ is_published: boolean }> {
+  return apiFetch<{ is_published: boolean }>(`/experiences/provider/${id}/unpublish/`, {
+    method: "PUT",
+  })
+}
+
 // City management
 export async function getPackageCities(packageId: string): Promise<PackageCity[]> {
   return apiGet<PackageCity[]>(`/experiences/provider/${packageId}/cities/`)
