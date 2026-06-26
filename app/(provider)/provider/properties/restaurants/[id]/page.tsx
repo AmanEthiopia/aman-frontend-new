@@ -58,6 +58,7 @@ import {
 import { toast } from "sonner"
 import { RequestVerificationButton } from "@/components/provider/request-verification-button"
 import * as providerAPI from "@/lib/api/provider"
+import { listingActionError } from "@/lib/utils/errors"
 import type { ProviderRestaurant, MenuItem } from "@/lib/api/provider"
 import { getMediaUrl } from "@/lib/utils/media"
 
@@ -583,11 +584,11 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
     }
     setIsPublishing(true)
     try {
-      const result = await providerAPI.publishRestaurant(resolvedParams.id)
-      setRestaurant((prev) => prev ? { ...prev, is_active: result.is_published, is_verified: result.is_verified } : prev)
-      toast.success("Restaurant published")
+      const data = await providerAPI.publishRestaurant(resolvedParams.id)
+      setRestaurant((prev) => prev ? { ...prev, is_active: data?.is_published ?? true, is_verified: data?.is_verified ?? prev.is_verified } : prev)
+      toast.success(data?.is_verified ? "Restaurant published" : "Restaurant published — pending verification")
     } catch (error) {
-      toast.error("Failed to update publish status")
+      toast.error(listingActionError(error, "Failed to publish"))
     } finally {
       setIsPublishing(false)
     }
@@ -597,11 +598,11 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
     if (!restaurant) return
     setIsPublishing(true)
     try {
-      const result = await providerAPI.unpublishRestaurant(resolvedParams.id)
-      setRestaurant((prev) => prev ? { ...prev, is_active: result.is_published } : prev)
+      await providerAPI.unpublishRestaurant(resolvedParams.id)
+      setRestaurant((prev) => prev ? { ...prev, is_active: false } : prev)
       toast.success("Restaurant unpublished — it's now hidden from travelers")
     } catch (error) {
-      toast.error("Failed to unpublish")
+      toast.error(listingActionError(error, "Failed to unpublish"))
     } finally {
       setIsPublishing(false)
       setShowUnpublishDialog(false)
@@ -648,11 +649,11 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
               ) : (
                 <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
                   <AlertCircle className="mr-1 h-3 w-3" />
-                  Unverified
+                  {restaurant.is_active ? "Pending verification" : "Unverified"}
                 </Badge>
               )}
               <Badge variant={restaurant.is_active ? "default" : "secondary"}>
-                {restaurant.is_active ? "Published" : "Unpublished"}
+                {restaurant.is_active ? "Published" : "Hidden"}
               </Badge>
               <RequestVerificationButton
                 category="restaurant"
@@ -860,7 +861,7 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
             <AlertDialogTitle>Unpublish this listing?</AlertDialogTitle>
             <AlertDialogDescription>
               It will be hidden from travelers until you publish it again. Your data,
-              bookings, and reviews are kept.
+              bookings and reviews are kept.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

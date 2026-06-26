@@ -39,6 +39,7 @@ import {
   PRICING_TYPE_LABELS
 } from "@/lib/api/guides"
 import { toast } from "sonner"
+import { listingActionError } from "@/lib/utils/errors"
 import { formatRating, toNumber } from "@/lib/utils"
 
 const API_BASE = "https://api.aman.yichalal.ai"
@@ -80,13 +81,13 @@ export default function ProviderGuidesPage() {
       return
     }
     try {
-      const result = await toggleGuidePublish(guide.id)
+      const data = await toggleGuidePublish(guide.id)
       setGuides(guides.map(g =>
-        g.id === guide.id ? { ...g, is_published: result.is_published } : g
+        g.id === guide.id ? { ...g, is_published: data?.is_published ?? true } : g
       ))
       toast.success("Guide published")
     } catch (error) {
-      toast.error("Failed to update guide status")
+      toast.error(listingActionError(error, "Failed to publish"))
     }
   }
 
@@ -94,13 +95,13 @@ export default function ProviderGuidesPage() {
     if (!unpublishTarget) return
     setIsUnpublishing(true)
     try {
-      const result = await unpublishGuide(unpublishTarget.id)
+      await unpublishGuide(unpublishTarget.id)
       setGuides(guides.map(g =>
-        g.id === unpublishTarget.id ? { ...g, is_published: result.is_published } : g
+        g.id === unpublishTarget.id ? { ...g, is_published: false } : g
       ))
       toast.success("Guide unpublished — it's now hidden from travelers")
     } catch (error) {
-      toast.error("Failed to unpublish")
+      toast.error(listingActionError(error, "Failed to unpublish"))
     } finally {
       setIsUnpublishing(false)
       setUnpublishTarget(null)
@@ -300,7 +301,7 @@ export default function ProviderGuidesPage() {
             <AlertDialogTitle>Unpublish this listing?</AlertDialogTitle>
             <AlertDialogDescription>
               It will be hidden from travelers until you publish it again. Your data,
-              bookings, and reviews are kept.
+              bookings and reviews are kept.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

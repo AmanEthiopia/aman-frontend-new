@@ -36,6 +36,7 @@ import { toast } from "sonner"
 import { RequestVerificationButton } from "@/components/provider/request-verification-button"
 import { PropertyPhotosCard } from "@/components/provider/property-photos-card"
 import * as providerAPI from "@/lib/api/provider"
+import { listingActionError } from "@/lib/utils/errors"
 import type { ProviderDriver } from "@/lib/api/provider"
 
 const vehicleTypeLabels: Record<string, string> = {
@@ -108,11 +109,11 @@ export default function DriverDetailPage({ params }: { params: Promise<{ id: str
     }
     setIsPublishing(true)
     try {
-      const result = await providerAPI.toggleDriverPublish(resolvedParams.id)
-      setDriver((prev) => prev ? { ...prev, is_active: result.is_published, is_verified: result.is_verified } : prev)
+      const data = await providerAPI.toggleDriverPublish(resolvedParams.id)
+      setDriver((prev) => prev ? { ...prev, is_active: data?.is_published ?? true, is_verified: data?.is_verified ?? prev.is_verified } : prev)
       toast.success("Driver service published")
     } catch (error) {
-      toast.error("Failed to update publish status")
+      toast.error(listingActionError(error, "Failed to publish"))
     } finally {
       setIsPublishing(false)
     }
@@ -122,11 +123,11 @@ export default function DriverDetailPage({ params }: { params: Promise<{ id: str
     if (!driver) return
     setIsPublishing(true)
     try {
-      const result = await providerAPI.unpublishDriver(resolvedParams.id)
-      setDriver((prev) => prev ? { ...prev, is_active: result.is_published } : prev)
+      await providerAPI.unpublishDriver(resolvedParams.id)
+      setDriver((prev) => prev ? { ...prev, is_active: false } : prev)
       toast.success("Driver service unpublished — it's now hidden from travelers")
     } catch (error) {
-      toast.error("Failed to unpublish")
+      toast.error(listingActionError(error, "Failed to unpublish"))
     } finally {
       setIsPublishing(false)
       setShowUnpublishDialog(false)
@@ -177,7 +178,7 @@ export default function DriverDetailPage({ params }: { params: Promise<{ id: str
                 </Badge>
               )}
               <Badge variant={driver.is_active ? "default" : "secondary"}>
-                {driver.is_active ? "Published" : "Unpublished"}
+                {driver.is_active ? "Published" : "Hidden"}
               </Badge>
               <RequestVerificationButton
                 category="driver"
@@ -434,7 +435,7 @@ export default function DriverDetailPage({ params }: { params: Promise<{ id: str
             <AlertDialogTitle>Unpublish this listing?</AlertDialogTitle>
             <AlertDialogDescription>
               It will be hidden from travelers until you publish it again. Your data,
-              bookings, and reviews are kept.
+              bookings and reviews are kept.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
