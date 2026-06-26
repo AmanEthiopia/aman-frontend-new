@@ -170,6 +170,23 @@ export function friendlyError(
 }
 
 /**
+ * User-facing message for provider publish/unpublish actions.
+ *
+ * Per product spec, 403 (not owner) and 404 (not found / not owned) are shown
+ * identically. Everything else defers to friendlyError, which surfaces the
+ * backend's message — important for gated publish (400) where the message
+ * explains exactly what's missing.
+ */
+export function listingActionError(err: unknown, fallback: string): string {
+  const status =
+    err && typeof err === "object" && "status" in err
+      ? (err as { status?: number }).status
+      : undefined
+  if (status === 403 || status === 404) return "You can't modify this listing."
+  return friendlyError(err, fallback)
+}
+
+/**
  * Returns a context-specific fallback message for common actions.
  * Use this when you want a more specific default than "Something went wrong."
  */

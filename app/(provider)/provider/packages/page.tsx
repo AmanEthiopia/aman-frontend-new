@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { listingActionError } from "@/lib/utils/errors"
 import {
   getProviderPackages,
   togglePackagePublish,
@@ -97,12 +98,12 @@ export default function ProviderPackagesPage() {
       return
     }
     try {
-      const result = await togglePackagePublish(pkg.id)
+      const data = await togglePackagePublish(pkg.id)
       setPackages(packages.map(p =>
-        p.id === pkg.id ? { ...p, is_published: result.is_published } : p
+        p.id === pkg.id ? { ...p, is_published: data?.is_published ?? true } : p
       ))
     } catch (err: any) {
-      alert(err.message || "Failed to update publish status")
+      alert(listingActionError(err, "Failed to publish"))
     }
   }
 
@@ -110,12 +111,12 @@ export default function ProviderPackagesPage() {
     if (!unpublishTarget) return
     setIsUnpublishing(true)
     try {
-      const result = await unpublishPackage(unpublishTarget.id)
+      await unpublishPackage(unpublishTarget.id)
       setPackages(packages.map(p =>
-        p.id === unpublishTarget.id ? { ...p, is_published: result.is_published } : p
+        p.id === unpublishTarget.id ? { ...p, is_published: false } : p
       ))
     } catch (err: any) {
-      alert(err.message || "Failed to unpublish")
+      alert(listingActionError(err, "Failed to unpublish"))
     } finally {
       setIsUnpublishing(false)
       setUnpublishTarget(null)
@@ -298,7 +299,7 @@ export default function ProviderPackagesPage() {
             <AlertDialogTitle>Unpublish this listing?</AlertDialogTitle>
             <AlertDialogDescription>
               It will be hidden from travelers until you publish it again. Your data,
-              bookings, and reviews are kept.
+              bookings and reviews are kept.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -82,6 +82,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import * as providerAPI from "@/lib/api/provider"
+import { listingActionError } from "@/lib/utils/errors"
 import type { ProviderHotel, ProviderRoom, CreateRoomPayload, PropertyPhoto } from "@/lib/api/provider"
 import { amenityLabel } from "@/lib/api/provider"
 import { formatRating } from "@/lib/utils"
@@ -1032,11 +1033,11 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
     }
     setIsPublishing(true)
     try {
-      const result = await providerAPI.publishHotel(resolvedParams.id)
-      setHotel((prev) => prev ? { ...prev, is_active: result.is_published, is_verified: result.is_verified } : prev)
-      toast.success("Hotel published")
+      const data = await providerAPI.publishHotel(resolvedParams.id)
+      setHotel((prev) => prev ? { ...prev, is_active: data?.is_published ?? true, is_verified: data?.is_verified ?? prev.is_verified } : prev)
+      toast.success(data?.is_verified ? "Hotel published" : "Hotel published — pending verification")
     } catch (error) {
-      toast.error("Failed to update publish status")
+      toast.error(listingActionError(error, "Failed to publish"))
     } finally {
       setIsPublishing(false)
     }
@@ -1046,11 +1047,11 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
     if (!hotel) return
     setIsPublishing(true)
     try {
-      const result = await providerAPI.unpublishHotel(resolvedParams.id)
-      setHotel((prev) => prev ? { ...prev, is_active: result.is_published } : prev)
+      await providerAPI.unpublishHotel(resolvedParams.id)
+      setHotel((prev) => prev ? { ...prev, is_active: false } : prev)
       toast.success("Hotel unpublished — it's now hidden from travelers")
     } catch (error) {
-      toast.error("Failed to unpublish")
+      toast.error(listingActionError(error, "Failed to unpublish"))
     } finally {
       setIsPublishing(false)
       setShowUnpublishDialog(false)
@@ -1108,11 +1109,11 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
               ) : (
                 <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
                   <AlertCircle className="mr-1 h-3 w-3" />
-                  Unverified
+                  {hotel.is_active ? "Pending verification" : "Unverified"}
                 </Badge>
               )}
               <Badge variant={hotel.is_active ? "default" : "secondary"}>
-                {hotel.is_active ? "Published" : "Unpublished"}
+                {hotel.is_active ? "Published" : "Hidden"}
               </Badge>
               <RequestVerificationButton
                 category="hotel"
@@ -1400,7 +1401,7 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
             <AlertDialogTitle>Unpublish this listing?</AlertDialogTitle>
             <AlertDialogDescription>
               It will be hidden from travelers until you publish it again. Your data,
-              bookings, and reviews are kept.
+              bookings and reviews are kept.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

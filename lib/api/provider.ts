@@ -542,15 +542,15 @@ export async function deleteHotel(hotelId: string): Promise<void> {
  * Publish a hotel
  */
 export async function publishHotel(hotelId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
-  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/hotels/provider/${hotelId}/publish/`)
+  return apiPut<{ is_published: boolean; is_verified: boolean }>(`/hotels/provider/${hotelId}/publish/`, {})
 }
 
 /**
  * Unpublish a hotel — hides it from public results without deleting it.
  * Idempotent: returns 200 even if already unpublished.
  */
-export async function unpublishHotel(hotelId: string): Promise<{ is_published: boolean }> {
-  return apiPut<{ is_published: boolean }>(`/hotels/provider/${hotelId}/unpublish/`, {})
+export async function unpublishHotel(hotelId: string): Promise<void> {
+  await apiPut(`/hotels/provider/${hotelId}/unpublish/`, {})
 }
 
 /**
@@ -640,15 +640,15 @@ export async function deleteRestaurant(restaurantId: string): Promise<void> {
  * Publish a restaurant
  */
 export async function publishRestaurant(restaurantId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
-  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/restaurants/provider/${restaurantId}/publish/`)
+  return apiPut<{ is_published: boolean; is_verified: boolean }>(`/restaurants/provider/${restaurantId}/publish/`, {})
 }
 
 /**
  * Unpublish a restaurant — hides it from public results without deleting it.
  * Idempotent: returns 200 even if already unpublished.
  */
-export async function unpublishRestaurant(restaurantId: string): Promise<{ is_published: boolean }> {
-  return apiPut<{ is_published: boolean }>(`/restaurants/provider/${restaurantId}/unpublish/`, {})
+export async function unpublishRestaurant(restaurantId: string): Promise<void> {
+  await apiPut(`/restaurants/provider/${restaurantId}/unpublish/`, {})
 }
 
 // ============================================================================
@@ -707,18 +707,19 @@ export async function deleteDriver(driverId: string): Promise<void> {
 }
 
 /**
- * Toggle publish state of a driver listing
+ * Publish a driver listing (POST per spec). Gated: may fail with 400 if the
+ * provider profile is incomplete.
  */
-export async function toggleDriverPublish(driverId: string): Promise<{ is_published: boolean; is_verified: boolean }> {
-  return apiPost<{ is_published: boolean; is_verified: boolean }>(`/drivers/${driverId}/publish/`)
+export async function toggleDriverPublish(driverId: string): Promise<{ is_published: boolean; is_verified?: boolean }> {
+  return apiPost<{ is_published: boolean; is_verified?: boolean }>(`/transport/drivers/${driverId}/publish/`, {})
 }
 
 /**
  * Unpublish a driver listing — hides it from public results without deleting it.
  * Idempotent: returns 200 even if already unpublished.
  */
-export async function unpublishDriver(driverId: string): Promise<{ is_published: boolean }> {
-  return apiPut<{ is_published: boolean }>(`/transport/drivers/${driverId}/unpublish/`, {})
+export async function unpublishDriver(driverId: string): Promise<void> {
+  await apiPut(`/transport/drivers/${driverId}/unpublish/`, {})
 }
 
 // ============================================================================
