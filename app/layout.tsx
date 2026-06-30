@@ -18,7 +18,11 @@ const geistMono = Geist_Mono({ subsets: ["latin"] })
 const GA_MEASUREMENT_ID =
   process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-ET6HXMVMQ8"
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.algalle.com"
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: "/" },
   title: "Alga Ale | Trust-First Ethiopian Travel & Local Intelligence",
   description:
     "Discover verified hotels, restaurants, transport, and experiences across Ethiopia. Alga Ale — a Yichalal Family Initiative — provides trusted stays and local intelligence for travelers.",
