@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Shield, Phone, AlertTriangle, Briefcase, Crown } from "lucide-react"
+import { Shield, Phone, AlertTriangle, Briefcase, Crown, ExternalLink } from "lucide-react"
 import { AlgaAleWordmark } from "@/components/brand/alga-ale-logo"
 
 export function Footer() {
@@ -25,6 +25,31 @@ export function Footer() {
                     If a booking fails, changes, or feels unsafe — Alga Ale steps in.
                   </p>
                 </div>
+              </div>
+            </div>
+
+            {/* Yichalal family of products */}
+            <div className="mt-2">
+              <p className="text-xs font-medium text-muted-foreground">Part of the Yichalal family</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <a
+                  href="https://www.yichalal.ai/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                >
+                  Yichalal
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                <a
+                  href="https://global.edu.yichalal.ai/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                >
+                  Yichalal Global Edu
+                  <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
             </div>
           </div>
