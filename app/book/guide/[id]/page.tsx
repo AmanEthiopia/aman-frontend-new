@@ -36,6 +36,7 @@ import {
 } from "@/lib/api/guides"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "sonner"
+import { trackBookingRequest } from "@/lib/analytics"
 import { formatRating, formatPrice } from "@/lib/utils"
 
 const API_BASE = "https://api.aman.yichalal.ai"
@@ -136,6 +137,7 @@ export default function BookGuidePage() {
       const response = await createGuideBooking(payload)
       setSuccess(true)
       setBookingNumber(response.booking_number)
+      trackBookingRequest("guide")
       toast.success("Booking submitted successfully!")
     } catch (err: any) {
       const message = err.message || "Failed to submit booking"

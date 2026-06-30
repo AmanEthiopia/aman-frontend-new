@@ -24,6 +24,7 @@ import {
 } from "@/lib/api/experiences"
 import { useAuth } from "@/contexts/auth-context"
 import { APIError } from "@/lib/api/client"
+import { trackBookingRequest } from "@/lib/analytics"
 import { getMediaUrl } from "@/lib/utils/media"
 import { formatRating } from "@/lib/utils"
 import {
@@ -160,6 +161,7 @@ export default function BookExperiencePage() {
         special_requests: formData.specialRequests || undefined,
       })
       setBookingNumber(response.booking.booking_number)
+      trackBookingRequest("experience")
       setSuccess(true)
     } catch (err) {
       if (err instanceof APIError) {

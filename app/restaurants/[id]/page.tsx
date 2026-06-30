@@ -17,6 +17,7 @@ import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getRestaurantById } from "@/lib/api/restaurants"
+import { trackBookingRequest } from "@/lib/analytics"
 import { ContactDialog } from "@/components/messaging/contact-dialog"
 import { getRestaurantMenu } from "@/lib/api/restaurants"
 import type { MenuCategory } from "@/lib/api/restaurants"
@@ -278,6 +279,7 @@ function ReservationForm({ restaurant }: { restaurant: Restaurant }) {
         special_requests: specialRequests || undefined,
       })
       setConfirmed(result.reservation)
+      trackBookingRequest("restaurant")
       toast.success("Reservation submitted!")
     } catch (err) {
       toast.error(err instanceof APIError ? err.message : "Failed to submit reservation")

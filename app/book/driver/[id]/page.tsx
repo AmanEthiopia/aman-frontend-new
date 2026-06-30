@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { getTransportById } from "@/lib/api/transport"
 import { createDriverBooking, getMyDriverBookings } from "@/lib/api/bookings"
+import { trackBookingRequest } from "@/lib/analytics"
 import type { Transport } from "@/lib/types"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "sonner"
@@ -114,6 +115,7 @@ export default function BookDriverPage() {
         special_requests: formData.special_requests || undefined,
       })
       setBookingNumber(response.booking_number)
+      trackBookingRequest("transport")
       setSuccess(true)
       toast.success("Booking request submitted!")
     } catch (err: any) {

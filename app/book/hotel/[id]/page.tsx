@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { TrustBadge } from "@/components/shared/trust-badge"
 import { getHotelById, getHotelRooms } from "@/lib/api/hotels"
 import { createHotelBooking, getMyHotelBookings, type GuestInfo, type HotelBooking, type HotelBookingListItem } from "@/lib/api/bookings"
+import { trackBookingRequest } from "@/lib/analytics"
 import { useAuth } from "@/contexts/auth-context"
 import type { Hotel, Room } from "@/lib/types"
 import {
@@ -240,6 +241,7 @@ export default function BookHotelPage() {
         guests: guests.length > 0 ? guests : undefined,
       })
       setBookingNumber(response.booking?.booking_number ?? null)
+      trackBookingRequest("hotel")
       setSuccess(true)
     } catch (err: any) {
       console.error("Booking error:", err)

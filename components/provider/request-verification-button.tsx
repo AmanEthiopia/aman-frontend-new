@@ -7,6 +7,7 @@ import { Clock, Loader2, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 import { requestVerification, type PropertyCategory } from "@/lib/api/provider"
 import { getVerificationStatus, type EntityType } from "@/lib/api/verification"
+import { trackVerificationRequest } from "@/lib/analytics"
 
 // Provider property category → unified verification entity_type
 const CATEGORY_TO_ENTITY: Record<string, EntityType> = {
@@ -62,6 +63,7 @@ export function RequestVerificationButton({ category, propertyId, isVerified, is
     try {
       const res = await requestVerification(category as PropertyCategory, propertyId)
       setStatus(res.status || "pending")
+      trackVerificationRequest(entityType)
       toast.success("Verification requested — our team will review your listing.")
     } catch {
       toast.error("Couldn't request verification. Please try again.")

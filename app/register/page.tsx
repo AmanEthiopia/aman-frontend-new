@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, Lock, User, Phone, Loader2, Eye, EyeOff, Building2, AlertCircle, CheckCircle } from "lucide-react"
 import { register } from "@/lib/api/auth"
+import { trackSignUp } from "@/lib/analytics"
 import { useAuth } from "@/contexts/auth-context"
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google"
 import { friendlyError, actionError } from "@/lib/utils/errors"
@@ -78,6 +79,7 @@ function RegisterForm() {
         role: accountType,
       })
 
+      trackSignUp("email")
       setSuccess(true)
 
       setTimeout(() => {
@@ -108,6 +110,7 @@ function RegisterForm() {
       // Backend verifies with Google and returns JWT tokens
       // No email verification needed for Google users - they are auto-verified
       await registerWithGoogle(idToken, accountType, redirectParam)
+      trackSignUp("google")
     } catch (err: any) {
       setError(friendlyError(err, "Failed to register with Google. Please try again."))
     } finally {
