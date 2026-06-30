@@ -21,7 +21,7 @@ import { friendlyError, actionError } from "@/lib/utils/errors"
 
 const GOOGLE_CLIENT_ID =
   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-  "836345213785-tbggj9i6unjmtr24l4hr8iltu5th2nn6.apps.googleusercontent.com"
+  "860009345086-if3l2krikcqqte9slnm4mbpl7ludsf9j.apps.googleusercontent.com"
 
 function RegisterForm() {
   const router = useRouter()
