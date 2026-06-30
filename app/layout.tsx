@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Inter, Geist_Mono } from "next/font/google"
 import Script from "next/script"
+import { GoogleAnalytics } from "@next/third-parties/google"
 import "./globals.css"
 import { AppProvider } from "@/lib/contexts/app-context"
 import { AuthProvider } from "@/contexts/auth-context"
@@ -11,6 +12,10 @@ import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 const geistMono = Geist_Mono({ subsets: ["latin"] })
+
+// GA4 Measurement ID (e.g. G-XXXXXXXXXX). Set NEXT_PUBLIC_GA_MEASUREMENT_ID in
+// the environment to enable analytics; absent = no tracking loaded.
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 
 export const metadata: Metadata = {
   title: "Alga Ale | Trust-First Ethiopian Travel & Local Intelligence",
@@ -82,6 +87,7 @@ export default function RootLayout({
           <Toaster />
         </ThemeProvider>
       </body>
+      {GA_MEASUREMENT_ID ? <GoogleAnalytics gaId={GA_MEASUREMENT_ID} /> : null}
     </html>
   )
 }
