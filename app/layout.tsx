@@ -13,9 +13,10 @@ import { Toaster } from "@/components/ui/sonner"
 const inter = Inter({ subsets: ["latin"] })
 const geistMono = Geist_Mono({ subsets: ["latin"] })
 
-// GA4 Measurement ID (e.g. G-XXXXXXXXXX). Set NEXT_PUBLIC_GA_MEASUREMENT_ID in
-// the environment to enable analytics; absent = no tracking loaded.
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
+// GA4 Measurement ID. Defaults to the Algalle property; override with
+// NEXT_PUBLIC_GA_MEASUREMENT_ID per environment. Measurement IDs are public.
+const GA_MEASUREMENT_ID =
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-ET6HXMVMQ8"
 
 export const metadata: Metadata = {
   title: "Alga Ale | Trust-First Ethiopian Travel & Local Intelligence",
