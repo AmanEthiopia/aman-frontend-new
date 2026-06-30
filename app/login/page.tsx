@@ -17,7 +17,9 @@ import { Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, Info } from "lucide-reac
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google"
 import { friendlyError, actionError } from "@/lib/utils/errors"
 
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
+const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  "836345213785-tbggj9i6unjmtr24l4hr8iltu5th2nn6.apps.googleusercontent.com"
 
 function LoginForm() {
   const router = useRouter()
