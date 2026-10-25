@@ -11,7 +11,7 @@ import { AIMessage } from "@/components/ai/ai-message"
 import { sendAIQuery } from "@/lib/api/ai"
 import { friendlyError } from "@/lib/utils/errors"
 import { FEATURES } from "@/lib/config/features"
-import { AmanZigzag, AmanZigzagLoader } from "@/components/brand/aman-logo"
+import { AlgaAleMark, AlgaAleMarkLoader } from "@/components/brand/alga-ale-logo"
 
 interface Message {
   role: "user" | "assistant"
@@ -76,7 +76,7 @@ export function FloatingAIAssistant() {
         size="icon"
         aria-label="Open Alga Ale AI Assistant"
       >
-        <AmanZigzag size={20} strokeWidth={6} title="Alga Ale AI" />
+        <AlgaAleMark size={28} tone="current" title="Alga Ale AI" />
         <span className="sr-only">Open AI Assistant</span>
       </Button>
     )
@@ -88,7 +88,7 @@ export function FloatingAIAssistant() {
         onClick={() => setIsMinimized(false)}
         className="fixed bottom-6 right-6 z-50 gap-2 rounded-full px-4 shadow-lg"
       >
-        <AmanZigzag size={14} strokeWidth={6} title="Alga Ale AI" />
+        <AlgaAleMark size={20} tone="current" title="Alga Ale AI" />
         AI Assistant
       </Button>
     )
@@ -99,7 +99,7 @@ export function FloatingAIAssistant() {
       <CardHeader className="flex flex-row items-center justify-between border-b p-3">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <AmanZigzag size={14} strokeWidth={6} title="Alga Ale AI" />
+            <AlgaAleMark size={20} tone="current" title="Alga Ale AI" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -127,7 +127,7 @@ export function FloatingAIAssistant() {
           {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div className="mb-3 text-primary/70">
-                <AmanZigzag size={36} strokeWidth={5} title="Alga Ale AI" />
+                <AlgaAleMark size={64} tone="current" title="Alga Ale AI" />
               </div>
               <h4 className="mb-1 font-medium">How can I help?</h4>
               <p className="mb-4 text-xs text-muted-foreground">Ask about hotels, restaurants, transport, or trip ideas in Ethiopia.</p>
@@ -149,7 +149,7 @@ export function FloatingAIAssistant() {
                 <div key={index} className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                   {message.role === "assistant" && (
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <AmanZigzag size={10} strokeWidth={6} title="Alga Ale AI" />
+                      <AlgaAleMark size={16} tone="current" title="Alga Ale AI" />
                     </div>
                   )}
                   <div
@@ -169,10 +169,10 @@ export function FloatingAIAssistant() {
               {isLoading && (
                 <div className="flex gap-2">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <AmanZigzag size={10} strokeWidth={6} title="Alga Ale AI" />
+                    <AlgaAleMark size={16} tone="current" title="Alga Ale AI" />
                   </div>
                   <div className="rounded-2xl bg-muted px-3 py-2">
-                    <AmanZigzagLoader size={18} label="Alga Ale AI is thinking" />
+                    <AlgaAleMarkLoader size={28} label="Alga Ale AI is thinking" />
                   </div>
                 </div>
               )}

@@ -35,6 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlgaAleMark } from "@/components/brand/alga-ale-logo"
 import {
   Dialog,
   DialogContent,
@@ -116,7 +117,7 @@ function PlannerForm({ onGenerate }: { onGenerate: (payload: ItineraryRequest) =
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-          <Sparkles className="h-8 w-8 text-primary" />
+          <AlgaAleMark size={40} title={null} />
         </div>
         <div className="flex items-center justify-center gap-2 mb-2">
           <h1 className="text-3xl font-bold">AI Trip Planner</h1>
@@ -303,7 +304,7 @@ function GeneratingState({ progress }: { progress: number }) {
     <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
       <div className="mb-8 relative">
         <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
-          <Sparkles className="h-12 w-12 text-primary animate-pulse" />
+          <AlgaAleMark size={56} title={null} className="animate-pulse" />
         </div>
         <div className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
       </div>
