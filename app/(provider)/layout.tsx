@@ -29,7 +29,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getMediaUrl } from "@/lib/utils/media"
-import { AlgaAleWordmark } from "@/components/brand/alga-ale-logo"
+import { AlgalleWordmark } from "@/components/brand/algalle-logo"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -296,17 +296,17 @@ export default function ProviderLayout({ children }: { children: ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
                 <div className="flex h-16 items-center border-b px-4">
-                  <Link href="/" className="flex items-center gap-2" aria-label="Alga Ale home">
-                    <AlgaAleWordmark size={32} />
+                  <Link href="/" className="flex items-center gap-2" aria-label="Algalle home">
+                    <AlgalleWordmark size={32} />
                   </Link>
                 </div>
                 <SidebarNav items={sidebarItems} onItemClick={() => setMobileMenuOpen(false)} />
               </SheetContent>
             </Sheet>
 
-            <Link href="/" className="flex items-center gap-2" aria-label="Alga Ale home">
-              <AlgaAleWordmark size={32} className="hidden sm:inline-flex" />
-              <AlgaAleWordmark size={32} showAmharic={false} className="sm:hidden" />
+            <Link href="/" className="flex items-center gap-2" aria-label="Algalle home">
+              <AlgalleWordmark size={32} className="hidden sm:inline-flex" />
+              <AlgalleWordmark size={32} showAmharic={false} className="sm:hidden" />
               <Badge variant="secondary" className="ml-2">
                 Provider
               </Badge>

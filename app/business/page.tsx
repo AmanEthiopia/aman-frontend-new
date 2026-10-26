@@ -110,7 +110,7 @@ const testimonials = [
     name: "African Development Bank",
     role: "Travel Coordinator",
     quote:
-      "Alga Ale has transformed how we manage travel for our 200+ staff. The centralized booking and compliance features are invaluable.",
+      "Algalle has transformed how we manage travel for our 200+ staff. The centralized booking and compliance features are invaluable.",
     rating: 5,
   },
   {
@@ -125,7 +125,7 @@ const founders = [
   {
     name: "Mulubrhan Legesse",
     role: "Co-Founder & CEO",
-    bio: "Builder of Alga Ale. Passionate about unlocking Ethiopia's business potential through technology.",
+    bio: "Builder of Algalle. Passionate about unlocking Ethiopia's business potential through technology.",
     linkedin: "https://www.linkedin.com/in/mulubrhan-legesse/",
     email: "legesse.mulubrhan@gmail.com",
     whatsapp: "+251708029422",
@@ -134,7 +134,7 @@ const founders = [
   {
     name: "Fitsum Getachew",
     role: "Co-Founder",
-    bio: "Driving partnerships and growth at Alga Ale. Committed to bridging Ethiopian opportunity with global capital.",
+    bio: "Driving partnerships and growth at Algalle. Committed to bridging Ethiopian opportunity with global capital.",
     linkedin: "https://www.linkedin.com/in/fitsum-getachew/",
     email: "fitsumgetachewtola@gmail.com",
     whatsapp: "+251709192541",
@@ -195,7 +195,7 @@ export default function BusinessPage() {
               Business & Diplomat Services
             </h1>
             <p className="mx-auto mb-10 max-w-2xl text-lg text-white/85 md:text-xl">
-              Whether you're expanding into Ethiopia, managing a diplomatic mission, or coordinating enterprise travel — Alga Ale provides the advisory, compliance, and logistics support to get it done right.
+              Whether you're expanding into Ethiopia, managing a diplomatic mission, or coordinating enterprise travel — Algalle provides the advisory, compliance, and logistics support to get it done right.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <a href="#contact">
@@ -298,7 +298,7 @@ export default function BusinessPage() {
                 <Badge className="mb-4 bg-green-600 text-white">Security First</Badge>
                 <h2 className="text-3xl font-bold">Trusted by Leading Organizations</h2>
                 <p className="mt-4 text-muted-foreground">
-                  Alga Ale provides verified accommodations with enhanced security protocols for diplomatic missions, international organizations, and corporate travelers.
+                  Algalle provides verified accommodations with enhanced security protocols for diplomatic missions, international organizations, and corporate travelers.
                 </p>
                 <ul className="mt-6 space-y-3">
                   {[
@@ -499,7 +499,7 @@ export default function BusinessPage() {
         {/* Nudge back to listings */}
         <section className="bg-primary py-14 text-primary-foreground">
           <div className="container mx-auto max-w-3xl px-4 text-center">
-            <h2 className="mb-3 text-2xl font-bold">Also listing your services on Alga Ale?</h2>
+            <h2 className="mb-3 text-2xl font-bold">Also listing your services on Algalle?</h2>
             <p className="mb-6 text-white/80">
               Hotels, guides, and transport providers can list on our platform separately from the advisory program.
             </p>

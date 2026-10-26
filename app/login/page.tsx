@@ -92,7 +92,7 @@ function LoginForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Welcome Back</CardTitle>
-        <CardDescription>Sign in to your Alga Ale account</CardDescription>
+        <CardDescription>Sign in to your Algalle account</CardDescription>
       </CardHeader>
       <CardContent>
         {showVerifyNotice && (

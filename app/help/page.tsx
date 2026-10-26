@@ -75,7 +75,7 @@ const topics: Topic[] = [
     articles: [
       {
         q: "How and when do I pay?",
-        a: "For most listings you arrange payment with the provider once your booking is confirmed — prices are shown clearly per listing in USD and/or ETB. Always confirm the amount and method with the provider before you travel, and keep everything inside Alga Ale so we can help if anything goes wrong.",
+        a: "For most listings you arrange payment with the provider once your booking is confirmed — prices are shown clearly per listing in USD and/or ETB. Always confirm the amount and method with the provider before you travel, and keep everything inside Algalle so we can help if anything goes wrong.",
       },
       {
         q: "Is it safe to pay?",
@@ -86,8 +86,8 @@ const topics: Topic[] = [
         a: "Refunds follow the cancellation policy shown on the listing at the time of booking. If a provider cancels on you or a listing wasn't as described, reach out to our team and we'll help sort it out.",
       },
       {
-        q: "What does the Alga Ale commission mean for me as a traveler?",
-        a: "Nothing extra — providers receive your payment directly and remit a small commission to Alga Ale. The price you see is the price you pay the provider.",
+        q: "What does the Algalle commission mean for me as a traveler?",
+        a: "Nothing extra — providers receive your payment directly and remit a small commission to Algalle. The price you see is the price you pay the provider.",
       },
     ],
   },
@@ -155,7 +155,7 @@ const topics: Topic[] = [
       },
       {
         q: "How do payouts and commission work for providers?",
-        a: "Guests pay you directly. You keep your revenue and remit Alga Ale's commission on a schedule that suits you (weekly, bi-weekly, or monthly). Your Earnings page shows gross revenue, commission owed, and net earnings.",
+        a: "Guests pay you directly. You keep your revenue and remit Algalle's commission on a schedule that suits you (weekly, bi-weekly, or monthly). Your Earnings page shows gross revenue, commission owed, and net earnings.",
       },
       {
         q: "How do I add photos, cities, or a day-by-day itinerary?",
@@ -173,7 +173,7 @@ const faqs: Article[] = [
   },
   {
     q: "Is my payment secure?",
-    a: "Keep payments and chats on Alga Ale and only pay confirmed, verified listings. Be wary of anyone asking you to pay off-platform before your booking is confirmed.",
+    a: "Keep payments and chats on Algalle and only pay confirmed, verified listings. Be wary of anyone asking you to pay off-platform before your booking is confirmed.",
   },
   {
     q: "How are listings verified?",
@@ -368,14 +368,14 @@ export default function HelpPage() {
           <div className="container">
             <h2 className="mb-6 text-center text-xl font-semibold">Still need help?</h2>
             <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-3">
-              {/* Live chat -> Alga Ale AI */}
+              {/* Live chat -> Algalle AI */}
               <Card>
                 <CardContent className="flex flex-col items-center py-6 text-center">
                   <div className="mb-3 rounded-full bg-primary/10 p-3">
                     <MessageSquare className="h-6 w-6 text-primary" />
                   </div>
                   <h3 className="font-semibold">Live Chat</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Ask the Alga Ale AI assistant</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Ask the Algalle AI assistant</p>
                   <Button size="sm" className="mt-4" onClick={() => setIsAIAssistantOpen(true)}>
                     Start Chat
                   </Button>
@@ -392,7 +392,7 @@ export default function HelpPage() {
                   <p className="mt-1 text-sm text-muted-foreground">Chat with us on WhatsApp</p>
                   <Button variant="outline" size="sm" className="mt-4 bg-transparent" asChild>
                     <a
-                      href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent("Hi Alga Ale, I need some help with...")}`}
+                      href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent("Hi Algalle, I need some help with...")}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

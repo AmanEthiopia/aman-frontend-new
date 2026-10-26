@@ -348,7 +348,7 @@ export default function ProviderDashboard() {
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="flex flex-col items-center justify-center py-8 text-center">
             <Building2 className="mb-4 h-12 w-12 text-primary" />
-            <h3 className="text-lg font-semibold">Welcome to Alga Ale Provider!</h3>
+            <h3 className="text-lg font-semibold">Welcome to Algalle Provider!</h3>
             <p className="mt-2 max-w-md text-muted-foreground">
               Start by adding your first property to begin receiving bookings.
             </p>

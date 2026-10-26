@@ -11,7 +11,7 @@ import { AIMessage } from "@/components/ai/ai-message"
 import { sendAIQuery } from "@/lib/api/ai"
 import { friendlyError } from "@/lib/utils/errors"
 import { FEATURES } from "@/lib/config/features"
-import { AlgaAleMark, AlgaAleMarkLoader } from "@/components/brand/alga-ale-logo"
+import { AlgalleMark, AlgalleMarkLoader } from "@/components/brand/algalle-logo"
 
 interface Message {
   role: "user" | "assistant"
@@ -74,9 +74,9 @@ export function FloatingAIAssistant() {
         onClick={() => setIsAIAssistantOpen(true)}
         className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg"
         size="icon"
-        aria-label="Open Alga Ale AI Assistant"
+        aria-label="Open Algalle AI Assistant"
       >
-        <AlgaAleMark size={28} tone="current" title="Alga Ale AI" />
+        <AlgalleMark size={28} tone="current" title="Algalle AI" />
         <span className="sr-only">Open AI Assistant</span>
       </Button>
     )
@@ -88,7 +88,7 @@ export function FloatingAIAssistant() {
         onClick={() => setIsMinimized(false)}
         className="fixed bottom-6 right-6 z-50 gap-2 rounded-full px-4 shadow-lg"
       >
-        <AlgaAleMark size={20} tone="current" title="Alga Ale AI" />
+        <AlgalleMark size={20} tone="current" title="Algalle AI" />
         AI Assistant
       </Button>
     )
@@ -99,11 +99,11 @@ export function FloatingAIAssistant() {
       <CardHeader className="flex flex-row items-center justify-between border-b p-3">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <AlgaAleMark size={20} tone="current" title="Alga Ale AI" />
+            <AlgalleMark size={20} tone="current" title="Algalle AI" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold">Alga Ale AI Assistant</h3>
+              <h3 className="text-sm font-semibold">Algalle AI Assistant</h3>
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                 Beta
               </Badge>
@@ -127,7 +127,7 @@ export function FloatingAIAssistant() {
           {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div className="mb-3 text-primary/70">
-                <AlgaAleMark size={64} tone="current" title="Alga Ale AI" />
+                <AlgalleMark size={64} tone="current" title="Algalle AI" />
               </div>
               <h4 className="mb-1 font-medium">How can I help?</h4>
               <p className="mb-4 text-xs text-muted-foreground">Ask about hotels, restaurants, transport, or trip ideas in Ethiopia.</p>
@@ -149,7 +149,7 @@ export function FloatingAIAssistant() {
                 <div key={index} className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                   {message.role === "assistant" && (
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <AlgaAleMark size={16} tone="current" title="Alga Ale AI" />
+                      <AlgalleMark size={16} tone="current" title="Algalle AI" />
                     </div>
                   )}
                   <div
@@ -169,10 +169,10 @@ export function FloatingAIAssistant() {
               {isLoading && (
                 <div className="flex gap-2">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <AlgaAleMark size={16} tone="current" title="Alga Ale AI" />
+                    <AlgalleMark size={16} tone="current" title="Algalle AI" />
                   </div>
                   <div className="rounded-2xl bg-muted px-3 py-2">
-                    <AlgaAleMarkLoader size={28} label="Alga Ale AI is thinking" />
+                    <AlgalleMarkLoader size={28} label="Algalle AI is thinking" />
                   </div>
                 </div>
               )}
@@ -201,7 +201,7 @@ export function FloatingAIAssistant() {
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </form>
-          <p className="mt-2 text-center text-[10px] text-muted-foreground">Alga Ale AI may make mistakes. Verify key details before booking.</p>
+          <p className="mt-2 text-center text-[10px] text-muted-foreground">Algalle AI may make mistakes. Verify key details before booking.</p>
         </div>
       </CardContent>
     </Card>

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 const emergencyContacts = [
-  { name: "Alga Ale Emergency Line", number: "+251708029422", available: "24/7" },
+  { name: "Algalle Emergency Line", number: "+251708029422", available: "24/7" },
   { name: "Ethiopia Police", number: "991", available: "24/7" },
   { name: "Ambulance", number: "907", available: "24/7" },
   { name: "Fire Emergency", number: "939", available: "24/7" },
@@ -68,7 +68,7 @@ export function EmergencyAccessButton() {
         {expanded && (
           <CardContent className="space-y-3 pt-0">
             <p className="text-sm text-red-700 dark:text-red-300">
-              Need help? Alga Ale provides 24/7 emergency support for all travelers in Ethiopia.
+              Need help? Algalle provides 24/7 emergency support for all travelers in Ethiopia.
             </p>
 
             <div className="space-y-2">
@@ -110,7 +110,7 @@ export function EmergencyAccessButton() {
               onClick={() => (window.location.href = "tel:+251708029422")}
             >
               <Phone className="mr-2 h-4 w-4" />
-              Call Alga Ale Emergency: +251 708 029 422
+              Call Algalle Emergency: +251 708 029 422
             </Button>
           </CardContent>
         )}

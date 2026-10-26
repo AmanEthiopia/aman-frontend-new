@@ -20,11 +20,11 @@ export function TrustBadge({ lastVerified, foreignTravelerCount, disputeFreeDays
           <TooltipTrigger asChild>
             <div className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary cursor-help">
               <Shield className="h-3 w-3" />
-              <span>Alga Ale Verified</span>
+              <span>Algalle Verified</span>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p className="text-xs">Verified by the Alga Ale trust team.</p>
+            <p className="text-xs">Verified by the Algalle trust team.</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -36,7 +36,7 @@ export function TrustBadge({ lastVerified, foreignTravelerCount, disputeFreeDays
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-medium text-primary">
           <Shield className="h-4 w-4" />
-          Why Alga Ale Recommends This
+          Why Algalle Recommends This
         </div>
         <TooltipProvider>
           <Tooltip>
@@ -44,7 +44,7 @@ export function TrustBadge({ lastVerified, foreignTravelerCount, disputeFreeDays
               <Info className="h-3 w-3 text-muted-foreground" />
             </TooltipTrigger>
             <TooltipContent>
-              <p className="text-xs">Signals based on Alga Ale verification, traveler activity, and pricing checks.</p>
+              <p className="text-xs">Signals based on Algalle verification, traveler activity, and pricing checks.</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

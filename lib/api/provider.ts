@@ -82,7 +82,7 @@ const CATEGORY_TO_ENTITY: Record<string, string> = {
 
 /**
  * Request verification for a published listing. Simple flow (no documents) —
- * flags the listing to the Alga Ale team and sets its status to "pending".
+ * flags the listing to the Algalle team and sets its status to "pending".
  */
 export async function requestVerification(
   category: PropertyCategory,

@@ -35,7 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlgaAleMark } from "@/components/brand/alga-ale-logo"
+import { AlgalleMark } from "@/components/brand/algalle-logo"
 import {
   Dialog,
   DialogContent,
@@ -117,7 +117,7 @@ function PlannerForm({ onGenerate }: { onGenerate: (payload: ItineraryRequest) =
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-          <AlgaAleMark size={40} title={null} />
+          <AlgalleMark size={40} title={null} />
         </div>
         <div className="flex items-center justify-center gap-2 mb-2">
           <h1 className="text-3xl font-bold">AI Trip Planner</h1>
@@ -304,7 +304,7 @@ function GeneratingState({ progress }: { progress: number }) {
     <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
       <div className="mb-8 relative">
         <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
-          <AlgaAleMark size={56} title={null} className="animate-pulse" />
+          <AlgalleMark size={56} title={null} className="animate-pulse" />
         </div>
         <div className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
       </div>
@@ -324,7 +324,7 @@ function GeneratingState({ progress }: { progress: number }) {
 const PLANNER_STORAGE_KEY = "algaale_planner_result"
 
 function itineraryAsText(itinerary: GeneratedDay[]): string {
-  const lines = ["My Ethiopia trip plan (via Alga Ale AI Planner):", ""]
+  const lines = ["My Ethiopia trip plan (via Algalle AI Planner):", ""]
   itinerary.forEach((day) => {
     lines.push(`Day ${day.day} — ${day.city}`)
     day.activities
@@ -366,9 +366,9 @@ function exportItineraryToPrint(itinerary: GeneratedDay[]) {
   @media print { body { padding: 12px; } }
 </style></head><body>
   <h1>My Ethiopia Itinerary</h1>
-  <p style="color:#6b7280">${itinerary.length} day${itinerary.length !== 1 ? "s" : ""} · Generated with Alga Ale AI Planner</p>
+  <p style="color:#6b7280">${itinerary.length} day${itinerary.length !== 1 ? "s" : ""} · Generated with Algalle AI Planner</p>
   ${dayBlocks}
-  <div class="footer">Alga Ale — Trust-first Ethiopian travel · aman.yichalal.ai</div>
+  <div class="footer">Algalle — Trust-first Ethiopian travel · aman.yichalal.ai</div>
 </body></html>`
 
   const win = window.open("", "_blank", "width=900,height=700")
@@ -472,7 +472,7 @@ function GeneratedItinerary({
 
       const trip = await createTrip({
         title: `Ethiopia Adventure — ${start.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`,
-        description: "Created with the Alga Ale AI Planner.",
+        description: "Created with the Algalle AI Planner.",
         start_date: iso(start),
         end_date: iso(end),
       })

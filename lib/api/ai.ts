@@ -13,7 +13,7 @@ export interface ChatHistoryItem {
 }
 
 /**
- * Ask the Alga Ale AI assistant (grounded on our live listings, then general
+ * Ask the Algalle AI assistant (grounded on our live listings, then general
  * knowledge). Throws APIError with a friendly message on failure.
  */
 export async function sendAIQuery(

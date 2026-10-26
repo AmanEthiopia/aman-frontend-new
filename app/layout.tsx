@@ -23,9 +23,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.algalle.com"
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   alternates: { canonical: "/" },
-  title: "Alga Ale | Trust-First Ethiopian Travel & Local Intelligence",
+  title: "Algalle | Trust-First Ethiopian Travel & Local Intelligence",
   description:
-    "Discover verified hotels, restaurants, transport, and experiences across Ethiopia. Alga Ale — a Yichalal Family Initiative — provides trusted stays and local intelligence for travelers.",
+    "Discover verified hotels, restaurants, transport, and experiences across Ethiopia. Algalle — a Yichalal Family Initiative — provides trusted stays and local intelligence for travelers.",
   keywords: [
     "Ethiopia hotels",
     "Ethiopia travel",
@@ -36,9 +36,9 @@ export const metadata: Metadata = {
     "safe travel Ethiopia",
     "Ethiopian experiences",
   ],
-  authors: [{ name: "Alga Ale" }],
+  authors: [{ name: "Algalle" }],
   openGraph: {
-    title: "Alga Ale | Trust-First Ethiopian Travel & Local Intelligence",
+    title: "Algalle | Trust-First Ethiopian Travel & Local Intelligence",
     description: "Discover verified hotels, restaurants, transport, and experiences across Ethiopia.",
     type: "website",
     locale: "en_US",

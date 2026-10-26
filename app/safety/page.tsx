@@ -4,8 +4,8 @@ import { Shield, AlertTriangle, Phone, MapPin, Users, Eye } from "lucide-react"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Safety Guidelines — Alga Ale",
-  description: "How Alga Ale keeps travelers safe and what to do in an emergency.",
+  title: "Safety Guidelines — Algalle",
+  description: "How Algalle keeps travelers safe and what to do in an emergency.",
 }
 
 const guidelines = [
@@ -13,7 +13,7 @@ const guidelines = [
     icon: Shield,
     title: "Verified Listings Only",
     description:
-      "Every hotel, restaurant, and transport provider on Alga Ale is manually reviewed and verified by our team. Look for the Verified badge on listings — it means we have physically checked or thoroughly vetted the property.",
+      "Every hotel, restaurant, and transport provider on Algalle is manually reviewed and verified by our team. Look for the Verified badge on listings — it means we have physically checked or thoroughly vetted the property.",
   },
   {
     icon: Eye,
@@ -37,13 +37,13 @@ const guidelines = [
     icon: AlertTriangle,
     title: "Report Issues Immediately",
     description:
-      "If a provider behaves in a way that feels unsafe, illegal, or grossly inconsistent with their listing, report it via the platform's Report button or email safety@algaale.com. Your report helps protect future travelers.",
+      "If a provider behaves in a way that feels unsafe, illegal, or grossly inconsistent with their listing, report it via the platform's Report button or email safety@algalle.com. Your report helps protect future travelers.",
   },
   {
     icon: Phone,
     title: "Emergency Contacts",
     description:
-      "Keep these numbers saved: Ethiopian Police 991 · Ambulance 907 · Alga Ale 24/7 Support +251 708 029 422. In a life-threatening emergency, always contact local authorities first.",
+      "Keep these numbers saved: Ethiopian Police 991 · Ambulance 907 · Algalle 24/7 Support +251 708 029 422. In a life-threatening emergency, always contact local authorities first.",
   },
 ]
 
@@ -60,7 +60,7 @@ export default function SafetyGuidelinesPage() {
               </span>
               <h1 className="mb-4 text-4xl font-bold tracking-tight">Safety Guidelines</h1>
               <p className="text-muted-foreground">
-                Alga Ale is built on trust. Here is how we protect you — and how you can stay safe while travelling in Ethiopia.
+                Algalle is built on trust. Here is how we protect you — and how you can stay safe while travelling in Ethiopia.
               </p>
             </div>
           </div>
@@ -77,7 +77,7 @@ export default function SafetyGuidelinesPage() {
               <div className="flex flex-wrap gap-6 text-sm">
                 <span><strong>Police:</strong> 991</span>
                 <span><strong>Ambulance:</strong> 907</span>
-                <span><strong>Alga Ale 24/7:</strong> +251 708 029 422</span>
+                <span><strong>Algalle 24/7:</strong> +251 708 029 422</span>
               </div>
             </div>
           </div>
@@ -100,15 +100,15 @@ export default function SafetyGuidelinesPage() {
                 ))}
               </div>
 
-              {/* Alga Ale Safety Promise */}
+              {/* Algalle Safety Promise */}
               <div className="mt-10 rounded-xl border border-primary/30 bg-primary/5 p-6">
                 <div className="flex items-start gap-4">
                   <Shield className="mt-1 h-6 w-6 shrink-0 text-primary" />
                   <div>
-                    <h2 className="mb-2 text-lg font-semibold text-foreground">The Alga Ale Safety Promise</h2>
+                    <h2 className="mb-2 text-lg font-semibold text-foreground">The Algalle Safety Promise</h2>
                     <p className="text-sm text-muted-foreground">
                       If a booking fails, a provider behaves dishonestly, or something goes wrong through no fault
-                      of yours — <strong className="text-foreground">Alga Ale steps in</strong>. We operate a
+                      of yours — <strong className="text-foreground">Algalle steps in</strong>. We operate a
                       Dispute Resolution Centre to investigate issues, mediate with providers, and where possible
                       facilitate refunds or alternative arrangements. You are never alone on your journey.
                     </p>
@@ -120,7 +120,7 @@ export default function SafetyGuidelinesPage() {
               <div className="mt-8 space-y-4 text-sm leading-relaxed text-muted-foreground">
                 <h2 className="text-xl font-semibold text-foreground">Traveler Responsibilities</h2>
                 <p>
-                  While Alga Ale works hard to verify every provider on our platform, travel inherently involves
+                  While Algalle works hard to verify every provider on our platform, travel inherently involves
                   some degree of personal responsibility. We ask that all travelers:
                 </p>
                 <ul className="space-y-2">
@@ -144,8 +144,8 @@ export default function SafetyGuidelinesPage() {
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     <span>
                       Report any safety concerns promptly via{" "}
-                      <a href="mailto:safety@algaale.com" className="text-primary hover:underline">
-                        safety@algaale.com
+                      <a href="mailto:safety@algalle.com" className="text-primary hover:underline">
+                        safety@algalle.com
                       </a>
                       .
                     </span>
@@ -157,8 +157,8 @@ export default function SafetyGuidelinesPage() {
               <div className="mt-8 rounded-lg border border-border bg-card p-5">
                 <p className="text-sm text-muted-foreground">
                   Non-emergency safety questions or provider reports:{" "}
-                  <a href="mailto:safety@algaale.com" className="text-primary hover:underline">
-                    safety@algaale.com
+                  <a href="mailto:safety@algalle.com" className="text-primary hover:underline">
+                    safety@algalle.com
                   </a>
                   {" "}·{" "}
                   24/7 phone:{" "}
@@ -173,7 +173,7 @@ export default function SafetyGuidelinesPage() {
                 <span className="text-border">·</span>
                 <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>
                 <span className="text-border">·</span>
-                <Link href="/about" className="text-primary hover:underline">About Alga Ale</Link>
+                <Link href="/about" className="text-primary hover:underline">About Algalle</Link>
               </div>
             </div>
           </div>

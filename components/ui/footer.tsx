@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Shield, Phone, AlertTriangle, Briefcase, Crown, ExternalLink } from "lucide-react"
-import { AlgaAleWordmark } from "@/components/brand/alga-ale-logo"
+import { AlgalleWordmark } from "@/components/brand/algalle-logo"
 
 export function Footer() {
   return (
@@ -9,8 +9,8 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
           {/* Brand */}
           <div className="flex flex-col gap-4 lg:col-span-2">
-            <Link href="/" className="inline-flex w-fit items-center gap-3 py-2" aria-label="Alga Ale home">
-              <AlgaAleWordmark size={40} />
+            <Link href="/" className="inline-flex w-fit items-center gap-3 py-2" aria-label="Algalle home">
+              <AlgalleWordmark size={40} />
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">
               A Yichalal Family Initiative — connecting locals, diaspora, and foreign travelers with verified hotels, experiences, and transport across Ethiopia.
@@ -22,7 +22,7 @@ export function Footer() {
                 <div>
                   <p className="text-xs font-medium">If something goes wrong</p>
                   <p className="text-xs text-muted-foreground">
-                    If a booking fails, changes, or feels unsafe — Alga Ale steps in.
+                    If a booking fails, changes, or feels unsafe — Algalle steps in.
                   </p>
                 </div>
               </div>
@@ -140,7 +140,7 @@ export function Footer() {
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
-          <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Alga Ale. A Yichalal Family Initiative. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Algalle. A Yichalal Family Initiative. All rights reserved.</p>
           <div className="flex flex-wrap justify-center gap-6">
             <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
               Privacy Policy

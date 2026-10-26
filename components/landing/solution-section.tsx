@@ -70,7 +70,7 @@ export function SolutionSection() {
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
             <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-              Why Alga Ale
+              Why Algalle
             </span>
             <h2 className="mb-6 text-3xl font-bold tracking-tight md:text-4xl">Trust, Transparency, and Technology</h2>
             <p className="mb-8 text-lg text-muted-foreground">

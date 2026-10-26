@@ -128,7 +128,7 @@ export default function ConciergePage() {
     }
   }
 
-  const waHref = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent("Hi Alga Ale — I'd like to ask about Premium Concierge services.")}`
+  const waHref = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent("Hi Algalle — I'd like to ask about Premium Concierge services.")}`
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -269,7 +269,7 @@ export default function ConciergePage() {
               Request Premium Concierge
             </DialogTitle>
             <DialogDescription>
-              Tell us what you need. The Alga Ale team will arrange it and confirm by email within 24 hours — no payment needed to request.
+              Tell us what you need. The Algalle team will arrange it and confirm by email within 24 hours — no payment needed to request.
             </DialogDescription>
           </DialogHeader>
 

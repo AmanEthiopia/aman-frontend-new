@@ -3,8 +3,8 @@ import { Footer } from "@/components/ui/footer"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Terms of Service — Alga Ale",
-  description: "The terms governing your use of the Alga Ale travel platform.",
+  title: "Terms of Service — Algalle",
+  description: "The terms governing your use of the Algalle travel platform.",
 }
 
 export default function TermsOfServicePage() {
@@ -20,7 +20,7 @@ export default function TermsOfServicePage() {
               </span>
               <h1 className="mb-4 text-4xl font-bold tracking-tight">Terms of Service</h1>
               <p className="text-muted-foreground">
-                Last updated: June 2026 &nbsp;·&nbsp; Alga Ale, a Yichalal Family Initiative
+                Last updated: June 2026 &nbsp;·&nbsp; Algalle, a Yichalal Family Initiative
               </p>
             </div>
           </div>
@@ -33,7 +33,7 @@ export default function TermsOfServicePage() {
               <div>
                 <h2 className="mb-3 text-xl font-semibold text-foreground">1. Agreement to Terms</h2>
                 <p>
-                  By accessing or using the Alga Ale platform (website, mobile, or any associated service), you
+                  By accessing or using the Algalle platform (website, mobile, or any associated service), you
                   agree to be bound by these Terms of Service. If you do not agree, please do not use our
                   platform. These terms apply to all visitors, registered users, and verified providers.
                 </p>
@@ -46,7 +46,7 @@ export default function TermsOfServicePage() {
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     <span>
                       You must be <strong className="text-foreground">18 years of age or older</strong> to create
-                      an account or make a booking on Alga Ale.
+                      an account or make a booking on Algalle.
                     </span>
                   </li>
                   <li className="flex gap-2">
@@ -79,14 +79,14 @@ export default function TermsOfServicePage() {
               <div>
                 <h2 className="mb-3 text-xl font-semibold text-foreground">3. Platform Role & Third-Party Providers</h2>
                 <p>
-                  Alga Ale acts as a <strong className="text-foreground">trusted digital companion and booking
+                  Algalle acts as a <strong className="text-foreground">trusted digital companion and booking
                   facilitator</strong>. We connect you with verified third-party hotels, tour operators, restaurants,
                   and transport providers — but we do not directly own or operate these physical services.
                 </p>
                 <p className="mt-3">
                   Our rigorous verification process includes AI photo verification and manual reviews conducted
                   by our team. However, we cannot guarantee the actions of individual third-party providers after
-                  a booking is confirmed. Alga Ale is <strong className="text-foreground">not liable</strong> for
+                  a booking is confirmed. Algalle is <strong className="text-foreground">not liable</strong> for
                   any losses, delays, personal injury, property damage, or service disruptions caused by
                   third-party providers.
                 </p>
@@ -105,7 +105,7 @@ export default function TermsOfServicePage() {
                   <li className="flex gap-2">
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     <span>
-                      Alga Ale facilitates payment via{" "}
+                      Algalle facilitates payment via{" "}
                       <strong className="text-foreground">Telebirr, CBE Birr</strong> (local) and{" "}
                       <strong className="text-foreground">Stripe</strong> (international). By completing a payment,
                       you agree to the terms of the relevant payment processor.
@@ -114,7 +114,7 @@ export default function TermsOfServicePage() {
                   <li className="flex gap-2">
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     <span>
-                      Alga Ale is not liable for immediate refunds where a dispute arises with the physical
+                      Algalle is not liable for immediate refunds where a dispute arises with the physical
                       provider. However, we operate a{" "}
                       <strong className="text-foreground">Dispute Resolution Centre</strong> to actively assist
                       affected travelers.
@@ -149,8 +149,8 @@ export default function TermsOfServicePage() {
               <div>
                 <h2 className="mb-3 text-xl font-semibold text-foreground">6. Intellectual Property</h2>
                 <p>
-                  All content on the Alga Ale platform — including logos, text, graphics, UI design, and software
-                  — is the property of Alga Ale / Yichalal Family Initiative and is protected under applicable
+                  All content on the Algalle platform — including logos, text, graphics, UI design, and software
+                  — is the property of Algalle / Yichalal Family Initiative and is protected under applicable
                   copyright and trademark law. You may not reproduce, redistribute, or create derivative works
                   without prior written consent.
                 </p>
@@ -160,7 +160,7 @@ export default function TermsOfServicePage() {
                 <h2 className="mb-3 text-xl font-semibold text-foreground">7. AI Travel Planner</h2>
                 <p>
                   Our AI Travel Planner provides suggestions based on your stated preferences and available
-                  platform data. AI-generated recommendations are for informational purposes only. Alga Ale
+                  platform data. AI-generated recommendations are for informational purposes only. Algalle
                   does not guarantee the accuracy of AI-generated content and recommends verifying critical
                   travel details (visa requirements, safety conditions, operating hours) independently.
                 </p>
@@ -169,7 +169,7 @@ export default function TermsOfServicePage() {
               <div>
                 <h2 className="mb-3 text-xl font-semibold text-foreground">8. Limitation of Liability</h2>
                 <p>
-                  To the fullest extent permitted by applicable law, Alga Ale and the Yichalal Family Initiative
+                  To the fullest extent permitted by applicable law, Algalle and the Yichalal Family Initiative
                   are not liable for indirect, incidental, consequential, or punitive damages arising from your
                   use of the platform or any third-party service booked through it. Our total liability for any
                   direct claim shall not exceed the amount you paid for the specific booking in dispute.
@@ -197,8 +197,8 @@ export default function TermsOfServicePage() {
               <div className="rounded-lg border border-border bg-card p-4">
                 <p>
                   Questions about these terms?{" "}
-                  <a href="mailto:legal@algaale.com" className="text-primary hover:underline">
-                    legal@algaale.com
+                  <a href="mailto:legal@algalle.com" className="text-primary hover:underline">
+                    legal@algalle.com
                   </a>
                 </p>
               </div>
@@ -208,7 +208,7 @@ export default function TermsOfServicePage() {
                 <span className="text-border">·</span>
                 <Link href="/safety" className="text-primary hover:underline">Safety Guidelines</Link>
                 <span className="text-border">·</span>
-                <Link href="/about" className="text-primary hover:underline">About Alga Ale</Link>
+                <Link href="/about" className="text-primary hover:underline">About Algalle</Link>
               </div>
             </div>
           </div>

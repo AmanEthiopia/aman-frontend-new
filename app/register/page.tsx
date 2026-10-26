@@ -159,7 +159,7 @@ function RegisterForm() {
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Create Account</CardTitle>
-              <CardDescription>Join Alga Ale to discover trusted travel in Ethiopia</CardDescription>
+              <CardDescription>Join Algalle to discover trusted travel in Ethiopia</CardDescription>
             </CardHeader>
             <CardContent>
               {error && (

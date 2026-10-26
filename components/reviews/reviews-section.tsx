@@ -146,7 +146,7 @@ function ReviewCard({ review }: { review: Review }) {
           )}
           {review.is_admin_verification && (
             <Badge variant="default" className="text-xs bg-primary">
-              Alga Ale Verified
+              Algalle Verified
             </Badge>
           )}
         </div>

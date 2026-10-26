@@ -38,7 +38,7 @@ const values = [
     icon: Building2,
     title: "Yichalal Family",
     description:
-      "Alga Ale is a proud initiative of the Yichalal Family — committed to building trusted digital infrastructure for Ethiopia.",
+      "Algalle is a proud initiative of the Yichalal Family — committed to building trusted digital infrastructure for Ethiopia.",
   },
 ]
 
@@ -55,7 +55,7 @@ export default function AboutPage() {
                 A Yichalal Family Initiative
               </span>
               <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl">
-                About Alga Ale
+                About Algalle
                 <span className="ml-3 font-serif text-muted-foreground">አልጋ አለ</span>
               </h1>
               <p className="text-lg text-muted-foreground">
@@ -72,14 +72,14 @@ export default function AboutPage() {
               <h2 className="mb-6 text-2xl font-bold">Our Story</h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  Alga Ale (አልጋ አለ) — meaning "there is a bed" — was born from a simple but persistent frustration:
+                  Algalle (አልጋ አለ) — meaning "there is a bed" — was born from a simple but persistent frustration:
                   finding reliable, verified travel information in Ethiopia was harder than it should be. Whether
                   you&apos;re a local planning a domestic getaway, a member of the diaspora visiting family, or an
                   international traveler discovering Ethiopia for the first time, the lack of transparent and
                   trustworthy information made every booking feel like a gamble.
                 </p>
                 <p>
-                  As a Yichalal Family Initiative, we set out to change that. Alga Ale is a trust-first travel
+                  As a Yichalal Family Initiative, we set out to change that. Algalle is a trust-first travel
                   platform that connects locals, diaspora, and foreign travelers with verified hotels, experiences,
                   and transport across Ethiopia. We combine rigorous verification — including AI photo verification
                   and manual team reviews — with an AI-powered travel planner to make every trip simpler, safer,

@@ -13,7 +13,7 @@ version (v1). Save it; we'll refine for v2.
 - **Name:** Algalle (Amharic **አልጋ አለ**, "there is a bed").
 - **Promise:** "there is a bed for you" — a warm, ready, trustworthy place to stay/travel.
 - **Note on spelling:** the brand assets use **"Algalle"**; the product UI currently
-  renders the wordmark as **"Alga Ale"** (same name, same Amharic). Unifying the Latin
+  renders the wordmark as **"Algalle"** (same name, same Amharic). Unifying the Latin
   spelling is a v2 decision — flagged here, not yet changed across the app.
 
 ---
@@ -43,11 +43,11 @@ An **arch** (doorway + roof = shelter, welcome) holding a **made bed** with a si
 
 **In code:** use the shared component, never re-implement the mark.
 ```tsx
-import { AlgaAleWordmark, AlgaAleMark } from "@/components/brand/alga-ale-logo"
+import { AlgalleWordmark, AlgalleMark } from "@/components/brand/algalle-logo"
 
-<AlgaAleWordmark size={36} />                 // mark + "Alga Ale" + አልጋ አለ (light bg)
-<AlgaAleWordmark size={36} reverse />         // cream mark + light text (dark/green bg)
-<AlgaAleMark size={28} />                      // mark only
+<AlgalleWordmark size={36} />                 // mark + "Algalle" + አልጋ አለ (light bg)
+<AlgalleWordmark size={36} reverse />         // cream mark + light text (dark/green bg)
+<AlgalleMark size={28} />                      // mark only
 ```
 
 ---
@@ -112,7 +112,7 @@ expressed in `oklch`:
 ## 5. Where it's applied (this version)
 
 - **Logo (Resting Arch):** main site header, traveler dashboard header, provider
-  dashboard (sidebar + top bar), and the footer — all via `AlgaAleWordmark`.
+  dashboard (sidebar + top bar), and the footer — all via `AlgalleWordmark`.
 - **Favicon / tab icon:** `public/brand/icon.svg` (cream arch on green tile).
 - **Guides page hero** (`/guides`): restyled from the old slate-gradient to the
   **green "Premium Concierge" pitch** treatment — `bg-primary` + the
@@ -128,5 +128,5 @@ expressed in `oklch`:
 - Kept the existing green/gold/cherry theme (already brand-aligned) rather than
   re-theming — documented the exact hex targets for v2.
 - Unified the Guides hero with the Premium pitch for one consistent brand feel.
-- **Open for v2:** finalize Latin spelling ("Algalle" vs "Alga Ale") across UI;
+- **Open for v2:** finalize Latin spelling ("Algalle" vs "Algalle") across UI;
   optionally pin theme `oklch` to exact brand hex; load Fraunces for the wordmark.

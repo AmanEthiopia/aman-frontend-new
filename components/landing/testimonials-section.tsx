@@ -52,9 +52,9 @@ export function TestimonialsSection() {
       await submitInquiry({
         inquiry_type: "general",
         name: form.name,
-        email: "no-reply@algaale.com",
+        email: "no-reply@algalle.com",
         organization: form.role,
-        message: `Testimonial (${rating}★ about Alga Ale):\n\n${form.message}`,
+        message: `Testimonial (${rating}★ about Algalle):\n\n${form.message}`,
       })
       setSubmitted(true)
       toast({ title: "Thank you for sharing your experience!" })
@@ -84,7 +84,7 @@ export function TestimonialsSection() {
             Trusted by Travelers Worldwide
           </h2>
           <p className="text-lg text-muted-foreground">
-            Real experiences from travelers exploring Ethiopia with Alga Ale
+            Real experiences from travelers exploring Ethiopia with Algalle
           </p>
         </div>
 
@@ -196,7 +196,7 @@ export function TestimonialsSection() {
                       Your experience <span className="text-destructive">*</span>
                     </label>
                     <Textarea
-                      placeholder="Tell us about your experience with Alga Ale..."
+                      placeholder="Tell us about your experience with Algalle..."
                       rows={4}
                       value={form.message}
                       onChange={e => setForm(p => ({ ...p, message: e.target.value }))}

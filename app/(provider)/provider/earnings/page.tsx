@@ -213,7 +213,7 @@ function exportToPDF(
       <div class="metric-value">${fmt(gross)}</div>
     </div>
     <div class="metric">
-      <div class="metric-label">Commission to Alga Ale (${pct}%)</div>
+      <div class="metric-label">Commission to Algalle (${pct}%)</div>
       <div class="metric-value">${fmt(commission)}</div>
     </div>
     <div class="metric">
@@ -241,7 +241,7 @@ function exportToPDF(
     </tbody>
   </table>
 
-  <div class="footer">Alga Ale Provider Dashboard</div>
+  <div class="footer">Algalle Provider Dashboard</div>
 </body>
 </html>`
 
@@ -315,7 +315,7 @@ export default function ProviderEarningsPage() {
   const currency = metrics?.total_revenue?.currency ?? "ETB"
   const commissionPct = data?.commission_pct ?? 10
 
-  // Money flow: guests pay the provider gross; provider owes Alga Ale commission.
+  // Money flow: guests pay the provider gross; provider owes Algalle commission.
   // Prefer backend-computed values, fall back to deriving from gross for safety.
   const grossMetric = metrics?.gross_revenue ?? metrics?.total_revenue
   const grossValue = grossMetric?.value ?? 0
@@ -347,7 +347,7 @@ export default function ProviderEarningsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold">Earnings</h1>
-          <p className="text-muted-foreground">Guests pay you directly — track your revenue and the commission you owe Alga Ale</p>
+          <p className="text-muted-foreground">Guests pay you directly — track your revenue and the commission you owe Algalle</p>
         </div>
         <div className="flex gap-2 flex-wrap items-end">
           <Button variant="ghost" size="icon" onClick={() => load(true)} disabled={refreshing || (period === "custom" && (!dateFrom || !dateTo))}>
@@ -439,7 +439,7 @@ export default function ProviderEarningsPage() {
           loading={loading}
         />
         <MetricCard
-          title={`Commission to Alga Ale (${commissionPct}%)`}
+          title={`Commission to Algalle (${commissionPct}%)`}
           value={loading ? "—" : `${currency} ${commissionValue.toLocaleString()}`}
           changePct={metrics?.commission_owed?.vs_last_period_pct}
           icon={Landmark}
@@ -461,7 +461,7 @@ export default function ProviderEarningsPage() {
         />
       </div>
 
-      {/* Commission payout to Alga Ale */}
+      {/* Commission payout to Algalle */}
       <Card className="border-primary/30 bg-primary/[0.03]">
         <CardContent className="py-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -470,9 +470,9 @@ export default function ProviderEarningsPage() {
                 <CalendarClock className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="font-semibold">Commission payout to Alga Ale</p>
+                <p className="font-semibold">Commission payout to Algalle</p>
                 <p className="text-sm text-muted-foreground max-w-xl">
-                  Guests pay you directly for every booking. You remit Alga Ale&apos;s {commissionPct}% commission on a
+                  Guests pay you directly for every booking. You remit Algalle&apos;s {commissionPct}% commission on a
                   schedule that suits you — we&apos;ll send a reminder and statement each cycle.
                 </p>
               </div>

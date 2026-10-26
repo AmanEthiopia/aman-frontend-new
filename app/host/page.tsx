@@ -28,7 +28,7 @@ const benefits = [
   {
     icon: Globe,
     title: "Reach Global Travelers",
-    body: "Connect with thousands of international visitors, diplomats, and business travelers who use Alga Ale as their trusted platform for discovering and booking services across Ethiopia.",
+    body: "Connect with thousands of international visitors, diplomats, and business travelers who use Algalle as their trusted platform for discovering and booking services across Ethiopia.",
   },
   {
     icon: TrendingUp,
@@ -38,7 +38,7 @@ const benefits = [
   {
     icon: Shield,
     title: "Verified & Trusted",
-    body: "Every partner on Alga Ale goes through a verification process. Your listing carries our trust badge, signaling quality to every traveler.",
+    body: "Every partner on Algalle goes through a verification process. Your listing carries our trust badge, signaling quality to every traveler.",
   },
   {
     icon: Users,
@@ -84,7 +84,7 @@ const founders = [
   {
     name: "Mulubrhan Legesse",
     role: "Co-Founder & CEO",
-    bio: "Builder of Alga Ale. Passionate about unlocking Ethiopia's tourism potential through technology.",
+    bio: "Builder of Algalle. Passionate about unlocking Ethiopia's tourism potential through technology.",
     linkedin: "https://www.linkedin.com/in/mulubrhan-legesse/",
     portfolio: "https://v0-mulubrhan.vercel.app/",
     email: "legesse.mulubrhan@gmail.com",
@@ -94,7 +94,7 @@ const founders = [
   {
     name: "Fitsum Getachew",
     role: "Co-Founder",
-    bio: "Driving partnerships and growth at Alga Ale. Committed to creating world-class travel experiences rooted in Ethiopian culture.",
+    bio: "Driving partnerships and growth at Algalle. Committed to creating world-class travel experiences rooted in Ethiopian culture.",
     linkedin: "https://www.linkedin.com/in/fitsum-getachew/",
     portfolio: "",
     email: "fitsumgetachewtola@gmail.com",
@@ -117,7 +117,7 @@ export default function PartnerWithUsPage() {
           <div className="container relative mx-auto max-w-4xl px-4 text-center">
             <Badge className="mb-4 bg-white/20 text-white hover:bg-white/30">For Hotels, Guides & Transport</Badge>
             <h1 className="mb-6 text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
-              Partner with Alga Ale
+              Partner with Algalle
             </h1>
             <p className="mx-auto mb-10 max-w-2xl text-lg text-white/85 md:text-xl">
               Join Ethiopia's fastest-growing travel platform. Reach thousands of verified travelers, manage bookings effortlessly, and grow your business with tools built specifically for Ethiopian hospitality providers.
@@ -184,7 +184,7 @@ export default function PartnerWithUsPage() {
         <section className="bg-muted/30 py-20">
           <div className="container mx-auto max-w-5xl px-4">
             <div className="mb-12 text-center">
-              <h2 className="text-3xl font-bold">Why Partner with Alga Ale?</h2>
+              <h2 className="text-3xl font-bold">Why Partner with Algalle?</h2>
               <p className="mt-3 text-muted-foreground">Built by Ethiopians, for the world</p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -214,7 +214,7 @@ export default function PartnerWithUsPage() {
               {[
                 { step: "01", title: "Create Your Provider Account", body: "Sign up as a provider and complete your profile. No subscription fee to get started." },
                 { step: "02", title: "List Your Services", body: "Add your hotel, tour, driver service, or guide profile with photos, pricing, and availability." },
-                { step: "03", title: "Get Verified", body: "Our team reviews your listing and applies the Alga Ale Verified badge, boosting traveler trust." },
+                { step: "03", title: "Get Verified", body: "Our team reviews your listing and applies the Algalle Verified badge, boosting traveler trust." },
                 { step: "04", title: "Accept Bookings & Get Paid", body: "Receive booking requests, confirm them from your dashboard, and receive payouts directly." },
               ].map((item) => (
                 <div key={item.step} className="flex gap-5">
@@ -338,7 +338,7 @@ export default function PartnerWithUsPage() {
         {/* CTA strip */}
         <section className="bg-primary py-16 text-primary-foreground">
           <div className="container mx-auto max-w-3xl px-4 text-center">
-            <h2 className="mb-4 text-3xl font-bold">Ready to Join Alga Ale?</h2>
+            <h2 className="mb-4 text-3xl font-bold">Ready to Join Algalle?</h2>
             <p className="mb-8 text-white/80">
               Hundreds of travelers discover Ethiopian hotels, tours, and experiences on our platform every month. Make sure yours is among them.
             </p>

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { AlgaAleWordmark } from "@/components/brand/alga-ale-logo"
+import { AlgalleWordmark } from "@/components/brand/algalle-logo"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,7 +114,7 @@ export function Header({ variant = "default" }: HeaderProps = {}) {
         }
       >
         <Link href={isProvider ? "/provider" : "/"} className="flex items-center gap-2">
-          <AlgaAleWordmark size={36} reverse={overlay} />
+          <AlgalleWordmark size={36} reverse={overlay} />
         </Link>
 
         {/* Desktop Navigation */}

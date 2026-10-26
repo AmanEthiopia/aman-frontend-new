@@ -29,7 +29,7 @@ export function TrustIndicators({
               </Badge>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Identity and property verified by Alga Ale</p>
+              <p>Identity and property verified by Algalle</p>
             </TooltipContent>
           </Tooltip>
         )}
@@ -78,7 +78,7 @@ export function BookingProtectionBadge() {
         </TooltipTrigger>
         <TooltipContent>
           <div className="max-w-xs space-y-1">
-            <p className="font-medium">Your booking is protected by Alga Ale</p>
+            <p className="font-medium">Your booking is protected by Algalle</p>
             <ul className="text-xs space-y-0.5">
               <li>• Free cancellation up to 48 hours</li>
               <li>• Verified property information</li>

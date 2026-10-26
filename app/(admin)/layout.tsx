@@ -119,7 +119,7 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive">
                       <Shield className="h-4 w-4 text-destructive-foreground" />
                     </div>
-                    <span className="text-xl font-bold">Alga Ale Admin</span>
+                    <span className="text-xl font-bold">Algalle Admin</span>
                   </Link>
                 </div>
                 <SidebarNav onItemClick={() => setMobileMenuOpen(false)} />
@@ -130,7 +130,7 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive">
                 <Shield className="h-4 w-4 text-destructive-foreground" />
               </div>
-              <span className="hidden text-xl font-bold sm:inline">Alga Ale</span>
+              <span className="hidden text-xl font-bold sm:inline">Algalle</span>
               <Badge variant="destructive" className="ml-2">
                 Admin
               </Badge>
@@ -142,7 +142,7 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
             <Link href="/">
               <Button variant="ghost" size="sm" className="hidden gap-2 sm:flex">
                 <Home className="h-4 w-4" />
-                Back to Alga Ale
+                Back to Algalle
               </Button>
             </Link>
             <Button variant="ghost" size="icon" className="relative">

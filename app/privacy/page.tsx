@@ -3,8 +3,8 @@ import { Footer } from "@/components/ui/footer"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Privacy Policy — Alga Ale",
-  description: "How Alga Ale collects, uses, and protects your personal data.",
+  title: "Privacy Policy — Algalle",
+  description: "How Algalle collects, uses, and protects your personal data.",
 }
 
 export default function PrivacyPolicyPage() {
@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
               </span>
               <h1 className="mb-4 text-4xl font-bold tracking-tight">Privacy Policy</h1>
               <p className="text-muted-foreground">
-                Last updated: June 2026 &nbsp;·&nbsp; Alga Ale, a Yichalal Family Initiative
+                Last updated: June 2026 &nbsp;·&nbsp; Algalle, a Yichalal Family Initiative
               </p>
             </div>
           </div>
@@ -33,15 +33,15 @@ export default function PrivacyPolicyPage() {
               <div>
                 <h2 className="mb-3 text-xl font-semibold text-foreground">1. Who We Are</h2>
                 <p>
-                  Alga Ale (አልጋ አለ) is a travel and local intelligence platform operated by the Yichalal Family
+                  Algalle (አልጋ አለ) is a travel and local intelligence platform operated by the Yichalal Family
                   Initiative. We connect locals, diaspora, and foreign travelers with verified hotels, experiences,
-                  and transport across Ethiopia. References to <strong className="text-foreground">"Alga Ale," "we," "us,"</strong> or{" "}
+                  and transport across Ethiopia. References to <strong className="text-foreground">"Algalle," "we," "us,"</strong> or{" "}
                   <strong className="text-foreground">"our"</strong> in this policy refer to this entity.
                 </p>
                 <p className="mt-2">
                   For questions about this policy, contact us at{" "}
-                  <a href="mailto:privacy@algaale.com" className="text-primary hover:underline">
-                    privacy@algaale.com
+                  <a href="mailto:privacy@algalle.com" className="text-primary hover:underline">
+                    privacy@algalle.com
                   </a>
                   .
                 </p>
@@ -113,7 +113,7 @@ export default function PrivacyPolicyPage() {
                 </ul>
                 <p className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-4 text-primary">
                   <strong>We will never sell your personal data to third-party advertisers.</strong> Your data is
-                  used solely to serve you on the Alga Ale platform.
+                  used solely to serve you on the Algalle platform.
                 </p>
               </div>
 
@@ -153,8 +153,8 @@ export default function PrivacyPolicyPage() {
                   We retain your account data for as long as your account is active, or as required by applicable
                   law. Booking records are retained for 5 years for financial compliance. You may request deletion
                   of your account at any time by emailing{" "}
-                  <a href="mailto:privacy@algaale.com" className="text-primary hover:underline">
-                    privacy@algaale.com
+                  <a href="mailto:privacy@algalle.com" className="text-primary hover:underline">
+                    privacy@algalle.com
                   </a>
                   .
                 </p>
@@ -175,8 +175,8 @@ export default function PrivacyPolicyPage() {
                 </ul>
                 <p className="mt-2">
                   Submit requests to{" "}
-                  <a href="mailto:privacy@algaale.com" className="text-primary hover:underline">
-                    privacy@algaale.com
+                  <a href="mailto:privacy@algalle.com" className="text-primary hover:underline">
+                    privacy@algalle.com
                   </a>
                   . We respond within 30 days.
                 </p>
@@ -204,7 +204,7 @@ export default function PrivacyPolicyPage() {
                 <span className="text-border">·</span>
                 <Link href="/safety" className="text-primary hover:underline">Safety Guidelines</Link>
                 <span className="text-border">·</span>
-                <Link href="/about" className="text-primary hover:underline">About Alga Ale</Link>
+                <Link href="/about" className="text-primary hover:underline">About Algalle</Link>
               </div>
             </div>
           </div>

@@ -9,7 +9,7 @@ export function CTASection() {
         <div className="mx-auto max-w-4xl rounded-2xl border border-border bg-card p-8 text-center shadow-lg md:p-12">
           <h2 className="mb-4 text-3xl font-bold tracking-tight md:text-4xl">Ready to Explore Ethiopia?</h2>
           <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
-            Whether you&apos;re planning a business trip, family vacation, or solo adventure — Alga Ale helps you discover
+            Whether you&apos;re planning a business trip, family vacation, or solo adventure — Algalle helps you discover
             trusted hotels, restaurants, and experiences that match your needs.
           </p>
 
