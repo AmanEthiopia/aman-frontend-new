@@ -12,6 +12,9 @@
  * The standalone <AlgaAleMark/> renders just the mark (no text).
  */
 
+/** Pending brand decision: "Alga Ale" or "AlgaAle". Change it here only. */
+export const BRAND_WORDMARK: "Alga Ale" | "AlgaAle" = "Alga Ale"
+
 const MARK_PATH =
   "M0 0H142A152 152 0 0 1 294 152H1098A236 236 0 0 1 1334 388V668H1192V516H142V668H0V374H1191A94 94 0 0 0 1098 294H0Z"
 
@@ -91,10 +94,10 @@ export function AlgaAleWordmark({ size = 36, showAmharic = true, reverse = false
       <AlgaAleMark size={Math.round(size * 1.33)} tone={reverse ? "light" : "brand"} title={null} />
       <span className="flex flex-col leading-none">
         <span
-          className={`font-bold tracking-tight ${reverse ? "text-white" : "text-foreground"}`}
+          className={`whitespace-nowrap font-bold tracking-tight ${reverse ? "text-white" : "text-foreground"}`}
           style={{ fontSize: Math.round(size * 0.5) }}
         >
-          Alga Ale
+          {BRAND_WORDMARK}
         </span>
         {showAmharic && (
           <span

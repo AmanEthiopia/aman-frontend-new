@@ -35,7 +35,12 @@ import { useAuth } from "@/contexts/auth-context"
 import { useApp } from "@/lib/contexts/app-context"
 import { FEATURES } from "@/lib/config/features"
 
-export function Header() {
+interface HeaderProps {
+  /** "overlay": transparent with white text over a full-bleed hero until the page scrolls (home page). */
+  variant?: "default" | "overlay"
+}
+
+export function Header({ variant = "default" }: HeaderProps = {}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
 
@@ -72,14 +77,44 @@ export function Header() {
     ...(FEATURES.ATTRACTIONS ? [{ href: "/attractions", label: "Attractions", icon: MapPin }] : []),
   ]
 
+  const isOverlayVariant = variant === "overlay"
+  const overlay = isOverlayVariant && !isScrolled && !isMenuOpen
+  const navButton = overlay ? "text-white hover:bg-white/10 hover:text-white" : ""
+
+  const localeMenu = (
+    <DropdownMenuContent align="end">
+      <DropdownMenuLabel>Language</DropdownMenuLabel>
+      <DropdownMenuItem onClick={() => handleSetLanguage("en")}>English {language === "en" && "✓"}</DropdownMenuItem>
+      <DropdownMenuItem onClick={() => handleSetLanguage("am")}>አማርኛ {language === "am" && "✓"}</DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel>Currency</DropdownMenuLabel>
+      <DropdownMenuItem onClick={() => setCurrency("USD")}>
+        USD ($) {currency === "USD" && "✓"}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => setCurrency("ETB")}>
+        ETB (Br) {currency === "ETB" && "✓"}
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  )
+
   return (
     <header
       data-scrolled={isScrolled}
-      className="aman-glass sticky top-0 z-50 w-full border-b border-border/40"
+      className={
+        overlay
+          ? "sticky top-0 z-50 w-full border-b border-white/12 bg-transparent text-white transition-colors"
+          : "aman-glass sticky top-0 z-50 w-full border-b border-border/40"
+      }
     >
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div
+        className={
+          isOverlayVariant
+            ? "flex h-16 w-full items-center justify-between px-4 lg:h-[84px] lg:px-8 xl:px-[72px]"
+            : "container mx-auto flex h-16 items-center justify-between px-4"
+        }
+      >
         <Link href={isProvider ? "/provider" : "/"} className="flex items-center gap-2">
-          <AlgaAleWordmark size={36} />
+          <AlgaAleWordmark size={36} reverse={overlay} />
         </Link>
 
         {/* Desktop Navigation */}
@@ -88,7 +123,7 @@ export function Header() {
             {/* Discover Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-1">
+                <Button variant="ghost" className={`flex items-center gap-1 ${navButton}`}>
                   Discover
                   <ChevronDown className="h-4 w-4" />
                 </Button>
@@ -106,24 +141,24 @@ export function Header() {
             </DropdownMenu>
 
             <Link href="/cities">
-              <Button variant="ghost">Cities</Button>
+              <Button variant="ghost" className={navButton}>Cities</Button>
             </Link>
             {FEATURES.AI_PLANNER && (
               <Link href="/planner">
-                <Button variant="ghost" className="flex items-center gap-1">
+                <Button variant="ghost" className={`flex items-center gap-1 ${navButton}`}>
                   <Sparkles className="h-4 w-4" />
                   AI Planner
                 </Button>
               </Link>
             )}
             <Link href="/concierge">
-              <Button variant="ghost" className="flex items-center gap-1">
+              <Button variant="ghost" className={`flex items-center gap-1 ${navButton}`}>
                 <Crown className="h-4 w-4" />
                 Premium
               </Button>
             </Link>
             <Link href="/about">
-              <Button variant="ghost">About</Button>
+              <Button variant="ghost" className={navButton}>About</Button>
             </Link>
           </nav>
         )}
@@ -133,33 +168,21 @@ export function Header() {
           {/* Language/Currency Switcher */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1">
+              <Button variant="ghost" size="sm" className={`gap-1 ${navButton}`}>
                 <Globe className="h-4 w-4" />
                 <span className="text-xs">
                   {language.toUpperCase()} / {currency}
                 </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Language</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleSetLanguage("en")}>English {language === "en" && "✓"}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleSetLanguage("am")}>አማርኛ {language === "am" && "✓"}</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>Currency</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => setCurrency("USD")}>
-                USD ($) {currency === "USD" && "✓"}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCurrency("ETB")}>
-                ETB (Br) {currency === "ETB" && "✓"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+            {localeMenu}
           </DropdownMenu>
 
           {/* User Menu */}
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2 cursor-pointer hover:bg-accent">
+                <Button variant="ghost" size="sm" className={`gap-2 cursor-pointer ${navButton || "hover:bg-accent"}`}>
                   <Link href={isProvider ? "/provider" : "/home"} className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground hover:ring-2 hover:ring-primary/30 transition-all">
                     <span className="text-xs font-medium">{userName.charAt(0)}</span>
                   </Link>
@@ -242,23 +265,58 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" size="sm" asChild className={navButton}>
                 <Link href="/login">
                   <LogIn className="mr-1 h-4 w-4" />
                   Sign In
                 </Link>
               </Button>
-              <Button size="sm" asChild>
+              <Button
+                size="sm"
+                asChild
+                className={overlay ? "rounded-full bg-white px-5 font-semibold text-[#0F1F14] hover:bg-[#E9F3E6]" : ""}
+              >
                 <Link href="/register">Register</Link>
               </Button>
             </div>
           )}
         </div>
 
-        {/* Mobile Menu Button */}
-        <button className="lg:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
-          {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        {/* Mobile: glass locale + menu buttons over the hero, plain menu toggle elsewhere */}
+        {isOverlayVariant ? (
+          <div className="flex items-center gap-2 lg:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  aria-label="Language and currency"
+                  className={
+                    overlay
+                      ? "flex h-11 w-11 items-center justify-center rounded-full border border-white/22 bg-white/14 backdrop-blur-md"
+                      : "flex h-11 w-11 items-center justify-center rounded-full hover:bg-muted"
+                  }
+                >
+                  <Globe className="h-[19px] w-[19px]" />
+                </button>
+              </DropdownMenuTrigger>
+              {localeMenu}
+            </DropdownMenu>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle menu"
+              className={
+                overlay
+                  ? "flex h-11 w-11 items-center justify-center rounded-full border border-white/22 bg-white/14 backdrop-blur-md"
+                  : "flex h-11 w-11 items-center justify-center rounded-full hover:bg-muted"
+              }
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+        ) : (
+          <button className="lg:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        )}
       </div>
 
       {/* Mobile Navigation */}
