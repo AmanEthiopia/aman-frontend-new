@@ -1,6 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" fill="none" role="img" aria-label="Algalle">
-  <title>Algalle — mark reverse (cream, for dark backgrounds)</title>
-  <path d="M26 86 L26 44 A24 24 0 0 1 74 44 L74 86" stroke="#FAF6EE" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path>
-  <line x1="38" y1="69" x2="62" y2="69" stroke="#FAF6EE" stroke-width="11" stroke-linecap="round"></line>
-  <line x1="40" y1="57" x2="50" y2="57" stroke="#E3A92C" stroke-width="8" stroke-linecap="round"></line>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1334 668" width="200" height="100" role="img" aria-label="Algalle">
+  <title>Algalle — mark (light, for dark and green backgrounds)</title>
+  <path d="M0 0H142A152 152 0 0 1 294 152H1098A236 236 0 0 1 1334 388V668H1192V516H142V668H0V374H1191A94 94 0 0 0 1098 294H0Z" fill="#F5F5F5"/>
 </svg>

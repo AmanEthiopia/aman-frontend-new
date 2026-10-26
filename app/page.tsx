@@ -15,7 +15,7 @@ import { FloatingAIAssistant } from "@/components/ai/floating-assistant"
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Header />
+      <Header variant="overlay" />
       <main className="flex-1">
         <HeroSection />
         <ProblemsSection />
